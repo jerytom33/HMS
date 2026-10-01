@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Users, X, Search, Plus, Mail, Phone, Home, Calendar, MapPin, GraduationCap, HeartPulse, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
-const INITIAL_STUDENTS = [
+const INITIAL_STUDENTS: any[] = [
   { 
     id: 1, name: 'John Doe', email: 'john@example.com', phone: '+1 234 567 8900', room: '101A', status: 'Active',
     dateOfBirth: '2001-05-15', gender: 'male', address: '123 College Ave, City', course: 'Computer Science', yearOfStudy: '3',

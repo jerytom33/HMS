@@ -23,7 +23,6 @@ export default function AddStudentPage() {
     yearOfStudy: '',
     emergencyName: '',
     emergencyPhone: '',
-    emergencyPhone: '',
     emergencyRelation: '',
     password: ''
   });

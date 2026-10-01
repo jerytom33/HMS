@@ -870,7 +870,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                   Floor {selectedFloor} Facilities
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {selectedProperty.floorFacilitiesLists[selectedFloor - 1].map((facility, idx) => (
+                  {selectedProperty.floorFacilitiesLists[selectedFloor - 1].map((facility: any, idx: number) => (
                     <div key={idx} className="bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 dark:border-gray-800 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                       {facility.images && facility.images.length > 0 ? (
                         <div className="h-48 relative bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800 dark:border-gray-800 overflow-hidden shrink-0">
@@ -991,7 +991,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         let mockStudentName = isFilled ? (selectedRoom.bedOccupants?.[idx] || 'Unknown Student') : null;
                         let mockStudentId = 1;
                         if (mockStudentName && !isNaN(Number(mockStudentName))) {
-                            const foundStudent = availableStudents.find(s => s.id.toString() === mockStudentName.toString());
+                            const foundStudent = availableStudents.find(s => s.id.toString() === String(mockStudentName));
                             if (foundStudent) {
                                 mockStudentId = foundStudent.id;
                                 mockStudentName = foundStudent.name;
@@ -1268,7 +1268,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         const bedLabel = String.fromCharCode(65 + idx);
                         let occupant = editRoomData.bedOccupants[idx];
                         if (occupant && !isNaN(Number(occupant))) {
-                            const foundStudent = availableStudents.find(s => s.id.toString() === occupant.toString());
+                            const foundStudent = availableStudents.find(s => s.id.toString() === String(occupant));
                             if (foundStudent) occupant = foundStudent.name;
                         }
                         
