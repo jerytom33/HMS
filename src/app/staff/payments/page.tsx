@@ -40,7 +40,7 @@ export default function AdminPayments() {
     }
     
     fetch('/api/v1-students?limit=1000').then(res => res.json()).then(data => {
-      if (data && data.docs) setAvailableStudents(data.docs);
+      if (data && data.docs) setStudents(data.docs);
     });
 
     fetch('/api/v1-properties?limit=1000').then(res => res.json()).then(data => {

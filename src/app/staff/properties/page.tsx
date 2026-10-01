@@ -121,7 +121,7 @@ export default function AdminProperties() {
   const [editPropertyForm, setEditPropertyForm] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[] });
   
   // Track specific room edits (status and bed counts)
-  const [roomOverrides, setRoomOverrides] = useState<Record<string, { status?: string, beds?: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] }>>({});
+  const [roomOverrides, setRoomOverrides] = useState<Record<string, { id?: any, status?: string, beds?: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] }>>({});
   const [isEditFloorModalOpen, setIsEditFloorModalOpen] = useState(false);
   const [editFloorData, setEditFloorData] = useState({ floor: 1, name: '', rooms: 0, beds: 0, image: '', floorFacilitiesList: [] as { description: string, images: string[] }[] });
   const [isEditingRoom, setIsEditingRoom] = useState(false);
@@ -399,7 +399,7 @@ export default function AdminProperties() {
     
     const overrideKey = `${selectedPropertyId}-${selectedRoom.roomNum}`;
     
-    const overrideData = {
+    const overrideData: any = {
       overrideKey,
       status: editRoomData.status,
       beds: editRoomData.beds,
@@ -448,7 +448,7 @@ export default function AdminProperties() {
     const propName = selectedProperty?.name;
     const roomNumStr = selectedRoom.roomNum;
 
-    const promises = [];
+    const promises: any[] = [];
     
     // Unassign students
     originalOccupants.forEach(oldId => {
