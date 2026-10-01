@@ -87,8 +87,8 @@ export default function AdminStudents() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Students</h1>
-          <p className="text-sm text-gray-500">Manage student directory and profiles.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Students</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Manage student directory and profiles.</p>
         </div>
         <Link 
           href="/staff/students/add"
@@ -98,9 +98,9 @@ export default function AdminStudents() {
         </Link>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200 flex flex-col min-h-[600px]">
-        <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 gap-3">
-          <h3 className="font-semibold text-gray-900">Student Directory</h3>
+      <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 flex flex-col min-h-[600px]">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 dark:bg-gray-950 gap-3">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100">Student Directory</h3>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <select
               value={propertyFilter}
@@ -108,7 +108,7 @@ export default function AdminStudents() {
                 setPropertyFilter(e.target.value);
                 setFloorFilter('all');
               }}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-900"
             >
               <option value="all">All Properties</option>
               {properties.map(p => (
@@ -120,7 +120,7 @@ export default function AdminStudents() {
               <select
                 value={floorFilter}
                 onChange={(e) => setFloorFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-900"
               >
                 <option value="all">All Floors</option>
                 {Array.from({ length: properties.find(p => p.name === propertyFilter)?.floors || 1 }).map((_, i) => (
@@ -136,15 +136,15 @@ export default function AdminStudents() {
                 placeholder="Search students..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 outline-none" 
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 outline-none" 
               />
             </div>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left text-sm text-gray-500">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+          <table className="w-full min-w-[800px] text-left text-sm text-gray-500 dark:text-gray-400">
+            <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
               <tr>
                 <th scope="col" className="px-6 py-4 font-semibold">Name</th>
                 <th scope="col" className="px-6 py-4 font-semibold">Contact</th>
@@ -156,13 +156,13 @@ export default function AdminStudents() {
             <tbody>
               {filteredStudents.length > 0 ? (
                 filteredStudents.map((student) => (
-                  <tr key={student.id} className="bg-white border-b hover:bg-gray-50 transition-colors">
+                  <tr key={student.id} className="bg-white dark:bg-gray-900 border-b hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0">
                           {student.name.charAt(0)}
                         </div>
-                        <div className="font-medium text-gray-900">{student.name}</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">{student.name}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -173,12 +173,12 @@ export default function AdminStudents() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1 text-xs">
-                        <div className="flex items-center gap-1.5 text-gray-700">
+                        <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                           <Home className="h-4 w-4 text-gray-400" />
                           <span className="font-medium text-sm">{student.room || 'Unassigned'}</span>
                         </div>
                         {student.property && (
-                          <div className="flex items-center gap-1.5 text-gray-500 pl-5">
+                          <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 pl-5">
                             <MapPin className="h-3 w-3" />
                             {student.property}
                           </div>
@@ -212,7 +212,7 @@ export default function AdminStudents() {
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center">
                     <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-gray-500 mb-2">No students found.</p>
+                    <p className="text-gray-500 dark:text-gray-400 mb-2">No students found.</p>
                   </td>
                 </tr>
               )}
@@ -224,20 +224,20 @@ export default function AdminStudents() {
       {/* Delete Confirmation Modal */}
       {studentToDelete !== null && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="h-8 w-8 text-red-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Student</h3>
-              <p className="text-gray-500 text-sm">
-                Are you sure you want to delete <span className="font-semibold text-gray-700">{students.find(s => s.id === studentToDelete)?.name}</span>? This action cannot be undone and will remove all their records.
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Delete Student</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                Are you sure you want to delete <span className="font-semibold text-gray-700 dark:text-gray-300">{students.find(s => s.id === studentToDelete)?.name}</span>? This action cannot be undone and will remove all their records.
               </p>
             </div>
-            <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-4 bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 flex gap-3 justify-end">
               <button 
                 onClick={() => setStudentToDelete(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 transition-colors"
               >
                 Cancel
               </button>

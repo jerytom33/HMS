@@ -107,12 +107,12 @@ export default function StudentDetailsPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Loading student details...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading student details...</div>;
   
   if (!student) return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12 text-center pt-20">
-      <h2 className="text-2xl font-bold text-gray-900">Student Not Found</h2>
-      <p className="text-gray-500 mb-6">The student you are looking for does not exist.</p>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Student Not Found</h2>
+      <p className="text-gray-500 dark:text-gray-400 mb-6">The student you are looking for does not exist.</p>
       <Link href="/staff/students" className="text-blue-600 hover:underline">Return to Students Directory</Link>
     </div>
   );
@@ -122,16 +122,16 @@ export default function StudentDetailsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href={backLink} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          <Link href={backLink} className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-800 rounded-full transition-colors">
+            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Student Profile</h1>
-            <p className="text-sm text-gray-500 mt-1">Detailed view of student information.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Student Profile</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Detailed view of student information.</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-            <Link href={`/staff/students/add?edit=${student.id}`} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
+            <Link href={`/staff/students/add?edit=${student.id}`} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 transition-colors shadow-sm">
                 <Edit className="w-4 h-4" /> Edit
             </Link>
             <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-sm">
@@ -144,33 +144,33 @@ export default function StudentDetailsPage() {
         
         {/* Left Column: Profile Card */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-8 flex flex-col items-center border-b border-gray-100 bg-gray-50/50">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="p-8 flex flex-col items-center border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50">
               <div className="w-32 h-32 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-5xl mb-4 shadow-sm border-4 border-white">
                 {student.name.charAt(0)}
               </div>
-              <h2 className="text-xl font-bold text-gray-900 text-center">{student.name}</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 text-center">{student.name}</h2>
               <span className="mt-2 bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full border border-green-200">
                 {student.status || 'Active'}
               </span>
             </div>
-            <div className="p-4 bg-white flex flex-col gap-3">
-              <div className="flex justify-between text-sm py-2 border-b border-gray-100">
-                  <span className="text-gray-500">Student ID</span>
-                  <span className="font-medium text-gray-900">#{student.id}</span>
+            <div className="p-4 bg-white dark:bg-gray-900 flex flex-col gap-3">
+              <div className="flex justify-between text-sm py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className="text-gray-500 dark:text-gray-400">Student ID</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">#{student.id}</span>
               </div>
-              <div className="flex flex-col text-sm py-2 border-b border-gray-100">
+              <div className="flex flex-col text-sm py-2 border-b border-gray-100 dark:border-gray-800">
                   <div className="flex justify-between items-center w-full">
-                    <span className="text-gray-500">Assigned Room</span>
+                    <span className="text-gray-500 dark:text-gray-400">Assigned Room</span>
                     {isAssigningRoom ? (
                       <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded">Assigning...</span>
                     ) : (
-                      <span className="font-medium text-gray-900 flex items-center gap-1.5">
+                      <span className="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
                         <Home className="w-3.5 h-3.5 text-blue-500" /> 
                         {student.room && student.room !== 'Unassigned' ? (
                           <div className="text-right">
                             <div>{student.room}</div>
-                            {student.property && <div className="text-xs text-gray-500 font-normal">{student.property}</div>}
+                            {student.property && <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">{student.property}</div>}
                           </div>
                         ) : (
                           <button onClick={() => setIsAssigningRoom(true)} className="text-blue-600 hover:underline text-xs bg-blue-50 px-2.5 py-0.5 rounded-full font-medium">Assign Now</button>
@@ -180,11 +180,11 @@ export default function StudentDetailsPage() {
                   </div>
                   
                   {isAssigningRoom && (
-                    <div className="mt-3 p-3 bg-gray-50 rounded border border-gray-200 flex flex-col gap-2">
+                    <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-950 rounded border border-gray-200 dark:border-gray-800 flex flex-col gap-2">
                       <select 
                         value={selectedPropId} 
                         onChange={e => { setSelectedPropId(e.target.value); setSelectedFloor(''); setSelectedRoom(''); setSelectedBed(''); }} 
-                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500 bg-white"
+                        className="w-full border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500 bg-white dark:bg-gray-900"
                       >
                         <option value="">Select Property</option>
                         {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -194,7 +194,7 @@ export default function StudentDetailsPage() {
                         <select 
                           value={selectedFloor} 
                           onChange={e => { setSelectedFloor(e.target.value); setSelectedRoom(''); setSelectedBed(''); }} 
-                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500 bg-white"
+                          className="w-full border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500 bg-white dark:bg-gray-900"
                         >
                           <option value="">Select Floor</option>
                           {Array.from({ length: properties.find(p => p.id.toString() === selectedPropId)?.floors || 0 }).map((_, i) => (
@@ -207,7 +207,7 @@ export default function StudentDetailsPage() {
                         <select 
                           value={selectedRoom} 
                           onChange={e => { setSelectedRoom(e.target.value); setSelectedBed(''); }} 
-                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500 bg-white"
+                          className="w-full border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500 bg-white dark:bg-gray-900"
                         >
                           <option value="">Select Room</option>
                           {Array.from({ length: properties.find(p => p.id.toString() === selectedPropId)?.roomsPerFloor?.[parseInt(selectedFloor) - 1] || 0 }).map((_, i) => {
@@ -221,7 +221,7 @@ export default function StudentDetailsPage() {
                         <select 
                           value={selectedBed} 
                           onChange={e => setSelectedBed(e.target.value)} 
-                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500 bg-white"
+                          className="w-full border border-gray-300 dark:border-gray-700 rounded px-2 py-1.5 text-xs outline-none focus:border-blue-500 bg-white dark:bg-gray-900"
                         >
                           <option value="">Select Bed</option>
                           {(() => {
@@ -245,7 +245,7 @@ export default function StudentDetailsPage() {
                         </button>
                         <button 
                           onClick={() => setIsAssigningRoom(false)} 
-                          className="flex-1 bg-white border border-gray-300 text-gray-700 px-2 py-1.5 rounded text-xs font-medium hover:bg-gray-50 transition-colors"
+                          className="flex-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1.5 rounded text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 transition-colors"
                         >
                           Cancel
                         </button>
@@ -254,8 +254,8 @@ export default function StudentDetailsPage() {
                   )}
               </div>
               <div className="flex justify-between text-sm py-2">
-                  <span className="text-gray-500">Joined</span>
-                  <span className="font-medium text-gray-900">Aug 2026</span>
+                  <span className="text-gray-500 dark:text-gray-400">Joined</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">Aug 2026</span>
               </div>
             </div>
           </div>
@@ -265,69 +265,69 @@ export default function StudentDetailsPage() {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Personal Details */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
               <User className="w-4 h-4 text-blue-600" />
-              <h3 className="font-semibold text-gray-900">Personal Details</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Personal Details</h3>
             </div>
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                  <div className="text-sm text-gray-500 font-medium mb-1">Full Name</div>
-                  <div className="font-semibold text-gray-900">{student.name}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Full Name</div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">{student.name}</div>
               </div>
               <div>
-                  <div className="text-sm text-gray-500 font-medium mb-1 flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Date of Birth</div>
-                  <div className="font-semibold text-gray-900">{student.dateOfBirth || 'Not provided'}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1 flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Date of Birth</div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">{student.dateOfBirth || 'Not provided'}</div>
               </div>
               <div>
-                  <div className="text-sm text-gray-500 font-medium mb-1">Gender</div>
-                  <div className="font-semibold text-gray-900 capitalize">{student.gender || 'Not provided'}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Gender</div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100 capitalize">{student.gender || 'Not provided'}</div>
               </div>
             </div>
           </div>
 
           {/* Contact Information */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
               <Phone className="w-4 h-4 text-blue-600" />
-              <h3 className="font-semibold text-gray-900">Contact Information</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Contact Information</h3>
             </div>
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                  <div className="text-sm text-gray-500 font-medium mb-1 flex items-center gap-1.5"><Mail className="w-4 h-4" /> Email Address</div>
-                  <div className="font-semibold text-gray-900">{student.email}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1 flex items-center gap-1.5"><Mail className="w-4 h-4" /> Email Address</div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">{student.email}</div>
               </div>
               <div>
-                  <div className="text-sm text-gray-500 font-medium mb-1 flex items-center gap-1.5"><Phone className="w-4 h-4" /> Phone Number</div>
-                  <div className="font-semibold text-gray-900">{student.phone || 'Not provided'}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1 flex items-center gap-1.5"><Phone className="w-4 h-4" /> Phone Number</div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">{student.phone || 'Not provided'}</div>
               </div>
               <div className="sm:col-span-2">
-                  <div className="text-sm text-gray-500 font-medium mb-1 flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Home Address</div>
-                  <div className="font-semibold text-gray-900">{student.address || 'Not provided'}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1 flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Home Address</div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">{student.address || 'Not provided'}</div>
               </div>
             </div>
           </div>
 
           {/* Academic Information */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
               <GraduationCap className="w-4 h-4 text-blue-600" />
-              <h3 className="font-semibold text-gray-900">Academic Information</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Academic Information</h3>
             </div>
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                  <div className="text-sm text-gray-500 font-medium mb-1">Course / Major</div>
-                  <div className="font-semibold text-gray-900">{student.course || 'Not provided'}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Course / Major</div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">{student.course || 'Not provided'}</div>
               </div>
               <div>
-                  <div className="text-sm text-gray-500 font-medium mb-1">Year of Study</div>
-                  <div className="font-semibold text-gray-900">{student.yearOfStudy ? `Year ${student.yearOfStudy}` : 'Not provided'}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Year of Study</div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">{student.yearOfStudy ? `Year ${student.yearOfStudy}` : 'Not provided'}</div>
               </div>
             </div>
           </div>
 
           {/* Emergency Contact */}
-          <div className="bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden relative">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-red-200 overflow-hidden relative">
             <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
             <div className="px-6 py-4 border-b border-red-100 bg-red-50/50 flex items-center gap-2">
               <HeartPulse className="w-4 h-4 text-red-600" />

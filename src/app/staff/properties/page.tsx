@@ -1,11 +1,45 @@
 'use client';
-import { Search, MapPin, AlertTriangle, Building2, LayoutGrid, CheckCircle2, AlertCircle, X, Plus, Edit, Trash2, Upload, Share2 } from 'lucide-react';
+import { Search, MapPin, AlertTriangle, Building2, LayoutGrid, CheckCircle2, AlertCircle, X, Plus, Edit, Trash2, Upload, Share2, ArrowLeft } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 
 const INITIAL_PROPERTIES: any[] = [];
 
 const MOCK_STUDENTS: any[] = [];
+
+const AutoCarousel = ({ images, name }: { images: string[], name: string }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (!images || images.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [images]);
+
+  if (!images || images.length === 0) {
+    return <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700"></div>;
+  }
+
+  return (
+    <>
+      <img key={currentIndex} src={images[currentIndex]} alt={name} className="w-full h-full object-cover animate-in fade-in zoom-in-95 duration-1000" />
+      {images.length > 1 && (
+        <div className="absolute top-4 left-4 bg-black/60 text-white text-xs font-bold px-2 py-1 rounded-md backdrop-blur-sm z-20 shadow-sm border border-white/10">
+          {currentIndex + 1} / {images.length}
+        </div>
+      )}
+      {images.length > 1 && (
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 bg-black/40 px-2 py-1.5 rounded-full backdrop-blur-md">
+          {images.map((_, idx) => (
+            <div key={idx} className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-white dark:bg-gray-900 dark:bg-gray-900' : 'w-1.5 bg-white dark:bg-gray-900 dark:bg-gray-900/50'}`}></div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+};
 
 export default function AdminProperties() {
   const [properties, setProperties] = useState<any[]>(INITIAL_PROPERTIES);
@@ -79,27 +113,29 @@ export default function AdminProperties() {
   const [selectedPropertyId, setSelectedPropertyId] = useState(1);
   const [selectedFloor, setSelectedFloor] = useState(1);
   const [isAddPropertyModalOpen, setIsAddPropertyModalOpen] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<{ roomNum: number, status: string, beds: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[] } | null>(null);
-  
+  const [selectedRoom, setSelectedRoom] = useState<{ roomNum: number, status: string, beds: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] } | null>(null);  
 
   const [editingPropertyId, setEditingPropertyId] = useState<number | null>(null);
 
   const [propertyToDelete, setPropertyToDelete] = useState<number | null>(null);
   const [roomFilters, setRoomFilters] = useState({ occupied: false, available: false, maintenance: false });
-  const [editPropertyForm, setEditPropertyForm] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'] });
+  const [editPropertyForm, setEditPropertyForm] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[] });
   
   // Track specific room edits (status and bed counts)
-  const [roomOverrides, setRoomOverrides] = useState<Record<string, { status?: string, beds?: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[] }>>({});
+  const [roomOverrides, setRoomOverrides] = useState<Record<string, { status?: string, beds?: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] }>>({});
+  const [isEditFloorModalOpen, setIsEditFloorModalOpen] = useState(false);
+  const [editFloorData, setEditFloorData] = useState({ floor: 1, name: '', rooms: 0, beds: 0, image: '', floorFacilitiesList: [] as { description: string, images: string[] }[] });
   const [isEditingRoom, setIsEditingRoom] = useState(false);
-  const [editRoomData, setEditRoomData] = useState({ status: '', beds: 0, freeBeds: 0, filledBeds: 0, bedStatuses: [] as boolean[], bedOccupants: [] as (string | null)[], bedImages: [] as string[][], bedDescriptions: [] as string[] });
+  const [editRoomData, setEditRoomData] = useState({ status: '', beds: 0, freeBeds: 0, filledBeds: 0, bedStatuses: [] as boolean[], bedOccupants: [] as (string | null)[], bedImages: [] as string[][], bedDescriptions: [] as string[], roomPrice: '', roomFacilitiesList: [] as { images: string[], description: string }[], roomFacilitiesImages: [] as string[], roomFacilitiesDescription: '', roomFacilitiesDescriptions: [] as string[] });
   const [activeSearchBed, setActiveSearchBed] = useState<number | null>(null);
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<{name: string, room: number, bed: string, phone: string, course: string} | null>(null);
 
-  const [newProperty, setNewProperty] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'] });
+  const [newProperty, setNewProperty] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[] });
   const [successMessage, setSuccessMessage] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isFullScreenMap, setIsFullScreenMap] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -178,7 +214,12 @@ export default function AdminProperties() {
         bedStatuses: override?.bedStatuses,
         bedOccupants: override?.bedOccupants,
         bedImages: override?.bedImages,
-        bedDescriptions: override?.bedDescriptions
+        bedDescriptions: override?.bedDescriptions,
+        roomPrice: override?.roomPrice,
+        roomFacilitiesList: override?.roomFacilitiesList,
+        roomFacilitiesImages: override?.roomFacilitiesImages,
+        roomFacilitiesDescription: override?.roomFacilitiesDescription,
+        roomFacilitiesDescriptions: override?.roomFacilitiesDescriptions
       };
     });
   }, [selectedPropertyId, selectedFloor, selectedProperty, roomOverrides]);
@@ -198,12 +239,13 @@ export default function AdminProperties() {
       bedsPerFloor: newProperty.bedsPerFloor.map(v => parseInt(v) || 2),
       beds: parseInt(newProperty.beds) || 2,
       occupancy: '0%',
-      status: 'Operational'
+      status: 'Operational',
+      images: newProperty.images
     };
     
     setProperties([...properties, addedProperty]);
     setIsAddPropertyModalOpen(false);
-    setNewProperty({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'] });
+    setNewProperty({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] });
     
     setSuccessMessage(`Property "${addedProperty.name}" added successfully!`);
     setSelectedPropertyId(newId);
@@ -244,7 +286,8 @@ export default function AdminProperties() {
       beds: (prop.beds || 2).toString(),
       roomsPerFloor: fallbackRoomsPerFloor,
       isCustomBedsPerFloor: prop.isCustomBedsPerFloor || false,
-      bedsPerFloor: fallbackBedsPerFloor
+      bedsPerFloor: fallbackBedsPerFloor,
+      images: prop.images || []
     });
     setEditingPropertyId(prop.id);
   };
@@ -308,6 +351,7 @@ export default function AdminProperties() {
           isCustomBedsPerFloor: editPropertyForm.isCustomBedsPerFloor,
           bedsPerFloor: editPropertyForm.bedsPerFloor.map(v => parseInt(v) || 2),
           beds: parseInt(editPropertyForm.beds) || 2,
+          images: editPropertyForm.images
         };
       }
       return p;
@@ -338,7 +382,16 @@ export default function AdminProperties() {
       bedStatuses: initialBedStatuses,
       bedOccupants: initialBedOccupants,
       bedImages: initialBedImages,
-      bedDescriptions: initialBedDescriptions
+      bedDescriptions: initialBedDescriptions,
+      roomPrice: selectedRoom.roomPrice || '',
+      roomFacilitiesList: selectedRoom.roomFacilitiesList || 
+        (selectedRoom.roomFacilitiesImages?.length ? selectedRoom.roomFacilitiesImages.map((img, i) => ({
+          images: [img],
+          description: selectedRoom.roomFacilitiesDescriptions?.[i] || selectedRoom.roomFacilitiesDescription || ''
+        })) : []),
+      roomFacilitiesImages: selectedRoom.roomFacilitiesImages || [],
+      roomFacilitiesDescription: selectedRoom.roomFacilitiesDescription || '',
+      roomFacilitiesDescriptions: selectedRoom.roomFacilitiesDescriptions || [],
     });
     setActiveSearchBed(null);
     setStudentSearchQuery('');
@@ -363,7 +416,12 @@ export default function AdminProperties() {
         bedStatuses: editRoomData.bedStatuses,
         bedOccupants: editRoomData.bedOccupants,
         bedImages: editRoomData.bedImages,
-        bedDescriptions: editRoomData.bedDescriptions
+        bedDescriptions: editRoomData.bedDescriptions,
+        roomPrice: editRoomData.roomPrice,
+        roomFacilitiesList: editRoomData.roomFacilitiesList,
+        roomFacilitiesImages: editRoomData.roomFacilitiesImages,
+        roomFacilitiesDescription: editRoomData.roomFacilitiesDescription,
+        roomFacilitiesDescriptions: editRoomData.roomFacilitiesDescriptions
       }
     }));
     
@@ -415,7 +473,12 @@ export default function AdminProperties() {
       bedStatuses: editRoomData.bedStatuses,
       bedOccupants: editRoomData.bedOccupants,
       bedImages: editRoomData.bedImages,
-      bedDescriptions: editRoomData.bedDescriptions
+      bedDescriptions: editRoomData.bedDescriptions,
+      roomPrice: editRoomData.roomPrice,
+      roomFacilitiesList: editRoomData.roomFacilitiesList,
+      roomFacilitiesImages: editRoomData.roomFacilitiesImages,
+      roomFacilitiesDescription: editRoomData.roomFacilitiesDescription,
+      roomFacilitiesDescriptions: editRoomData.roomFacilitiesDescriptions
     });
     
     setIsEditingRoom(false);
@@ -428,21 +491,45 @@ export default function AdminProperties() {
     
     const bedLabel = String.fromCharCode(65 + bedIndex);
     const isFilled = selectedRoom.bedStatuses ? selectedRoom.bedStatuses[bedIndex] : bedIndex < (selectedRoom.filledBeds || 0);
-    const description = selectedRoom.bedDescriptions?.[bedIndex];
-    const images = selectedRoom.bedImages?.[bedIndex]?.filter(Boolean) || [];
+    const bedDescription = selectedRoom.bedDescriptions?.[bedIndex];
+    const bedImages = selectedRoom.bedImages?.[bedIndex]?.filter(Boolean) || [];
     
-    const shareText = `🏨 *Room Details - ${selectedProperty.name}*
-Room: ${selectedRoom.roomNum} (Floor ${selectedFloor})
-Total Beds: ${selectedRoom.beds} (${selectedRoom.freeBeds} Free)
+    const propertyImages = selectedProperty.images || [];
+    
+    const floorFacilities = selectedProperty.floorFacilitiesLists?.[selectedFloor - 1] || [];
+    let floorFacilitiesText = '';
+    if (floorFacilities.length > 0) {
+      floorFacilitiesText = `\n\n🏢 *Floor ${selectedFloor} Facilities*\n` + floorFacilities.map((f: any) => 
+        `- ${f.description || 'Facility'}${f.images?.length > 0 ? `\n  Images:\n  ${f.images.join('\n  ')}` : ''}`
+      ).join('\n');
+    }
 
-🛏️ *Bed ${bedLabel}*
+    const roomFacilities = selectedRoom.roomFacilitiesList || [];
+    let roomFacilitiesText = '';
+    if (roomFacilities.length > 0) {
+      roomFacilitiesText = `\n\n🛋️ *Room Facilities*\n` + roomFacilities.map((f: any) =>
+        `- ${f.description || 'Facility'}${f.images?.length > 0 ? `\n  Images:\n  ${f.images.join('\n  ')}` : ''}`
+      ).join('\n');
+    }
+    
+    const shareText = `🏨 *Property Details*
+Name: ${selectedProperty.name}
+Location: ${selectedProperty.location}
+${propertyImages.length > 0 ? `Images:\n${propertyImages.join('\n')}` : ''}${floorFacilitiesText}
+
+🚪 *Room ${selectedRoom.roomNum} Details*
+Floor: ${selectedFloor}
+Price: ${selectedRoom.roomPrice ? `₹${selectedRoom.roomPrice}` : 'Not set'}
+Total Beds: ${selectedRoom.beds} (${selectedRoom.freeBeds} Free)${roomFacilitiesText}
+
+🛏️ *Bed ${bedLabel} Details*
 Status: ${isFilled ? 'Occupied' : 'Free'}
-${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Images:\n${images.join('\n')}\n` : ''}`;
+${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 0 ? `Images:\n${bedImages.join('\n')}\n` : ''}`;
 
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `Bed ${bedLabel} Details`,
+          title: `Bed ${bedLabel} at ${selectedProperty.name}`,
           text: shareText
         });
       } else {
@@ -455,6 +542,92 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
 
   return (
     <div className="space-y-6">
+      <style>{`
+        .property-glass-card {
+          position: relative;
+          border-radius: 1rem;
+          background: transparent;
+          overflow: hidden;
+        }
+
+        .property-glass-card::before {
+          content: "";
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            transparent 280deg,
+            red 330deg,
+            #ff4444 360deg
+          );
+          animation: rotateBorder 5s linear infinite;
+          z-index: 0;
+          filter: blur(8px);
+          opacity: 0.8;
+          transition: all 0.3s ease;
+        }
+
+        .property-glass-card:hover::before {
+          filter: blur(12px);
+          opacity: 1;
+          animation-duration: 2.5s;
+        }
+
+        .property-glass-card::after {
+          content: "";
+          position: absolute;
+          inset: 2px;
+          background: #ffffff;
+          border-radius: inherit;
+          z-index: 1;
+        }
+
+        @keyframes rotateBorder {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .card-content-layer {
+          position: relative;
+          z-index: 2;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          border-radius: inherit;
+          overflow: hidden;
+        }
+        
+        .glass-pill-badge {
+          background: rgba(34, 197, 94, 0.15);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(34, 197, 94, 0.3);
+          box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+          padding: 4px 10px;
+          border-radius: 9999px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .pulse-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background-color: #22c55e;
+          box-shadow: 0 0 8px #22c55e;
+          animation: pulse-glow 2s infinite;
+        }
+        
+        @keyframes pulse-glow {
+          0% { opacity: 0.6; transform: scale(0.9); }
+          50% { opacity: 1; transform: scale(1.1); box-shadow: 0 0 12px #22c55e; }
+          100% { opacity: 0.6; transform: scale(0.9); }
+        }
+      `}</style>
       {successMessage && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -464,8 +637,8 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
 
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Property Management</h1>
-          <p className="text-sm text-gray-500">Manage buildings and view interactive room layouts.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 tracking-tight">Property Management</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">Manage buildings and view interactive room layouts.</p>
         </div>
         <button 
           onClick={() => setIsAddPropertyModalOpen(true)}
@@ -475,11 +648,12 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="flex flex-col gap-6">
         {/* Properties List */}
-        <div className="lg:col-span-5 bg-white shadow-sm rounded-lg border border-gray-200 flex flex-col h-[400px] lg:h-[600px]">
-          <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 gap-3">
-            <h3 className="font-semibold text-gray-900">Your Properties</h3>
+        {!isFullScreenMap && (
+        <div className="bg-white dark:bg-gray-900 dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800 flex flex-col h-[calc(100vh-150px)] min-h-[600px]">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-800 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 gap-3">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100">Your Properties</h3>
             <div className="relative w-full sm:w-auto">
               <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input 
@@ -487,188 +661,324 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                 placeholder="Search..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-48 pl-9 pr-4 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 outline-none" 
+                className="w-full sm:w-48 pl-9 pr-4 py-1.5 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 outline-none" 
               />
             </div>
           </div>
-          <div className="divide-y divide-gray-200 flex-1 overflow-y-auto">
+          <div className="p-6 flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 dark:bg-gray-950/50">
             {filteredProperties.length > 0 ? (
-              filteredProperties.map((prop) => (
-                <div 
-                  key={prop.id} 
-                  onClick={() => { setSelectedPropertyId(prop.id); setSelectedFloor(1); setIsEditingRoom(false); setSelectedRoom(null); }}
-                  className={`p-4 cursor-pointer transition-colors flex gap-4 items-start ${selectedPropertyId === prop.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'hover:bg-gray-50 border-l-4 border-l-transparent'}`}
-                >
-                  <div className={`h-12 w-12 rounded-lg flex items-center justify-center shrink-0 ${selectedPropertyId === prop.id ? 'bg-blue-200 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-                    <Building2 className="h-6 w-6" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className={`font-semibold ${selectedPropertyId === prop.id ? 'text-blue-900' : 'text-gray-900'}`}>{prop.name}</h4>
-                    <div className="flex items-center text-xs text-gray-500 mt-1 gap-4">
-                      <span className="flex items-center"><MapPin className="h-3 w-3 mr-1" /> {prop.location}</span>
-                      <span className="flex items-center"><LayoutGrid className="h-3 w-3 mr-1" /> {prop.rooms} Rooms</span>
-                      <span className="flex items-center text-gray-400">• {prop.floors || 1} Floors</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredProperties.map((prop) => (
+                  <div 
+                    key={prop.id} 
+                    onClick={() => { setSelectedPropertyId(prop.id); setSelectedFloor(1); setIsEditingRoom(false); setSelectedRoom(null); setIsFullScreenMap(true); }}
+                    className="property-glass-card group cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-red-500/20"
+                  >
+                    <div className="card-content-layer">
+                      <div className="h-80 sm:h-[350px] relative bg-white dark:bg-gray-900 dark:bg-gray-900/20 flex items-center justify-center overflow-hidden">
+                        <AutoCarousel images={prop.images} name={prop.name} />
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
+                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleEditPropertyStart(prop); }}
+                            className="bg-white dark:bg-gray-900 dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900 dark:bg-gray-900 text-white hover:text-blue-600 p-2 rounded-lg backdrop-blur-sm transition-all shadow-sm border border-white/20"
+                            title="Edit Property"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteProperty(prop.id); }}
+                            className="bg-white dark:bg-gray-900 dark:bg-gray-900/20 hover:bg-red-500 text-white p-2 rounded-lg backdrop-blur-sm transition-all shadow-sm border border-white/20"
+                            title="Delete Property"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="pt-10 pb-6 px-6 flex-1 flex flex-col relative z-10">
+                        <h4 className="font-bold text-xl text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-1 group-hover:text-red-600 transition-colors">{prop.name}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 flex items-center gap-1.5 mb-6">
+                          <MapPin className="h-4 w-4 text-gray-400" /> {prop.location}
+                        </p>
+                        
+                        <div className="grid grid-cols-2 gap-4 mt-auto border-t border-gray-200 dark:border-gray-800 dark:border-gray-800/50 pt-5">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mb-1 uppercase tracking-wider flex items-center gap-1"><LayoutGrid className="h-3 w-3" /> Rooms</span>
+                            <span className="font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100 text-lg">{prop.rooms}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mb-1 uppercase tracking-wider">Floors</span>
+                            <span className="font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100 text-lg">{prop.floors || 1}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mb-1 uppercase tracking-wider">Occupied</span>
+                            <span className="font-semibold text-blue-600 text-lg">{prop.occupancy}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mb-1 uppercase tracking-wider">Status</span>
+                            <div className="glass-pill-badge mt-1">
+                              <span className="pulse-dot"></span>
+                              <span className="font-semibold text-green-700 text-xs tracking-wide">{prop.status || 'Active'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right flex flex-col items-end justify-between">
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleEditPropertyStart(prop); }}
-                        className="text-gray-400 hover:text-blue-600 transition-colors p-1"
-                        title="Edit Property"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleDeleteProperty(prop.id); }}
-                        className="text-gray-400 hover:text-red-600 transition-colors p-1"
-                        title="Delete Property"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <div>
-                      <div className={`text-sm font-bold ${selectedPropertyId === prop.id ? 'text-blue-900' : 'text-gray-900'}`}>{prop.occupancy}</div>
-                      <div className="text-xs text-gray-500">Occupied</div>
-                    </div>
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             ) : (
-              <div className="p-8 text-center text-gray-500 text-sm">
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm">
                 No properties found matching "{searchQuery}"
               </div>
             )}
           </div>
         </div>
+        )}
 
         {/* Interactive Room Map */}
-        <div className="lg:col-span-7 bg-white shadow-sm rounded-lg border border-gray-200 flex flex-col h-[500px] lg:h-[600px] overflow-hidden lg:relative">
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
-            <h3 className="font-semibold text-gray-900">Room Map: {selectedProperty?.name}</h3>
-            <select 
-              value={selectedFloor}
-              onChange={(e) => setSelectedFloor(Number(e.target.value))}
-              className="text-sm border-gray-300 rounded-md py-1.5 pl-3 pr-8 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
-            >
-              {Array.from({ length: selectedProperty?.floors || 1 }, (_, i) => i + 1).map(floor => (
-                <option key={floor} value={floor}>Floor {floor}</option>
-              ))}
-            </select>
+        {isFullScreenMap && (
+        <div className="bg-white dark:bg-gray-900 dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800 flex flex-col h-[calc(100vh-150px)] min-h-[600px] overflow-hidden relative">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-800 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-950 dark:bg-gray-950">
+            <div className="flex items-center gap-3">
+              {isFullScreenMap && (
+                <button 
+                  onClick={() => setIsFullScreenMap(false)}
+                  className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 dark:text-gray-400 transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              )}
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100">Room Map: {selectedProperty?.name}</h3>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setEditFloorData({
+                    floor: selectedFloor,
+                    name: selectedProperty?.floorNames?.[selectedFloor - 1] || '',
+                    image: selectedProperty?.floorImages?.[selectedFloor - 1] || '',
+                    rooms: selectedProperty?.roomsPerFloor?.[selectedFloor - 1] || 0,
+                    beds: selectedProperty?.bedsPerFloor?.[selectedFloor - 1] || (selectedProperty?.beds || 2),
+                    floorFacilitiesList: selectedProperty?.floorFacilitiesLists?.[selectedFloor - 1] 
+                      ? JSON.parse(JSON.stringify(selectedProperty.floorFacilitiesLists[selectedFloor - 1])) 
+                      : []
+                  });
+                  setIsEditFloorModalOpen(true);
+                }}
+                className="text-sm bg-white dark:bg-gray-900 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 dark:border-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 px-3 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 dark:hover:bg-gray-800 dark:bg-gray-950 flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                <Edit className="w-4 h-4" /> Edit Floor
+              </button>
+              <select 
+                value={selectedFloor}
+                onChange={(e) => setSelectedFloor(Number(e.target.value))}
+                className="text-sm border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-md py-1.5 pl-3 pr-8 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900 dark:bg-gray-900 shadow-sm"
+              >
+                {Array.from({ length: selectedProperty?.floors || 1 }, (_, i) => i + 1).map(floor => (
+                  <option key={floor} value={floor}>{selectedProperty?.floorNames?.[floor - 1] ? `${selectedProperty.floorNames[floor - 1]} (Floor ${floor})` : `Floor ${floor}`}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="p-4 sm:p-6 bg-gray-50 flex-1 overflow-auto pb-24">
+          <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 flex-1 overflow-auto pb-24">
             <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 min-w-full">
-              {filteredRooms.map(({ roomNum, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions }) => (
+              {filteredRooms.map(({ roomNum, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions }) => (
                 <div 
                   key={roomNum} 
                   onClick={() => {
-                    setSelectedRoom({ roomNum, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions });
+                    setSelectedRoom({ roomNum, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions });
                     setIsEditingRoom(false);
                   }}
-                  className={`border rounded-lg p-3 relative cursor-pointer hover:shadow-md transition-shadow ${
-                    status === 'occupied' ? 'bg-white border-gray-200 hover:border-gray-300' :
-                    status === 'available' ? 'bg-green-50 border-green-200 hover:border-green-300' :
-                    'bg-red-50 border-red-200 hover:border-red-300'
-                  }`}
+                  className="property-glass-card group cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-red-500/20 flex flex-col h-full"
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="font-bold text-gray-900">{roomNum}</div>
-                    {status === 'occupied' ? <CheckCircle2 className="h-4 w-4 text-gray-400" /> :
-                     status === 'maintenance' ? <AlertCircle className="h-4 w-4 text-red-500" /> :
-                     <span className="text-green-600 font-semibold text-xs">Free</span>}
-                  </div>
-                  <div className="mt-3 flex flex-col gap-1.5">
-                    <div className="text-xs font-medium text-gray-500 border-b border-gray-100 pb-1">
-                      {beds} Total Bed{beds !== 1 ? 's' : ''}
-                    </div>
-                    <div className="flex justify-between text-xs mt-0.5">
-                      <span className="text-green-600 font-medium flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                        {freeBeds !== undefined ? freeBeds : '-'} Free
-                      </span>
-                      <span className="text-red-500 font-medium flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                        {filledBeds !== undefined ? filledBeds : '-'} Filled
-                      </span>
+                  <div className={`card-content-layer border relative flex flex-col overflow-hidden h-full ${
+                    status === 'occupied' ? 'bg-white dark:bg-gray-900 dark:bg-gray-900 border-gray-200 dark:border-gray-800 dark:border-gray-800' :
+                    status === 'available' ? 'bg-green-50 border-green-200' :
+                    'bg-red-50 border-red-200'
+                  }`}>
+                    {bedImages && bedImages.flat().filter(Boolean).length > 0 && (
+                      <div className="h-80 sm:h-[350px] relative bg-black/5 flex items-center justify-center overflow-hidden shrink-0 border-b border-gray-200 dark:border-gray-800 dark:border-gray-800/50">
+                        <AutoCarousel images={bedImages.flat().filter(Boolean) as string[]} name={`Room ${roomNum}`} />
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent pointer-events-none z-10"></div>
+                      </div>
+                    )}
+                    <div className="p-3 flex flex-col flex-1">
+                      <div className="flex justify-between items-start">
+                        <div className="font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 group-hover:text-red-600 transition-colors">{roomNum}</div>
+                        {status === 'occupied' ? <CheckCircle2 className="h-4 w-4 text-gray-400" /> :
+                         status === 'maintenance' ? <AlertCircle className="h-4 w-4 text-red-500" /> :
+                         <span className="text-green-600 font-semibold text-xs">Free</span>}
+                      </div>
+                      <div className="mt-auto pt-3 flex flex-col gap-1.5">
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800 pb-1">
+                          {beds} Total Bed{beds !== 1 ? 's' : ''}
+                        </div>
+                        <div className="flex justify-between text-xs mt-0.5">
+                          <span className="text-green-600 font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                            {freeBeds !== undefined ? freeBeds : '-'} Free
+                          </span>
+                          <span className="text-red-500 font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                            {filledBeds !== undefined ? filledBeds : '-'} Filled
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-            
-          {/* Legend / Filters */}
-            <div className="absolute bottom-4 left-6 flex flex-wrap gap-4 text-xs font-medium bg-white/90 backdrop-blur-sm p-3 rounded-lg border border-gray-200 shadow-sm">
+
+            {/* Legend / Filters */}
+            <div className="mt-6 mb-2 flex flex-wrap gap-4 text-xs font-medium bg-white dark:bg-gray-900 dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800 shadow-sm w-fit">
               <label className="flex items-center gap-2 cursor-pointer select-none hover:opacity-80 transition-opacity">
                 <input 
                   type="checkbox" 
                   checked={roomFilters.occupied}
                   onChange={(e) => setRoomFilters({...roomFilters, occupied: e.target.checked})}
-                  className="rounded border-gray-300 text-gray-900 focus:ring-gray-500 h-3.5 w-3.5 cursor-pointer"
+                  className="rounded border-gray-300 dark:border-gray-700 dark:border-gray-700 text-gray-900 dark:text-gray-100 dark:text-gray-100 focus:ring-gray-500 h-3.5 w-3.5 cursor-pointer"
                 />
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-white border border-gray-300"></div> Occupied</div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-white dark:bg-gray-900 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 dark:border-gray-700"></div> Occupied</div>
               </label>
               <label className="flex items-center gap-2 cursor-pointer select-none hover:opacity-80 transition-opacity">
                 <input 
                   type="checkbox" 
                   checked={roomFilters.available}
                   onChange={(e) => setRoomFilters({...roomFilters, available: e.target.checked})}
-                  className="rounded border-gray-300 text-green-600 focus:ring-green-500 h-3.5 w-3.5 cursor-pointer"
+                  className="rounded border-gray-300 dark:border-gray-700 dark:border-gray-700 text-green-600 focus:ring-green-500 h-3.5 w-3.5 cursor-pointer"
                 />
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-green-50 border border-gray-300"></div> Available</div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-green-50 border border-gray-300 dark:border-gray-700 dark:border-gray-700"></div> Available</div>
               </label>
               <label className="flex items-center gap-2 cursor-pointer select-none hover:opacity-80 transition-opacity">
                 <input 
                   type="checkbox" 
                   checked={roomFilters.maintenance}
                   onChange={(e) => setRoomFilters({...roomFilters, maintenance: e.target.checked})}
-                  className="rounded border-gray-300 text-red-600 focus:ring-red-500 h-3.5 w-3.5 cursor-pointer"
+                  className="rounded border-gray-300 dark:border-gray-700 dark:border-gray-700 text-red-600 focus:ring-red-500 h-3.5 w-3.5 cursor-pointer"
                 />
                 <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-50 border border-red-300"></div> Maintenance</div>
               </label>
             </div>
+
+            {/* Floor Facilities Display */}
+            {selectedProperty?.floorFacilitiesLists?.[selectedFloor - 1] && selectedProperty.floorFacilitiesLists[selectedFloor - 1].length > 0 && (
+              <div className="mt-8 border-t border-gray-200 dark:border-gray-800 dark:border-gray-800 pt-8">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-6 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm"><Building2 className="w-4 h-4" /></span>
+                  Floor {selectedFloor} Facilities
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {selectedProperty.floorFacilitiesLists[selectedFloor - 1].map((facility, idx) => (
+                    <div key={idx} className="bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 dark:border-gray-800 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                      {facility.images && facility.images.length > 0 ? (
+                        <div className="h-48 relative bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800 dark:border-gray-800 overflow-hidden shrink-0">
+                          <AutoCarousel images={facility.images} name={`Floor Facility ${idx + 1}`} />
+                        </div>
+                      ) : (
+                        <div className="h-48 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 flex items-center justify-center text-gray-400 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800 shrink-0">
+                          No images available
+                        </div>
+                      )}
+                      <div className="p-5 flex-1 flex flex-col bg-white dark:bg-gray-900 dark:bg-gray-900">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{facility.description || 'No description provided.'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+        )}
       </div>
 
       {/* Room Details Modal */}
       {selectedRoom && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50 shrink-0">
-              <h2 className="text-lg font-bold text-gray-900">Room {selectedRoom.roomNum} Details</h2>
-              <button onClick={() => { setSelectedRoom(null); setIsEditingRoom(false); }} className="text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-1 transition-colors">
+          <div className="bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 shrink-0">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">Room {selectedRoom.roomNum} Details</h2>
+              <button onClick={() => { setSelectedRoom(null); setIsEditingRoom(false); }} className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:bg-gray-700 rounded-full p-1 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-500">Property</span>
-                <span className="font-medium text-gray-900">{selectedProperty?.name}</span>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Property</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{selectedProperty?.name}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-500">Floor</span>
-                <span className="font-medium text-gray-900">{selectedFloor}</span>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Floor</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{selectedFloor}</span>
               </div>
               
               {!isEditingRoom ? (
                 <>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-500">Status</span>
+                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Status</span>
                     <span className={`font-semibold capitalize ${
-                      selectedRoom.status === 'occupied' ? 'text-gray-700' :
+                      selectedRoom.status === 'occupied' ? 'text-gray-700 dark:text-gray-300 dark:text-gray-300' :
                       selectedRoom.status === 'available' ? 'text-green-600' :
                       'text-red-600'
                     }`}>
                       {selectedRoom.status}
                     </span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-500">Total Beds</span>
-                    <span className="font-medium text-gray-900">{selectedRoom.beds} Bed{selectedRoom.beds !== 1 ? 's' : ''}</span>
+                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Total Beds</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{selectedRoom.beds} Bed{selectedRoom.beds !== 1 ? 's' : ''}</span>
                   </div>
-                  <div className="pt-4 mt-2 border-t border-gray-100">
+                  
+                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Room Price</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{selectedRoom.roomPrice || 'Not set'}</span>
+                  </div>
+                  
+                  <div className="py-3 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400 mb-3 block font-medium">Room Facilities</span>
+                    {selectedRoom.roomFacilitiesList && selectedRoom.roomFacilitiesList.length > 0 ? (
+                      <div className="flex flex-col gap-4 mb-2">
+                        {selectedRoom.roomFacilitiesList.map((facility, i) => (
+                          <div key={i} className="flex flex-col gap-2 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 p-3 rounded-lg border border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                            {facility.description && (
+                              <div className="text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 whitespace-pre-line leading-relaxed font-medium">
+                                {facility.description}
+                              </div>
+                            )}
+                            {facility.images.length > 0 && (
+                              <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1 pt-1">
+                                {facility.images.map((img, imgIdx) => (
+                                  <img key={imgIdx} src={img} alt={`Facility ${i + 1}`} onClick={() => setPreviewImage(img)} className="h-20 w-32 object-cover rounded-md border border-gray-200 dark:border-gray-800 dark:border-gray-800 shrink-0 cursor-pointer hover:opacity-90 transition-opacity shadow-sm" />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (selectedRoom.roomFacilitiesImages && selectedRoom.roomFacilitiesImages.length > 0) ? (
+                      <div className="flex flex-col gap-3 mb-2">
+                        {selectedRoom.roomFacilitiesImages.map((img, i) => (
+                          <div key={i} className="flex items-start gap-3 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 p-2.5 rounded-lg border border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                            <img src={img} alt={`Facility ${i + 1}`} onClick={() => setPreviewImage(img)} className="h-16 w-24 object-cover rounded-md border border-gray-200 dark:border-gray-800 dark:border-gray-800 shrink-0 cursor-pointer hover:opacity-90 transition-opacity shadow-sm" />
+                            <div className="flex-1 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 pt-0.5">
+                                {selectedRoom.roomFacilitiesDescriptions?.[i] ? (
+                                  <div className="whitespace-pre-line leading-relaxed">{selectedRoom.roomFacilitiesDescriptions[i]}</div>
+                                ) : (
+                                  <span className="text-gray-400 italic">No description</span>
+                                )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-400 italic mb-3">No facilities added</div>
+                    )}
+                  </div>
+                  <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800">
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-gray-700 font-bold text-base">Beds & Occupants</span>
+                      <span className="text-gray-700 dark:text-gray-300 dark:text-gray-300 font-bold text-base">Beds & Occupants</span>
                       <div className="text-xs font-semibold flex gap-3">
                         <span className="flex items-center gap-1.5 text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200"><div className="w-2 h-2 rounded-full bg-green-500"></div> Free: {selectedRoom.freeBeds}</span>
                         <span className="flex items-center gap-1.5 text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200"><div className="w-2 h-2 rounded-full bg-red-500"></div> Filled: {selectedRoom.filledBeds}</span>
@@ -697,11 +1007,11 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                         const displayInitial = mockStudentName ? String(mockStudentName).charAt(0).toUpperCase() : '?';
                         
                         return (
-                          <div key={idx} className={`flex flex-col p-4 rounded-xl border transition-all duration-200 ${isFilled ? 'bg-white border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300' : 'bg-green-50/40 border-green-200 border-dashed hover:bg-green-50'}`}>
-                            <div className="flex justify-between items-center mb-3 border-b border-gray-100/50 pb-2">
+                          <div key={idx} className={`flex flex-col p-4 rounded-xl border transition-all duration-200 ${isFilled ? 'bg-white dark:bg-gray-900 dark:bg-gray-900 border-gray-200 dark:border-gray-800 dark:border-gray-800 shadow-sm hover:shadow-md hover:border-blue-300' : 'bg-green-50/40 border-green-200 border-dashed hover:bg-green-50'}`}>
+                            <div className="flex justify-between items-center mb-3 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800/50 pb-2">
                               <div className="flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full ${isFilled ? 'bg-red-500' : 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]'}`}></div>
-                                <span className="font-bold text-gray-800 text-sm">Bed {bedLabel}</span>
+                                <span className="font-bold text-gray-800 dark:text-gray-200 dark:text-gray-200 text-sm">Bed {bedLabel}</span>
                                 <button 
                                   onClick={(e) => handleShareBed(idx, e)}
                                   className="ml-1 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
@@ -711,7 +1021,7 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                                 </button>
                               </div>
                               {isFilled ? (
-                                <span className="text-[9px] font-bold tracking-wider uppercase text-gray-500 bg-gray-100 px-2 py-1 rounded-md">Occupied</span>
+                                <span className="text-[9px] font-bold tracking-wider uppercase text-gray-500 dark:text-gray-400 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 px-2 py-1 rounded-md">Occupied</span>
                               ) : (
                                 <span className="text-[9px] font-bold tracking-wider uppercase text-green-700 bg-green-100 px-2 py-1 rounded-md">Free</span>
                               )}
@@ -720,17 +1030,17 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                             <div className="flex gap-2 mb-2 mt-1 overflow-x-auto custom-scrollbar pb-1">
                               {selectedRoom.bedImages && selectedRoom.bedImages[idx] && selectedRoom.bedImages[idx].filter(Boolean).length > 0 ? (
                                 selectedRoom.bedImages[idx].filter(Boolean).map((imgUrl, i) => (
-                                  <img key={i} src={imgUrl} alt={`Bed View ${i + 1}`} onClick={() => setPreviewImage(imgUrl)} className="h-20 w-32 object-cover rounded-lg border border-gray-200 shrink-0 cursor-pointer hover:opacity-90 transition-opacity" />
+                                  <img key={i} src={imgUrl} alt={`Bed View ${i + 1}`} onClick={() => setPreviewImage(imgUrl)} className="h-20 w-32 object-cover rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800 shrink-0 cursor-pointer hover:opacity-90 transition-opacity" />
                                 ))
                               ) : (
-                                <div className="h-20 w-32 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 text-xs font-medium">
+                                <div className="h-20 w-32 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800 flex items-center justify-center text-gray-400 text-xs font-medium">
                                   No images
                                 </div>
                               )}
                             </div>
 
                             {selectedRoom.bedDescriptions && selectedRoom.bedDescriptions[idx] && (
-                              <div className="mb-3 text-sm text-gray-700 bg-gray-50 p-2.5 rounded-lg border border-gray-200">
+                              <div className="mb-3 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800">
                                 {selectedRoom.bedDescriptions[idx]}
                               </div>
                             )}
@@ -738,26 +1048,26 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                               {isFilled ? (
                                 mockStudentName === 'Unknown Student' ? (
                                   <div className="flex items-center gap-3 mt-1 p-1.5 -mx-1.5 rounded-lg">
-                                    <div className="w-9 h-9 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center font-bold text-sm shadow-sm">
+                                    <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 text-gray-500 dark:text-gray-400 dark:text-gray-400 flex items-center justify-center font-bold text-sm shadow-sm">
                                       {displayInitial}
                                     </div>
                                     <div className="flex flex-col">
-                                      <span className="text-sm font-bold text-gray-900">{String(mockStudentName)}</span>
-                                      <span className="text-xs text-gray-500 font-medium mt-0.5">No profile available</span>
+                                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{String(mockStudentName)}</span>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mt-0.5">No profile available</span>
                                     </div>
                                   </div>
                                 ) : (
                                   <Link 
                                     href={`/staff/students/${mockStudentId}?from=properties`}
                                     onClick={() => sessionStorage.setItem('hms_return_room', JSON.stringify(selectedRoom))}
-                                    className="flex items-center gap-3 mt-1 cursor-pointer group p-1.5 -mx-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                                    className="flex items-center gap-3 mt-1 cursor-pointer group p-1.5 -mx-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 dark:hover:bg-gray-800 dark:bg-gray-950 transition-colors"
                                   >
                                     <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm group-hover:bg-blue-600 group-hover:text-white transition-colors shadow-sm">
                                       {displayInitial}
                                     </div>
                                     <div className="flex flex-col">
-                                      <span className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{String(mockStudentName)}</span>
-                                      <span className="text-xs text-gray-500 font-medium mt-0.5 group-hover:text-blue-500">View Details &rarr;</span>
+                                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 group-hover:text-blue-600 transition-colors">{String(mockStudentName)}</span>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mt-0.5 group-hover:text-blue-500">View Details &rarr;</span>
                                     </div>
                                   </Link>
                                 )
@@ -779,20 +1089,20 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                 </>
               ) : (
                 <>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-500">Status</span>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Status</span>
                     <select 
                       value={editRoomData.status}
                       onChange={(e) => setEditRoomData({...editRoomData, status: e.target.value})}
-                      className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     >
                       <option value="available">Available</option>
                       <option value="occupied">Occupied</option>
                       <option value="maintenance">Maintenance</option>
                     </select>
                   </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-500">Total Beds</span>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Total Beds</span>
                     <input 
                       type="number"
                       value={editRoomData.beds}
@@ -833,13 +1143,126 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                           };
                         });
                       }}
-                      className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-20 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none"
                       min="1" max="10"
                     />
                   </div>
                   
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Room Price</span>
+                    <input 
+                      type="text"
+                      placeholder="e.g. 500"
+                      value={editRoomData.roomPrice || ''}
+                      onChange={(e) => setEditRoomData({...editRoomData, roomPrice: e.target.value})}
+                      className="w-32 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="pt-3 pb-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mb-3 block">Room Facilities</span>
+                    
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-semibold">Facilities</span>
+                          <button onClick={() => {
+                            setEditRoomData(prev => ({
+                              ...prev,
+                              roomFacilitiesList: [...prev.roomFacilitiesList, { images: [], description: '' }]
+                            }));
+                          }} className="text-xs text-blue-600 font-medium flex items-center gap-1 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded">
+                            <Plus className="w-3.5 h-3.5" /> Add Facility
+                          </button>
+                        </div>
+                        {editRoomData.roomFacilitiesList.map((facility, fIdx) => (
+                          <div key={fIdx} className="flex flex-col gap-2 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 p-3 border border-gray-200 dark:border-gray-800 dark:border-gray-800 rounded-lg">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-400">Facility {fIdx + 1}</span>
+                              <button onClick={() => {
+                                const newList = editRoomData.roomFacilitiesList.filter((_, i) => i !== fIdx);
+                                setEditRoomData({...editRoomData, roomFacilitiesList: newList});
+                              }} className="text-red-400 hover:text-red-600 p-1 shrink-0">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            
+                            <textarea 
+                              className="w-full border border-gray-200 dark:border-gray-800 dark:border-gray-800 bg-white dark:bg-gray-900 dark:bg-gray-900 p-2 text-xs text-gray-700 dark:text-gray-300 dark:text-gray-300 focus:ring-1 focus:ring-blue-300 outline-none rounded resize-none mb-1" 
+                              rows={2}
+                              value={facility.description} 
+                              placeholder="Add description for this facility group (e.g. Washroom)..."
+                              onChange={(e) => {
+                                const newList = [...editRoomData.roomFacilitiesList];
+                                newList[fIdx].description = e.target.value;
+                                setEditRoomData({...editRoomData, roomFacilitiesList: newList});
+                              }} 
+                            />
+                            
+                            {facility.images.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                {facility.images.map((img, imgIdx) => (
+                                  <div key={imgIdx} className="relative group">
+                                    <img src={img} alt="facility" className="h-12 w-20 object-cover rounded border border-gray-200 dark:border-gray-800 dark:border-gray-800" />
+                                    <button onClick={() => {
+                                      const newList = [...editRoomData.roomFacilitiesList];
+                                      newList[fIdx].images = newList[fIdx].images.filter((_, i) => i !== imgIdx);
+                                      setEditRoomData({...editRoomData, roomFacilitiesList: newList});
+                                    }} className="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-full text-red-500 shadow hover:text-red-700 p-0.5 hidden group-hover:block">
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center">
+                              <input 
+                                type="file" 
+                                accept="image/*"
+                                id={`room-facility-upload-${fIdx}`}
+                                className="hidden"
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
+                                        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                                        formData.append('upload_preset', uploadPreset);
+                                        
+                                        try {
+                                            const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                                                method: 'POST',
+                                                body: formData
+                                            });
+                                            const data = await res.json();
+                                            if (data.secure_url) {
+                                                const newList = [...editRoomData.roomFacilitiesList];
+                                                newList[fIdx].images.push(data.secure_url);
+                                                setEditRoomData(prev => ({ ...prev, roomFacilitiesList: newList }));
+                                            }
+                                        } catch (err) {
+                                            console.error('Upload failed', err);
+                                        }
+                                    }
+                                }}
+                              />
+                              <label 
+                                htmlFor={`room-facility-upload-${fIdx}`}
+                                className="text-xs text-blue-600 font-semibold hover:text-blue-800 cursor-pointer flex items-center justify-center gap-1.5 border border-dashed border-blue-300 bg-blue-50 hover:bg-blue-100 w-full py-1.5 rounded-lg transition-colors"
+                              >
+                                <Upload className="w-3.5 h-3.5" /> Add Image to this Facility
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+                  
                   <div className="pt-2 pb-1">
-                    <span className="text-gray-500 font-medium mb-3 block">Bed Assignments</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mb-3 block">Bed Assignments</span>
                     <div className="flex flex-col gap-3 max-h-[350px] overflow-y-auto pr-2 pb-2 custom-scrollbar">
                       {editRoomData.bedStatuses.map((isFilled, idx) => {
                         const bedLabel = String.fromCharCode(65 + idx);
@@ -850,12 +1273,12 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                         }
                         
                         return (
-                          <div key={idx} className="flex flex-col gap-2 p-3 rounded-lg border border-gray-200 bg-gray-50">
+                          <div key={idx} className="flex flex-col gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950">
                             <div className="flex justify-between items-center relative">
-                              <span className="font-bold text-gray-700">Bed {bedLabel}</span>
+                              <span className="font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">Bed {bedLabel}</span>
                               {isFilled && occupant ? (
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-semibold text-gray-900">{occupant}</span>
+                                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100">{occupant}</span>
                                   <button 
                                     onClick={() => {
                                       const removedOccupantId = editRoomData.bedOccupants[idx];
@@ -896,7 +1319,7 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                                   {activeSearchBed === idx && (
                                     <>
                                       <div className="fixed inset-0 z-[55]" onClick={(e) => { e.stopPropagation(); setActiveSearchBed(null); }}></div>
-                                      <div className="absolute right-0 top-10 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-[60] p-2">
+                                      <div className="absolute right-0 top-10 w-64 bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 dark:border-gray-800 z-[60] p-2">
                                         <div className="relative mb-2">
                                           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
                                           <input 
@@ -904,7 +1327,7 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                                             placeholder="Search students..." 
                                             value={studentSearchQuery}
                                             onChange={e => setStudentSearchQuery(e.target.value)}
-                                            className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                            className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 dark:border-gray-800 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                             autoFocus
                                           />
                                         </div>
@@ -958,15 +1381,15 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                                                   });
                                                   setActiveSearchBed(null);
                                                 }}
-                                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${isAssigned ? 'bg-gray-50 text-gray-500 cursor-not-allowed opacity-80' : 'hover:bg-blue-50 text-gray-700 hover:text-blue-700'}`}
+                                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${isAssigned ? 'bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 text-gray-500 dark:text-gray-400 dark:text-gray-400 cursor-not-allowed opacity-80' : 'hover:bg-blue-50 text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:text-blue-700'}`}
                                               >
-                                                <div className={`font-semibold ${isAssigned ? 'text-gray-500' : ''}`}>{student.name}</div>
+                                                <div className={`font-semibold ${isAssigned ? 'text-gray-500 dark:text-gray-400 dark:text-gray-400' : ''}`}>{student.name}</div>
                                                 {isAssigned ? (
                                                   <div className="text-[10px] text-red-500 font-medium mt-1">
                                                     {assignmentText}
                                                   </div>
                                                 ) : (
-                                                  <div className="text-[10px] text-gray-500">{student.course}</div>
+                                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-400">{student.course}</div>
                                                 )}
                                               </button>
                                             );
@@ -980,16 +1403,16 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                             </div>
                             
                             {/* Images Edit Section */}
-                            <div className="mt-2 pt-2 border-t border-gray-100">
-                              <span className="text-xs font-semibold text-gray-500 block mb-2">Bed Images</span>
+                            <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-400 block mb-2">Bed Images</span>
                               <div className="flex flex-col gap-2">
                                 {editRoomData.bedImages[idx]?.map((imgUrl, imgIdx) => (
                                   <div key={imgIdx} className="flex items-center gap-2">
                                     {imgUrl ? (
                                       <img src={imgUrl} onClick={() => setPreviewImage(imgUrl)} className="w-8 h-8 object-cover rounded bg-gray-200 shrink-0 cursor-pointer hover:opacity-80 transition-opacity" />
                                     ) : (
-                                      <div className="w-8 h-8 rounded bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center text-gray-400">
-                                        <div className="w-4 h-4 rounded-full border-2 border-gray-300"></div>
+                                      <div className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 dark:border-gray-800 shrink-0 flex items-center justify-center text-gray-400">
+                                        <div className="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-700 dark:border-gray-700"></div>
                                       </div>
                                     )}
                                     <input 
@@ -1004,7 +1427,7 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                                         newImages[idx] = newRow;
                                         setEditRoomData(prev => ({ ...prev, bedImages: newImages }));
                                       }}
-                                      className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                                      className="flex-1 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
                                     />
                                     <button onClick={() => {
                                         const newImages = [...editRoomData.bedImages];
@@ -1086,12 +1509,12 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                                         }}
                                       />
                                     </label>
-                                    {isUploading && <span className="text-xs text-gray-500 self-center ml-2">Uploading...</span>}
+                                    {isUploading && <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 self-center ml-2">Uploading...</span>}
                                   </div>
                                 )}
                               </div>
-                              <div className="mt-4 pt-3 border-t border-gray-100">
-                                <span className="text-xs font-semibold text-gray-500 block mb-2">Bed Description</span>
+                              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-400 block mb-2">Bed Description</span>
                                 <textarea
                                   placeholder={`Description for Bed ${String.fromCharCode(65 + idx)}...`}
                                   value={editRoomData.bedDescriptions?.[idx] || ''}
@@ -1100,7 +1523,7 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                                     newDescriptions[idx] = e.target.value;
                                     setEditRoomData(prev => ({ ...prev, bedDescriptions: newDescriptions }));
                                   }}
-                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-white"
+                                  className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-white dark:bg-gray-900 dark:bg-gray-900"
                                   rows={2}
                                 />
                               </div>
@@ -1111,8 +1534,8 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-500">Free Beds</span>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Free Beds</span>
                     <div className="text-right">
                       <span className="font-medium text-green-600">{editRoomData.freeBeds}</span>
                       <div className="text-xs text-gray-400 mt-0.5">
@@ -1121,8 +1544,8 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                     </div>
                   </div>
                   
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-500">Filled Beds</span>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Filled Beds</span>
                     <div className="text-right">
                       <span className="font-medium text-red-600">{editRoomData.filledBeds}</span>
                       <div className="text-xs text-gray-400 mt-0.5">
@@ -1133,10 +1556,10 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                 </>
               )}
             </div>
-            <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-3 shrink-0">
+            <div className="p-4 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 flex gap-3 shrink-0">
               <button 
                 onClick={() => { setSelectedRoom(null); setIsEditingRoom(false); }}
-                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-200"
+                className="flex-1 bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 text-gray-700 dark:text-gray-300 dark:text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-800 dark:border-gray-800"
               >
                 Close
               </button>
@@ -1164,46 +1587,114 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
       {/* Add Property Modal */}
       {isAddPropertyModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50 shrink-0">
-              <h2 className="text-lg font-bold text-gray-900">Add New Property</h2>
-              <button onClick={() => setIsAddPropertyModalOpen(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-1 transition-colors">
+          <div className="bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 shrink-0">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">Add New Property</h2>
+              <button onClick={() => setIsAddPropertyModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:bg-gray-700 rounded-full p-1 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Property Name</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Property Name</label>
                 <input 
                   type="text" 
                   value={newProperty.name}
                   onChange={(e) => setNewProperty({...newProperty, name: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
+                  className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
                   placeholder="e.g. University View" 
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Location / Address</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Location / Address</label>
                 <input 
                   type="text" 
                   value={newProperty.location}
                   onChange={(e) => setNewProperty({...newProperty, location: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
+                  className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
                   placeholder="e.g. North Campus" 
                 />
               </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Property Images (Up to 5)</label>
+                <div className="flex flex-wrap gap-2">
+                  {newProperty.images.map((img, idx) => (
+                    <div key={idx} className="relative h-16 w-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-800 dark:border-gray-800">
+                      <img src={img} alt="" className="h-full w-full object-cover" />
+                      <button
+                        onClick={() => {
+                          const newImages = [...newProperty.images];
+                          newImages.splice(idx, 1);
+                          setNewProperty({...newProperty, images: newImages});
+                        }}
+                        className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5 hover:bg-red-500 transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {newProperty.images.length < 5 && (
+                    <label className="h-16 w-16 border-2 border-dashed border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-md flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 dark:hover:bg-gray-800 dark:bg-gray-950 transition-colors">
+                      {isUploading ? (
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 text-gray-400" />
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Upload</span>
+                        </>
+                      )}
+                      <input 
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={isUploading}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                            const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+                            if (!cloudName || !uploadPreset) {
+                              alert("Cloudinary credentials missing");
+                              return;
+                            }
+                            setIsUploading(true);
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            formData.append('upload_preset', uploadPreset);
+                            try {
+                              const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                                method: 'POST',
+                                body: formData,
+                              });
+                              const data = await res.json();
+                              if (data.secure_url) {
+                                setNewProperty({...newProperty, images: [...newProperty.images, data.secure_url]});
+                              }
+                            } catch (error) {
+                              console.error("Upload failed");
+                            } finally {
+                              setIsUploading(false);
+                              e.target.value = '';
+                            }
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Total Rooms</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Total Rooms</label>
                   <input 
                     type="number" 
                     readOnly value={newProperty.roomsPerFloor.reduce((acc, curr) => acc + (parseInt(curr) || 0), 0)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-not-allowed" 
+                    className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-not-allowed" 
                     placeholder="0" 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Floors</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Floors</label>
                   <input 
                     type="number" 
                     value={newProperty.floors}
@@ -1222,18 +1713,18 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                       }
                       setNewProperty({...newProperty, floors: e.target.value, roomsPerFloor: newRoomsPerFloor, bedsPerFloor: newBedsPerFloor});
                     }}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
+                    className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
                     placeholder="1" 
                   />
                 </div>
               </div>
 
-              <div className="space-y-3 mt-4 border-t border-gray-100 pt-4">
-                <label className="text-sm font-medium text-gray-700">Rooms per Floor</label>
+              <div className="space-y-3 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Rooms per Floor</label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                   {newProperty.roomsPerFloor.map((rooms, idx) => (
                     <div key={idx} className="flex flex-col gap-1">
-                      <span className="text-xs text-gray-500">Floor {idx + 1}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Floor {idx + 1}</span>
                       <input 
                         type="number" 
                         value={rooms}
@@ -1242,23 +1733,23 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                           newRooms[idx] = e.target.value;
                           setNewProperty({...newProperty, roomsPerFloor: newRooms});
                         }}
-                        className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                       />
                     </div>
                   ))}
                 </div>
               </div>
               
-              <div className="mt-4 border-t border-gray-100 pt-4">
+              <div className="mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
                 <div className="flex items-center mb-3">
                   <input 
                     type="checkbox" 
                     id="newProperty_customBeds"
                     checked={newProperty.isCustomBedsPerFloor}
                     onChange={(e) => setNewProperty({...newProperty, isCustomBedsPerFloor: e.target.checked})}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded"
                   />
-                  <label htmlFor="newProperty_customBeds" className="ml-2 block text-sm font-medium text-gray-700">
+                  <label htmlFor="newProperty_customBeds" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">
                     Specify beds per floor
                   </label>
                 </div>
@@ -1267,7 +1758,7 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-3 animate-in fade-in slide-in-from-top-2">
                     {newProperty.bedsPerFloor.map((beds, idx) => (
                       <div key={idx} className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-500">Floor {idx + 1} Beds</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Floor {idx + 1} Beds</span>
                         <input 
                           type="number" 
                           value={beds}
@@ -1276,7 +1767,7 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                             newBeds[idx] = e.target.value;
                             setNewProperty({...newProperty, bedsPerFloor: newBeds});
                           }}
-                          className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                          className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                         />
                       </div>
                     ))}
@@ -1285,10 +1776,10 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
               </div>
 
             </div>
-            <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-3 shrink-0">
+            <div className="p-4 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 flex gap-3 shrink-0">
               <button 
                 onClick={() => setIsAddPropertyModalOpen(false)}
-                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                className="flex-1 bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 text-gray-700 dark:text-gray-300 dark:text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:bg-gray-700 transition-colors"
               >
                 Cancel
               </button>
@@ -1307,46 +1798,114 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
       {/* Edit Property Modal */}
       {editingPropertyId && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50 shrink-0">
-              <h2 className="text-lg font-bold text-gray-900">Edit Property</h2>
-              <button onClick={() => setEditingPropertyId(null)} className="text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full p-1 transition-colors">
+          <div className="bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 shrink-0">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">Edit Property</h2>
+              <button onClick={() => setEditingPropertyId(null)} className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:bg-gray-700 rounded-full p-1 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Property Name</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Property Name</label>
                 <input 
                   type="text" 
                   value={editPropertyForm.name}
                   onChange={(e) => setEditPropertyForm({...editPropertyForm, name: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
+                  className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
                   placeholder="e.g. University View" 
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Location / Address</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Location / Address</label>
                 <input 
                   type="text" 
                   value={editPropertyForm.location}
                   onChange={(e) => setEditPropertyForm({...editPropertyForm, location: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
+                  className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
                   placeholder="e.g. North Campus" 
                 />
               </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Property Images (Up to 5)</label>
+                <div className="flex flex-wrap gap-2">
+                  {editPropertyForm.images.map((img, idx) => (
+                    <div key={idx} className="relative h-16 w-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-800 dark:border-gray-800">
+                      <img src={img} alt="" className="h-full w-full object-cover" />
+                      <button
+                        onClick={() => {
+                          const newImages = [...editPropertyForm.images];
+                          newImages.splice(idx, 1);
+                          setEditPropertyForm({...editPropertyForm, images: newImages});
+                        }}
+                        className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5 hover:bg-red-500 transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {editPropertyForm.images.length < 5 && (
+                    <label className="h-16 w-16 border-2 border-dashed border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-md flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 dark:hover:bg-gray-800 dark:bg-gray-950 transition-colors">
+                      {isUploading ? (
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 text-gray-400" />
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Upload</span>
+                        </>
+                      )}
+                      <input 
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={isUploading}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                            const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+                            if (!cloudName || !uploadPreset) {
+                              alert("Cloudinary credentials missing");
+                              return;
+                            }
+                            setIsUploading(true);
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            formData.append('upload_preset', uploadPreset);
+                            try {
+                              const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                                method: 'POST',
+                                body: formData,
+                              });
+                              const data = await res.json();
+                              if (data.secure_url) {
+                                setEditPropertyForm({...editPropertyForm, images: [...editPropertyForm.images, data.secure_url]});
+                              }
+                            } catch (error) {
+                              console.error("Upload failed");
+                            } finally {
+                              setIsUploading(false);
+                              e.target.value = '';
+                            }
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Total Rooms</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Total Rooms</label>
                   <input 
                     type="number" 
                     readOnly value={editPropertyForm.roomsPerFloor.reduce((acc, curr) => acc + (parseInt(curr) || 0), 0)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-not-allowed" 
+                    className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-not-allowed" 
                     placeholder="0" 
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Floors</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Floors</label>
                   <input 
                     type="number" 
                     value={editPropertyForm.floors}
@@ -1365,18 +1924,18 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                       }
                       setEditPropertyForm({...editPropertyForm, floors: e.target.value, roomsPerFloor: newRoomsPerFloor, bedsPerFloor: newBedsPerFloor});
                     }}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
+                    className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
                     placeholder="1" 
                   />
                 </div>
               </div>
 
-              <div className="space-y-3 mt-4 border-t border-gray-100 pt-4">
-                <label className="text-sm font-medium text-gray-700">Rooms per Floor</label>
+              <div className="space-y-3 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Rooms per Floor</label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                   {editPropertyForm.roomsPerFloor.map((rooms, idx) => (
                     <div key={idx} className="flex flex-col gap-1">
-                      <span className="text-xs text-gray-500">Floor {idx + 1}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Floor {idx + 1}</span>
                       <input 
                         type="number" 
                         value={rooms}
@@ -1385,23 +1944,23 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                           newRooms[idx] = e.target.value;
                           setEditPropertyForm({...editPropertyForm, roomsPerFloor: newRooms});
                         }}
-                        className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                       />
                     </div>
                   ))}
                 </div>
               </div>
               
-              <div className="mt-4 border-t border-gray-100 pt-4">
+              <div className="mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
                 <div className="flex items-center mb-3">
                   <input 
                     type="checkbox" 
                     id="editPropertyForm_customBeds"
                     checked={editPropertyForm.isCustomBedsPerFloor}
                     onChange={(e) => setEditPropertyForm({...editPropertyForm, isCustomBedsPerFloor: e.target.checked})}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded"
                   />
-                  <label htmlFor="editPropertyForm_customBeds" className="ml-2 block text-sm font-medium text-gray-700">
+                  <label htmlFor="editPropertyForm_customBeds" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">
                     Specify beds per floor
                   </label>
                 </div>
@@ -1410,7 +1969,7 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-3 animate-in fade-in slide-in-from-top-2">
                     {editPropertyForm.bedsPerFloor.map((beds, idx) => (
                       <div key={idx} className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-500">Floor {idx + 1} Beds</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Floor {idx + 1} Beds</span>
                         <input 
                           type="number" 
                           value={beds}
@@ -1419,7 +1978,7 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                             newBeds[idx] = e.target.value;
                             setEditPropertyForm({...editPropertyForm, bedsPerFloor: newBeds});
                           }}
-                          className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                          className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                         />
                       </div>
                     ))}
@@ -1427,10 +1986,10 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                 )}
               </div>
             </div>
-            <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-3 shrink-0">
+            <div className="p-4 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 flex gap-3 shrink-0">
               <button 
                 onClick={() => setEditingPropertyId(null)}
-                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                className="flex-1 bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 text-gray-700 dark:text-gray-300 dark:text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:bg-gray-700 transition-colors"
               >
                 Cancel
               </button>
@@ -1449,22 +2008,22 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
       {/* Delete Confirmation Modal */}
       {propertyToDelete !== null && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="p-6 text-center space-y-4">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-bold text-gray-900">Delete Property?</h3>
-                <p className="text-sm text-gray-500">
-                  Are you sure you want to delete <span className="font-semibold text-gray-700">{properties.find(p => p.id === propertyToDelete)?.name}</span>? This action cannot be undone.
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">Delete Property?</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                  Are you sure you want to delete <span className="font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300">{properties.find(p => p.id === propertyToDelete)?.name}</span>? This action cannot be undone.
                 </p>
               </div>
             </div>
-            <div className="p-4 bg-gray-50 flex gap-3">
+            <div className="p-4 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 flex gap-3">
               <button 
                 onClick={() => setPropertyToDelete(null)}
-                className="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 bg-white dark:bg-gray-900 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 dark:border-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 dark:hover:bg-gray-800 dark:bg-gray-950 transition-colors"
               >
                 Cancel
               </button>
@@ -1481,10 +2040,10 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
       {/* Student Details Modal */}
       {selectedStudent && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-              <h3 className="font-semibold text-gray-800">Occupant Details</h3>
-              <button onClick={() => setSelectedStudent(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <div className="bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-4 border-b flex justify-between items-center bg-gray-50 dark:bg-gray-950 dark:bg-gray-950">
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200 dark:text-gray-200">Occupant Details</h3>
+              <button onClick={() => setSelectedStudent(null)} className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:text-gray-400 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1494,25 +2053,258 @@ ${description ? `Description: ${description}\n` : ''}${images.length > 0 ? `Imag
                   {selectedStudent.name.charAt(0)}
                 </div>
                 <div>
-                  <h4 className="text-lg font-bold text-gray-900">{selectedStudent.name}</h4>
-                  <p className="text-sm text-gray-500">Room {selectedStudent.room} • Bed {selectedStudent.bed}</p>
+                  <h4 className="text-lg font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{selectedStudent.name}</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">Room {selectedStudent.room} • Bed {selectedStudent.bed}</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Course</span>
-                  <span className="text-gray-800 font-medium mt-0.5">{selectedStudent.course}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider font-semibold">Course</span>
+                  <span className="text-gray-800 dark:text-gray-200 dark:text-gray-200 font-medium mt-0.5">{selectedStudent.course}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Phone</span>
-                  <span className="text-gray-800 font-medium mt-0.5">{selectedStudent.phone}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider font-semibold">Phone</span>
+                  <span className="text-gray-800 dark:text-gray-200 dark:text-gray-200 font-medium mt-0.5">{selectedStudent.phone}</span>
                 </div>
               </div>
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <button onClick={() => setSelectedStudent(null)} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 rounded-lg transition-colors">
+              <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                <button onClick={() => setSelectedStudent(null)} className="w-full bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 dark:text-gray-200 font-medium py-2 rounded-lg transition-colors">
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Floor Modal */}
+      {isEditFloorModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center p-5 sm:p-6 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">Edit Floor {editFloorData.floor} Details</h2>
+              <button onClick={() => setIsEditFloorModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-800 p-1.5 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar">
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">Floor Name (Optional)</label>
+                  <input
+                    type="text"
+                    value={editFloorData.name}
+                    onChange={e => setEditFloorData({ ...editFloorData, name: e.target.value })}
+                    placeholder="e.g. Ground Floor, VIP Wing"
+                    className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">Number of Rooms on this Floor</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editFloorData.rooms}
+                    onChange={e => setEditFloorData({ ...editFloorData, rooms: parseInt(e.target.value) || 0 })}
+                    className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">Default Beds per Room</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={editFloorData.beds}
+                    onChange={e => setEditFloorData({ ...editFloorData, beds: parseInt(e.target.value) || 0 })}
+                    className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">Floor Layout / Map (Optional)</label>
+                  <div className="flex items-center gap-3">
+                    {editFloorData.image && (
+                      <div className="relative">
+                        <img src={editFloorData.image} alt="Floor map" onClick={() => setPreviewImage(editFloorData.image)} className="h-16 w-24 object-cover rounded border border-gray-200 dark:border-gray-800 dark:border-gray-800 cursor-pointer hover:opacity-80 transition-opacity" />
+                        <button onClick={() => setEditFloorData({ ...editFloorData, image: '' })} className="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-900 dark:bg-gray-900 text-red-500 rounded-full shadow hover:text-red-700 p-0.5">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                    <label className="flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:text-blue-600 hover:border-blue-400 cursor-pointer transition-colors bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 flex-1">
+                      <Upload className="w-4 h-4" /> {editFloorData.image ? 'Change Image' : 'Upload Map Image'}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
+                            const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                            formData.append('upload_preset', uploadPreset);
+                            try {
+                              const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formData });
+                              const data = await res.json();
+                              if (data.secure_url) setEditFloorData({ ...editFloorData, image: data.secure_url });
+                            } catch (err) { console.error(err); }
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="pt-3 pb-2 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300">Floor Facilities</span>
+                    <button onClick={() => {
+                      setEditFloorData(prev => ({
+                        ...prev,
+                        floorFacilitiesList: [...(prev.floorFacilitiesList || []), { images: [], description: '' }]
+                      }));
+                    }} className="text-xs text-blue-600 font-medium flex items-center gap-1 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded">
+                      <Plus className="w-3.5 h-3.5" /> Add Facility
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {editFloorData.floorFacilitiesList.map((facility, fIdx) => (
+                      <div key={fIdx} className="flex flex-col gap-2 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 p-3 border border-gray-200 dark:border-gray-800 dark:border-gray-800 rounded-lg">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-400">Facility {fIdx + 1}</span>
+                          <button onClick={() => {
+                            const newList = editFloorData.floorFacilitiesList.filter((_, i) => i !== fIdx);
+                            setEditFloorData({...editFloorData, floorFacilitiesList: newList});
+                          }} className="text-red-400 hover:text-red-600 p-1 shrink-0">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        
+                        <textarea 
+                          className="w-full border border-gray-200 dark:border-gray-800 dark:border-gray-800 bg-white dark:bg-gray-900 dark:bg-gray-900 p-2 text-xs text-gray-700 dark:text-gray-300 dark:text-gray-300 focus:ring-1 focus:ring-blue-300 outline-none rounded resize-none mb-1" 
+                          rows={2}
+                          value={facility.description} 
+                          placeholder="Add description for this facility group (e.g. Washroom)..."
+                          onChange={(e) => {
+                            setEditFloorData(prev => {
+                              const newList = [...prev.floorFacilitiesList];
+                              newList[fIdx] = { ...newList[fIdx], description: e.target.value };
+                              return { ...prev, floorFacilitiesList: newList };
+                            });
+                          }} 
+                        />
+                        
+                        {facility.images.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {facility.images.map((img, imgIdx) => (
+                              <div key={imgIdx} className="relative group">
+                                <img src={img} alt="facility" onClick={() => setPreviewImage(img)} className="h-12 w-20 object-cover rounded border border-gray-200 dark:border-gray-800 dark:border-gray-800 cursor-pointer hover:opacity-80 transition-opacity" />
+                                <button onClick={() => {
+                                  setEditFloorData(prev => {
+                                    const newList = [...prev.floorFacilitiesList];
+                                    newList[fIdx] = { ...newList[fIdx], images: newList[fIdx].images.filter((_, i) => i !== imgIdx) };
+                                    return { ...prev, floorFacilitiesList: newList };
+                                  });
+                                }} className="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-full text-red-500 shadow hover:text-red-700 p-0.5 hidden group-hover:block">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            id={`floor-facility-upload-${fIdx}`}
+                            className="hidden"
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    const formData = new FormData();
+                                    formData.append('file', file);
+                                    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
+                                    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+                                    formData.append('upload_preset', uploadPreset);
+                                    
+                                    try {
+                                        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formData });
+                                        const data = await res.json();
+                                        if (data.secure_url) {
+                                            setEditFloorData(prev => {
+                                                const newList = [...prev.floorFacilitiesList];
+                                                newList[fIdx] = { ...newList[fIdx], images: [...(newList[fIdx].images || []), data.secure_url] };
+                                                return { ...prev, floorFacilitiesList: newList };
+                                            });
+                                        }
+                                    } catch (err) { console.error(err); }
+                                }
+                            }}
+                          />
+                          <label 
+                            htmlFor={`floor-facility-upload-${fIdx}`}
+                            className="text-xs text-blue-600 font-semibold hover:text-blue-800 cursor-pointer flex items-center justify-center gap-1.5 border border-dashed border-blue-300 bg-blue-50 hover:bg-blue-100 w-full py-1.5 rounded-lg transition-colors"
+                          >
+                            <Upload className="w-3.5 h-3.5" /> Add Image to this Facility
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+            <div className="p-5 sm:p-6 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 flex justify-end gap-3 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 rounded-b-xl">
+              <button onClick={() => setIsEditFloorModalOpen(false)} className="px-4 py-2 text-gray-700 dark:text-gray-300 dark:text-gray-300 font-medium hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-800 dark:border-gray-800 bg-white dark:bg-gray-900 dark:bg-gray-900">
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  const updatedProperties = properties.map(p => {
+                    if (p.id === selectedPropertyId) {
+                      const newRoomsPerFloor = [...(p.roomsPerFloor || [])];
+                      newRoomsPerFloor[editFloorData.floor - 1] = editFloorData.rooms;
+                      
+                      const newBedsPerFloor = [...(p.bedsPerFloor || [])];
+                      newBedsPerFloor[editFloorData.floor - 1] = editFloorData.beds;
+                      
+                      const newFloorNames = [...(p.floorNames || Array(p.floors).fill(''))];
+                      newFloorNames[editFloorData.floor - 1] = editFloorData.name;
+                      
+                      const newFloorImages = [...(p.floorImages || Array(p.floors).fill(''))];
+                      newFloorImages[editFloorData.floor - 1] = editFloorData.image;
+                      
+                      const newFloorFacilitiesLists = p.floorFacilitiesLists ? [...p.floorFacilitiesLists] : Array.from({ length: p.floors }, () => []);
+                      newFloorFacilitiesLists[editFloorData.floor - 1] = editFloorData.floorFacilitiesList;
+                      
+                      const totalRooms = newRoomsPerFloor.reduce((a, b) => a + (b || 0), 0);
+                      
+                      return {
+                        ...p,
+                        roomsPerFloor: newRoomsPerFloor,
+                        bedsPerFloor: newBedsPerFloor,
+                        floorNames: newFloorNames,
+                        floorImages: newFloorImages,
+                        floorFacilitiesLists: newFloorFacilitiesLists,
+                        rooms: totalRooms,
+                        isCustomBedsPerFloor: true 
+                      };
+                    }
+                    return p;
+                  });
+                  setProperties(updatedProperties);
+                  localStorage.setItem('hms_properties', JSON.stringify(updatedProperties));
+                  setIsEditFloorModalOpen(false);
+                  setSuccessMessage(`Floor ${editFloorData.floor} details updated successfully!`);
+                }}
+                className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                Save Changes
+              </button>
             </div>
           </div>
         </div>

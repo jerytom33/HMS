@@ -289,12 +289,12 @@ export default function AddStudentPage() {
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href={isEditing ? `/staff/students/${editId}` : "/staff/students"} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <Link href={isEditing ? `/staff/students/${editId}` : "/staff/students"} className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-800 rounded-full transition-colors">
+          <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{isEditing ? "Edit Student Profile" : "Register New Student"}</h1>
-          <p className="text-sm text-gray-500 mt-1">{isEditing ? "Update student details and save changes." : "Enter complete student details to create a new profile."}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">{isEditing ? "Edit Student Profile" : "Register New Student"}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{isEditing ? "Update student details and save changes." : "Enter complete student details to create a new profile."}</p>
         </div>
       </div>
 
@@ -303,18 +303,18 @@ export default function AddStudentPage() {
           
           {/* Left Column: Photo & Quick Actions */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="p-6 flex flex-col items-center border-b border-gray-100 bg-gray-50/50">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="p-6 flex flex-col items-center border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50">
                 <div className="relative group cursor-pointer mb-4">
-                  <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                  <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
                     <User className="w-12 h-12 text-gray-300" />
                   </div>
                   <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Camera className="w-8 h-8 text-white" />
                   </div>
                 </div>
-                <h3 className="font-semibold text-gray-900">Student Photo</h3>
-                <p className="text-xs text-gray-500 mt-1 text-center">Click to upload or drag and drop<br/>SVG, PNG, JPG or GIF (max. 2MB)</p>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Student Photo</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Click to upload or drag and drop<br/>SVG, PNG, JPG or GIF (max. 2MB)</p>
               </div>
             </div>
           </div>
@@ -323,27 +323,27 @@ export default function AddStudentPage() {
           <div className="lg:col-span-2 space-y-6">
             
             {/* Personal Details */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
                 <User className="w-4 h-4 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Personal Details</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Personal Details</h3>
               </div>
               <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">First Name <span className="text-red-500">*</span></label>
-                  <input required name="firstName" value={formData.firstName} onChange={handleChange} type="text" placeholder="e.g. John" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">First Name <span className="text-red-500">*</span></label>
+                  <input required name="firstName" value={formData.firstName} onChange={handleChange} type="text" placeholder="e.g. John" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Last Name <span className="text-red-500">*</span></label>
-                  <input required name="lastName" value={formData.lastName} onChange={handleChange} type="text" placeholder="e.g. Doe" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Last Name <span className="text-red-500">*</span></label>
+                  <input required name="lastName" value={formData.lastName} onChange={handleChange} type="text" placeholder="e.g. Doe" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Date of Birth</label>
-                  <input name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} type="date" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date of Birth</label>
+                  <input name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} type="date" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Gender</label>
-                  <select name="gender" value={formData.gender} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Gender</label>
+                  <select name="gender" value={formData.gender} onChange={handleChange} className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -351,30 +351,30 @@ export default function AddStudentPage() {
                   </select>
                 </div>
                 <div className="space-y-1 sm:col-span-2">
-                  <label className="text-sm font-medium text-gray-700">Password <span className="text-gray-400 font-normal">(for student portal)</span></label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password <span className="text-gray-400 font-normal">(for student portal)</span></label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Lock className="w-4 h-4 text-gray-400" />
                     </div>
-                    <input name="password" value={formData.password} onChange={handleChange} type="password" placeholder="Enter password" className="w-full border border-gray-300 rounded-lg pl-10 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <input name="password" value={formData.password} onChange={handleChange} type="password" placeholder="Enter password" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg pl-10 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Room Assignment */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
                 <Home className="w-4 h-4 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Room Assignment</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Room Assignment</h3>
               </div>
               <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Property</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Property</label>
                   <select 
                     value={selectedPropId} 
                     onChange={e => { setSelectedPropId(e.target.value); setSelectedFloor(''); setSelectedRoom(''); setSelectedBed(''); }} 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                   >
                     <option value="">Select Property</option>
                     {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -382,12 +382,12 @@ export default function AddStudentPage() {
                 </div>
                 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Floor</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Floor</label>
                   <select 
                     value={selectedFloor} 
                     onChange={e => { setSelectedFloor(e.target.value); setSelectedRoom(''); setSelectedBed(''); }} 
                     disabled={!selectedPropId}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 dark:bg-gray-800"
                   >
                     <option value="">Select Floor</option>
                     {selectedPropId && Array.from({ length: properties.find(p => p.id.toString() === selectedPropId)?.floors || 0 }).map((_, i) => (
@@ -397,12 +397,12 @@ export default function AddStudentPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Room</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Room</label>
                   <select 
                     value={selectedRoom} 
                     onChange={e => { setSelectedRoom(e.target.value); setSelectedBed(''); }}
                     disabled={!selectedFloor}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 dark:bg-gray-800"
                   >
                     <option value="">Select Room</option>
                     {selectedFloor && Array.from({ length: properties.find(p => p.id.toString() === selectedPropId)?.roomsPerFloor?.[parseInt(selectedFloor) - 1] || 0 }).map((_, i) => {
@@ -413,12 +413,12 @@ export default function AddStudentPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Bed</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Bed</label>
                   <select 
                     value={selectedBed} 
                     onChange={e => setSelectedBed(e.target.value)}
                     disabled={!selectedRoom}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 dark:bg-gray-800"
                   >
                     <option value="">Select Bed</option>
                     {selectedRoom && (() => {
@@ -435,41 +435,41 @@ export default function AddStudentPage() {
             </div>
 
             {/* Contact Information */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
                 <Phone className="w-4 h-4 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Contact Information</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Contact Information</h3>
               </div>
               <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Email Address <span className="text-red-500">*</span></label>
-                  <input required name="email" value={formData.email} onChange={handleChange} type="email" placeholder="john@example.com" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email Address <span className="text-red-500">*</span></label>
+                  <input required name="email" value={formData.email} onChange={handleChange} type="email" placeholder="john@example.com" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Phone Number <span className="text-red-500">*</span></label>
-                  <input required name="phone" value={formData.phone} onChange={handleChange} type="tel" placeholder="+1 234 567 8900" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number <span className="text-red-500">*</span></label>
+                  <input required name="phone" value={formData.phone} onChange={handleChange} type="tel" placeholder="+1 234 567 8900" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div className="sm:col-span-2 space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Home Address</label>
-                  <textarea name="address" value={formData.address} onChange={handleChange} rows={3} placeholder="Full residential address..." className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Home Address</label>
+                  <textarea name="address" value={formData.address} onChange={handleChange} rows={3} placeholder="Full residential address..." className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
                 </div>
               </div>
             </div>
 
             {/* Academic Information */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
                 <GraduationCap className="w-4 h-4 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Academic Information</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Academic Information</h3>
               </div>
               <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Course / Major</label>
-                  <input name="course" value={formData.course} onChange={handleChange} type="text" placeholder="e.g. Computer Science" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Course / Major</label>
+                  <input name="course" value={formData.course} onChange={handleChange} type="text" placeholder="e.g. Computer Science" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Year of Study</label>
-                  <select name="yearOfStudy" value={formData.yearOfStudy} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Year of Study</label>
+                  <select name="yearOfStudy" value={formData.yearOfStudy} onChange={handleChange} className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     <option value="">Select Year</option>
                     <option value="1">First Year</option>
                     <option value="2">Second Year</option>
@@ -482,23 +482,23 @@ export default function AddStudentPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
                 <HeartPulse className="w-4 h-4 text-red-500" />
-                <h3 className="font-semibold text-gray-900">Emergency Contact</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Emergency Contact</h3>
               </div>
               <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2 space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Contact Name <span className="text-red-500">*</span></label>
-                  <input required name="emergencyName" value={formData.emergencyName} onChange={handleChange} type="text" placeholder="Jane Doe" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contact Name <span className="text-red-500">*</span></label>
+                  <input required name="emergencyName" value={formData.emergencyName} onChange={handleChange} type="text" placeholder="Jane Doe" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Phone Number <span className="text-red-500">*</span></label>
-                  <input required name="emergencyPhone" value={formData.emergencyPhone} onChange={handleChange} type="tel" placeholder="+1 234 567 8900" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number <span className="text-red-500">*</span></label>
+                  <input required name="emergencyPhone" value={formData.emergencyPhone} onChange={handleChange} type="tel" placeholder="+1 234 567 8900" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700">Relationship</label>
-                  <input name="emergencyRelation" value={formData.emergencyRelation} onChange={handleChange} type="text" placeholder="e.g. Mother, Father, Guardian" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Relationship</label>
+                  <input name="emergencyRelation" value={formData.emergencyRelation} onChange={handleChange} type="text" placeholder="e.g. Mother, Father, Guardian" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
               </div>
             </div>
@@ -507,8 +507,8 @@ export default function AddStudentPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
-          <Link href={isEditing ? `/staff/students/${editId}` : "/staff/students"} className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
+        <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-800">
+          <Link href={isEditing ? `/staff/students/${editId}` : "/staff/students"} className="px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 transition-colors shadow-sm">
             Cancel
           </Link>
           <button type="submit" className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2">

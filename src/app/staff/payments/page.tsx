@@ -139,11 +139,11 @@ export default function AdminPayments() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Payment Management</h1>
-          <p className="text-sm text-gray-500">Track and record transactions across all properties.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Payment Management</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Track and record transactions across all properties.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto">
+          <button className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto">
             <Download className="h-4 w-4" /> Export CSV
           </button>
           <button 
@@ -157,27 +157,27 @@ export default function AdminPayments() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-          <p className="text-sm font-medium text-gray-500 mb-1">Total Revenue {monthFilter ? `(${monthFilter})` : '(All Time)'}</p>
-          <p className="text-3xl font-bold text-gray-900">€{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Revenue {monthFilter ? `(${monthFilter})` : '(All Time)'}</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">€{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           <span className="text-xs font-medium text-green-600 mt-2 block">Completed Payments</span>
         </div>
-        <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-          <p className="text-sm font-medium text-gray-500 mb-1">Pending Payments</p>
+        <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Pending Payments</p>
           <p className="text-3xl font-bold text-orange-600">€{pendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-          <span className="text-xs font-medium text-gray-500 mt-2 block">{pendingCount} students with past due</span>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-2 block">{pendingCount} students with past due</span>
         </div>
-        <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-          <p className="text-sm font-medium text-gray-500 mb-1">Failed Transactions</p>
+        <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Failed Transactions</p>
           <p className="text-3xl font-bold text-red-600">€{failedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           <span className="text-xs font-medium text-red-600 mt-2 block">Action required</span>
         </div>
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <h3 className="text-base font-semibold text-gray-900">Recent Transactions</h3>
+      <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Recent Transactions</h3>
           <div className="flex items-center gap-2">
             <select
               value={propertyFilter}
@@ -185,7 +185,7 @@ export default function AdminPayments() {
                 setPropertyFilter(e.target.value);
                 setFloorFilter('all');
               }}
-              className="border border-gray-300 rounded-md text-sm px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="border border-gray-300 dark:border-gray-700 rounded-md text-sm px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
             >
               <option value="all">All Properties</option>
               {properties.map(p => (
@@ -196,7 +196,7 @@ export default function AdminPayments() {
               <select
                 value={floorFilter}
                 onChange={(e) => setFloorFilter(e.target.value)}
-                className="border border-gray-300 rounded-md text-sm px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="border border-gray-300 dark:border-gray-700 rounded-md text-sm px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
               >
                 <option value="all">All Floors</option>
                 {Array.from({ length: properties.find(p => p.name === propertyFilter)?.floors || 1 }).map((_, i) => (
@@ -207,7 +207,7 @@ export default function AdminPayments() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="border border-gray-300 rounded-md text-sm px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="border border-gray-300 dark:border-gray-700 rounded-md text-sm px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
             >
               <option value="">All Types</option>
               <option value="Rent">Rent</option>
@@ -218,7 +218,7 @@ export default function AdminPayments() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded-md text-sm px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="border border-gray-300 dark:border-gray-700 rounded-md text-sm px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
             >
               <option value="">All Statuses</option>
               <option value="Completed">Completed</option>
@@ -229,12 +229,12 @@ export default function AdminPayments() {
               type="month" 
               value={monthFilter}
               onChange={(e) => setMonthFilter(e.target.value)}
-              className="border border-gray-300 rounded-md text-sm px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="border border-gray-300 dark:border-gray-700 rounded-md text-sm px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500 outline-none"
             />
             {(monthFilter || statusFilter || typeFilter || propertyFilter !== 'all') && (
               <button 
                 onClick={() => { setMonthFilter(''); setStatusFilter(''); setTypeFilter(''); setPropertyFilter('all'); setFloorFilter('all'); }}
-                className="text-gray-400 hover:text-gray-600 ml-1"
+                className="text-gray-400 hover:text-gray-600 dark:text-gray-400 ml-1"
                 title="Clear filters"
               >
                 <X className="h-4 w-4" />
@@ -243,36 +243,36 @@ export default function AdminPayments() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-left text-sm text-gray-700">
-            <thead className="bg-white">
+          <table className="min-w-full divide-y divide-gray-200 text-left text-sm text-gray-700 dark:text-gray-300">
+            <thead className="bg-white dark:bg-gray-900">
               <tr>
-                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs">Transaction ID</th>
-                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs">Student</th>
-                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs">Type</th>
-                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs">Amount</th>
-                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs">Date</th>
-                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs">Status</th>
-                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right">Actions</th>
+                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs">Transaction ID</th>
+                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs">Student</th>
+                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs">Type</th>
+                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs">Amount</th>
+                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs">Date</th>
+                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs">Status</th>
+                <th scope="col" className="px-6 py-3 font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody className="divide-y divide-gray-200 bg-white dark:bg-gray-900">
               {filteredPayments.length > 0 ? (
                 filteredPayments.map((trx) => (
-                  <tr key={trx.id} className="hover:bg-gray-50">
-                    <td className="whitespace-nowrap px-6 py-4 font-mono text-gray-500">{trx.id}</td>
+                  <tr key={trx.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950">
+                    <td className="whitespace-nowrap px-6 py-4 font-mono text-gray-500 dark:text-gray-400">{trx.id}</td>
                     <td className="whitespace-nowrap px-6 py-4">
-                      <div className="font-medium text-gray-900">{trx.student}</div>
-                      <div className="text-xs text-gray-500">{trx.property}{trx.room ? ` - ${trx.room}` : ''}</div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">{trx.student}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{trx.property}{trx.room ? ` - ${trx.room}` : ''}</div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex items-center gap-1.5 text-gray-600">
+                      <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
                         <FileText className="h-4 w-4" /> {trx.type}
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900">
+                    <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
                       €{trx.amount.toFixed(2)}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-gray-500">{trx.date}</td>
+                    <td className="whitespace-nowrap px-6 py-4 text-gray-500 dark:text-gray-400">{trx.date}</td>
                     <td className="whitespace-nowrap px-6 py-4">
                       <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
                         trx.status === 'Completed' ? 'bg-green-50 text-green-700 ring-green-600/20' :
@@ -283,7 +283,7 @@ export default function AdminPayments() {
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right">
-                      <button className="text-gray-400 hover:text-gray-600">
+                      <button className="text-gray-400 hover:text-gray-600 dark:text-gray-400">
                         <MoreHorizontal className="h-5 w-5" />
                       </button>
                     </td>
@@ -291,7 +291,7 @@ export default function AdminPayments() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                     No transactions found for the selected period.
                   </td>
                 </tr>
@@ -304,12 +304,12 @@ export default function AdminPayments() {
       {/* Add Payment Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-semibold text-gray-900">Record New Payment</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-950">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Record New Payment</h3>
               <button 
                 onClick={() => closeAndResetModal()}
-                className="text-gray-400 hover:text-gray-600 bg-white rounded-full p-1 border border-gray-200"
+                className="text-gray-400 hover:text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900 rounded-full p-1 border border-gray-200 dark:border-gray-800"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -318,7 +318,7 @@ export default function AdminPayments() {
             <form onSubmit={handleAddPayment} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student Name</label>
                   <input 
                     type="text" 
                     required
@@ -329,11 +329,11 @@ export default function AdminPayments() {
                     }}
                     onFocus={() => setShowStudentDropdown(true)}
                     onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
                     autoComplete="off"
                   />
                   {showStudentDropdown && formData.student && (
-                    <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-900 rounded-md shadow-lg border border-gray-200 dark:border-gray-800 max-h-48 overflow-y-auto">
                       {students.filter(s => s.name.toLowerCase().includes(formData.student.toLowerCase())).length > 0 ? (
                         students.filter(s => s.name.toLowerCase().includes(formData.student.toLowerCase())).map(s => (
                           <div 
@@ -366,22 +366,22 @@ export default function AdminPayments() {
                           >
                             <div className="font-medium">{s.name}</div>
                             {(s.property || s.room) && (
-                              <div className="text-xs text-gray-500">{s.property}{s.room ? ` - ${s.room}` : ''}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">{s.property}{s.room ? ` - ${s.room}` : ''}</div>
                             )}
                           </div>
                         ))
                       ) : (
-                        <div className="px-3 py-2 text-sm text-gray-500">No students found</div>
+                        <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No students found</div>
                       )}
                     </div>
                   )}
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Property</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Property</label>
                   <select 
                     value={selectedPropId} 
                     onChange={e => { setSelectedPropId(e.target.value); setSelectedFloor(''); setSelectedRoom(''); setSelectedBed(''); setFormData(prev => ({...prev, student: ''})); }} 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                   >
                     <option value="">Select Property</option>
                     {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -389,12 +389,12 @@ export default function AdminPayments() {
                 </div>
                 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Floor</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Floor</label>
                   <select 
                     value={selectedFloor} 
                     onChange={e => { setSelectedFloor(e.target.value); setSelectedRoom(''); setSelectedBed(''); setFormData(prev => ({...prev, student: ''})); }} 
                     disabled={!selectedPropId}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 dark:bg-gray-800"
                   >
                     <option value="">Select Floor</option>
                     {selectedPropId && Array.from({ length: properties.find(p => p.id.toString() === selectedPropId)?.floors || 0 }).map((_, i) => (
@@ -404,12 +404,12 @@ export default function AdminPayments() {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room</label>
                   <select 
                     value={selectedRoom} 
                     onChange={e => { setSelectedRoom(e.target.value); setSelectedBed(''); setFormData(prev => ({...prev, student: ''})); }}
                     disabled={!selectedFloor}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 dark:bg-gray-800"
                   >
                     <option value="">Select Room</option>
                     {selectedFloor && Array.from({ length: properties.find(p => p.id.toString() === selectedPropId)?.roomsPerFloor?.[parseInt(selectedFloor) - 1] || 0 }).map((_, i) => {
@@ -420,12 +420,12 @@ export default function AdminPayments() {
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bed</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bed</label>
                   <select 
                     value={selectedBed} 
                     onChange={e => setSelectedBed(e.target.value)}
                     disabled={!selectedRoom}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                    className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 dark:bg-gray-800"
                   >
                     <option value="">Select Bed</option>
                     {selectedRoom && (() => {
@@ -439,7 +439,7 @@ export default function AdminPayments() {
                   </select>
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (€)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (€)</label>
                   <input 
                     type="number" 
                     step="0.01"
@@ -447,25 +447,25 @@ export default function AdminPayments() {
                     required
                     value={formData.amount}
                     onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
                   />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
                   <input 
                     type="date" 
                     required
                     value={formData.date}
                     onChange={(e) => setFormData({...formData, date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
                   />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
                   <select 
                     value={formData.type}
                     onChange={(e) => setFormData({...formData, type: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
                   >
                     <option value="Rent">Rent</option>
                     <option value="Deposit">Deposit</option>
@@ -474,11 +474,11 @@ export default function AdminPayments() {
                   </select>
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                   <select 
                     value={formData.status}
                     onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
                   >
                     <option value="Completed">Completed</option>
                     <option value="Pending">Pending</option>
@@ -487,11 +487,11 @@ export default function AdminPayments() {
                 </div>
               </div>
               
-              <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-6">
+              <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-800 mt-6">
                 <button 
                   type="button"
                   onClick={() => closeAndResetModal()}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950"
                 >
                   Cancel
                 </button>
