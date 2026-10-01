@@ -35,24 +35,25 @@ export default function AddStudentPage() {
   const [selectedRoom, setSelectedRoom] = useState('');
   const [selectedBed, setSelectedBed] = useState('');
 
-  useEffect(() => {
+    useEffect(() => {
     let loadedProps: any[] = [];
-    const savedProps = localStorage.getItem('hms_properties');
-    if (savedProps) {
-        loadedProps = JSON.parse(savedProps);
-        setProperties(loadedProps);
-    }
+    fetch('/api/v1-properties?limit=1000').then(res => res.json()).then(data => {
+      if (data && data.docs) {
+        loadedProps = data.docs;
+        setProperties(data.docs);
+      }
+    });
     
-    const savedOverrides = localStorage.getItem('hms_room_overrides');
-    if (savedOverrides) {
-        setRoomOverrides(JSON.parse(savedOverrides));
-    }
+    fetch('/api/v1-room-overrides?limit=1000').then(res => res.json()).then(data => {
+      if (data && data.docs) {
+        const overrides: any = {};
+        data.docs.forEach((doc: any) => { overrides[doc.overrideKey] = doc; });
+        setRoomOverrides(overrides);
+      }
+    });
 
     if (isEditing) {
-      const saved = localStorage.getItem('hms_students');
-      if (saved) {
-        const students = JSON.parse(saved);
-        const student = students.find((s: any) => s.id.toString() === editId);
+      fetch(`/api/v1-students/${editId}`).then(res => res.json()).then(student => {
         if (student) {
           const [firstName, ...lastNameParts] = (student.name || '').split(' ');
           setFormData({
@@ -74,7 +75,7 @@ export default function AddStudentPage() {
           if (student.property && student.room && student.room !== 'Unassigned') {
             const prop = loadedProps.find(p => p.name === student.property);
             if (prop) {
-                setSelectedPropId(prop.id.toString());
+                setSelectedPropId(prop.id);
                 const match = student.room.match(/Room (\d)(\d+) - Bed ([A-Z0-9]+)/i);
                 if (match) {
                     setSelectedFloor(match[1]);
@@ -84,7 +85,7 @@ export default function AddStudentPage() {
             }
           }
         }
-      }
+      });
     } else {
       const fromRoom = searchParams.get('from_room');
       if (fromRoom) {
@@ -106,64 +107,57 @@ export default function AddStudentPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Get existing students
-    const saved = localStorage.getItem('hms_students');
     let currentStudents: any[] = [];
-    if (saved) {
-      currentStudents = JSON.parse(saved);
-    }
+    try {
+        const res = await fetch('/api/v1-students?limit=1000');
+        const data = await res.json();
+        if (data && data.docs) currentStudents = data.docs;
+    } catch(err) {}
     
-    const prop = properties.find(p => p.id.toString() === selectedPropId);
+    const prop = properties.find(p => String(p.id) === String(selectedPropId));
     const propName = prop ? prop.name : undefined;
     const roomStr = (selectedPropId && selectedFloor && selectedRoom && selectedBed) 
         ? `Room ${selectedRoom} - Bed ${selectedBed}` : undefined;
 
-    let studentIdToSave = isEditing ? editId : Date.now().toString();
-
     let oldRoomInfo = null;
     if (isEditing) {
-      const oldStudent = currentStudents.find((s: any) => s.id.toString() === editId);
+      const oldStudent = currentStudents.find((s: any) => String(s.id) === String(editId));
       if (oldStudent && oldStudent.room && oldStudent.room !== 'Unassigned') {
         oldRoomInfo = { room: oldStudent.room, property: oldStudent.property };
       }
     }
+    
+    let studentIdToSave = editId;
 
     if (isEditing) {
-      currentStudents = currentStudents.map((s: any) => {
-        if (s.id.toString() === editId) {
-          return {
-            ...s,
-            name: `${formData.firstName} ${formData.lastName}`.trim(),
-            email: formData.email,
-            phone: formData.phone,
-            dateOfBirth: formData.dateOfBirth,
-            gender: formData.gender,
-            address: formData.address,
-            course: formData.course,
-            yearOfStudy: formData.yearOfStudy,
-            emergencyName: formData.emergencyName,
-            emergencyPhone: formData.emergencyPhone,
-            emergencyRelation: formData.emergencyRelation,
-            password: formData.password,
-            room: roomStr || 'Unassigned',
-            property: propName || undefined,
-            status: roomStr ? 'Active' : 'Active'
-          };
-        }
-        return s;
-      });
-      localStorage.setItem('hms_students', JSON.stringify(currentStudents));
+      const updated = {
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        phone: formData.phone,
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender,
+        address: formData.address,
+        course: formData.course,
+        yearOfStudy: formData.yearOfStudy,
+        emergencyName: formData.emergencyName,
+        emergencyPhone: formData.emergencyPhone,
+        emergencyRelation: formData.emergencyRelation,
+        password: formData.password,
+        room: roomStr || 'Unassigned',
+        property: propName || '',
+        status: roomStr ? 'Active' : 'Active'
+      };
+      await fetch(`/api/v1-students/${editId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json'}, body: JSON.stringify(updated) });
     } else {
       const newStudent = {
-        id: parseInt(studentIdToSave!),
         name: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
         phone: formData.phone,
         room: roomStr || 'Unassigned',
-        property: propName || undefined,
+        property: propName || '',
         status: roomStr ? 'Active' : 'Active',
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender,
@@ -176,8 +170,9 @@ export default function AddStudentPage() {
         password: formData.password
       };
       
-      // Save back to localStorage
-      localStorage.setItem('hms_students', JSON.stringify([...currentStudents, newStudent]));
+      const res = await fetch('/api/v1-students', { method: 'POST', headers: { 'Content-Type': 'application/json'}, body: JSON.stringify(newStudent) });
+      const data = await res.json();
+      if (data.doc) studentIdToSave = data.doc.id;
     }
 
     const currentOverrides = { ...roomOverrides };
@@ -231,7 +226,7 @@ export default function AddStudentPage() {
 
     if (selectedPropId && selectedFloor && selectedRoom && selectedBed) {
       const overrideKey = `${selectedPropId}-${selectedRoom}`;
-      const roomOverride = currentOverrides[overrideKey] || {};
+      const roomOverride = currentOverrides[overrideKey] || { overrideKey };
       const bedsCount = roomOverride.beds || (prop?.bedsPerFloor ? prop.bedsPerFloor[parseInt(selectedFloor) - 1] : prop?.bedsPerRoom) || 0;
       
       let bedStatuses = roomOverride.bedStatuses ? [...roomOverride.bedStatuses] : Array(bedsCount).fill(false);
@@ -243,7 +238,7 @@ export default function AddStudentPage() {
       
       if (bedIndex >= 0 && bedIndex < bedsCount) {
          bedStatuses[bedIndex] = true;
-         bedOccupants[bedIndex] = parseInt(studentIdToSave!);
+         bedOccupants[bedIndex] = studentIdToSave;
          
          const newFilled = bedStatuses.filter(v => v).length;
          const newFree = bedsCount - newFilled;
@@ -268,7 +263,14 @@ export default function AddStudentPage() {
     }
 
     if (overridesChanged) {
-        localStorage.setItem('hms_room_overrides', JSON.stringify(currentOverrides));
+        for (const [key, val] of Object.entries(currentOverrides)) {
+            const data: any = val;
+            if (data.id) {
+                await fetch(`/api/v1-room-overrides/${data.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            } else {
+                await fetch(`/api/v1-room-overrides`, { method: 'POST', headers: { 'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            }
+        }
     }
 
     if (isEditing) {
@@ -276,7 +278,7 @@ export default function AddStudentPage() {
     } else {
         const returnRoomEdit = sessionStorage.getItem('hms_return_room_edit');
         if (returnRoomEdit) {
-            sessionStorage.setItem('hms_new_assigned_student_id', studentIdToSave!);
+            sessionStorage.setItem('hms_new_assigned_student_id', String(studentIdToSave));
             router.push('/staff/properties');
         } else {
             router.push('/staff/students');
@@ -389,7 +391,7 @@ export default function AddStudentPage() {
                     className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 dark:bg-gray-800"
                   >
                     <option value="">Select Floor</option>
-                    {selectedPropId && Array.from({ length: properties.find(p => p.id.toString() === selectedPropId)?.floors || 0 }).map((_, i) => (
+                    {selectedPropId && Array.from({ length: properties.find(p => String(p.id) === String(selectedPropId))?.floors || 0 }).map((_, i) => (
                       <option key={i+1} value={i+1}>Floor {i+1}</option>
                     ))}
                   </select>
@@ -404,7 +406,7 @@ export default function AddStudentPage() {
                     className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 dark:bg-gray-800"
                   >
                     <option value="">Select Room</option>
-                    {selectedFloor && Array.from({ length: properties.find(p => p.id.toString() === selectedPropId)?.roomsPerFloor?.[parseInt(selectedFloor) - 1] || 0 }).map((_, i) => {
+                    {selectedFloor && Array.from({ length: properties.find(p => String(p.id) === String(selectedPropId))?.roomsPerFloor?.[parseInt(selectedFloor) - 1] || 0 }).map((_, i) => {
                       const rNum = `${selectedFloor}0${i+1}`;
                       return <option key={rNum} value={rNum}>Room {rNum}</option>
                     })}
@@ -421,7 +423,7 @@ export default function AddStudentPage() {
                   >
                     <option value="">Select Bed</option>
                     {selectedRoom && (() => {
-                      const prop = properties.find(p => p.id.toString() === selectedPropId);
+                      const prop = properties.find(p => String(p.id) === String(selectedPropId));
                       const override = roomOverrides[`${selectedPropId}-${selectedRoom}`];
                       const beds = override?.beds || (prop?.bedsPerFloor ? prop.bedsPerFloor[parseInt(selectedFloor) - 1] : prop?.bedsPerRoom) || 0;
                       return Array.from({ length: beds }).map((_, i) => (

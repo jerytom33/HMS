@@ -38,6 +38,9 @@ import { EventRSVPs } from './src/collections/EventRSVPs'
 import { Reports } from './src/collections/Reports'
 import { SystemAuditLogs } from './src/collections/SystemAuditLogs'
 import { IntegrationLogs } from './src/collections/IntegrationLogs'
+import { V1Properties } from './src/collections/V1Properties'
+import { V1Students } from './src/collections/V1Students'
+import { V1RoomOverrides } from './src/collections/V1RoomOverrides'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -81,6 +84,9 @@ export default buildConfig({
     Reports,
     SystemAuditLogs,
     IntegrationLogs,
+    V1Properties,
+    V1Students,
+    V1RoomOverrides,
   ],
   editor: lexicalEditor({}),
   secret: process.env.PAYLOAD_SECRET || '',

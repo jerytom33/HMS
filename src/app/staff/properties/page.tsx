@@ -46,14 +46,13 @@ export default function AdminProperties() {
   const [searchQuery, setSearchQuery] = useState('');
   const [availableStudents, setAvailableStudents] = useState<any[]>(MOCK_STUDENTS);
 
-  // Load real students from localStorage
+    // Load real students from API
   useEffect(() => {
-    const saved = localStorage.getItem('hms_students');
-    if (saved) {
-      try {
-        setAvailableStudents(JSON.parse(saved));
-      } catch (e) {}
-    }
+    fetch('/api/v1-students?limit=1000').then(res => res.json()).then(data => {
+      if (data && data.docs) {
+        setAvailableStudents(data.docs);
+      }
+    }).catch(e => console.error(e));
   }, []);
 
   // Restore room modal if returning from student details
@@ -110,14 +109,14 @@ export default function AdminProperties() {
       }
     }
   }, []);
-  const [selectedPropertyId, setSelectedPropertyId] = useState(1);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<any>(1);
   const [selectedFloor, setSelectedFloor] = useState(1);
   const [isAddPropertyModalOpen, setIsAddPropertyModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<{ roomNum: number, status: string, beds: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] } | null>(null);  
 
-  const [editingPropertyId, setEditingPropertyId] = useState<number | null>(null);
+  const [editingPropertyId, setEditingPropertyId] = useState<any>(null);
 
-  const [propertyToDelete, setPropertyToDelete] = useState<number | null>(null);
+  const [propertyToDelete, setPropertyToDelete] = useState<any>(null);
   const [roomFilters, setRoomFilters] = useState({ occupied: false, available: false, maintenance: false });
   const [editPropertyForm, setEditPropertyForm] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[] });
   
@@ -137,40 +136,27 @@ export default function AdminProperties() {
   const [isUploading, setIsUploading] = useState(false);
   const [isFullScreenMap, setIsFullScreenMap] = useState(false);
 
-  // Load from localStorage on mount
+    // Load from API on mount
   useEffect(() => {
-    const savedProperties = localStorage.getItem('hms_properties');
-    if (savedProperties) {
-      try {
-        setProperties(JSON.parse(savedProperties));
-      } catch (e) {
-        console.error("Failed to parse properties from localStorage");
+    fetch('/api/v1-properties?limit=100').then(res => res.json()).then(data => {
+      if (data && data.docs) {
+        setProperties(data.docs);
+        if (data.docs.length > 0 && selectedPropertyId === 1) {
+            setSelectedPropertyId(data.docs[0].id);
+        }
       }
-    }
+    }).catch(e => console.error(e));
     
-    const savedOverrides = localStorage.getItem('hms_room_overrides');
-    if (savedOverrides) {
-      try {
-        setRoomOverrides(JSON.parse(savedOverrides));
-      } catch (e) {
-        console.error("Failed to parse room overrides from localStorage");
+    fetch('/api/v1-room-overrides?limit=1000').then(res => res.json()).then(data => {
+      if (data && data.docs) {
+        const overrides: any = {};
+        data.docs.forEach((doc: any) => {
+          overrides[doc.overrideKey] = doc;
+        });
+        setRoomOverrides(overrides);
       }
-    }
+    }).catch(e => console.error(e));
   }, []);
-
-  // Save to localStorage when properties change
-  useEffect(() => {
-    if (properties !== INITIAL_PROPERTIES) {
-      localStorage.setItem('hms_properties', JSON.stringify(properties));
-    }
-  }, [properties]);
-
-  // Save to localStorage when room overrides change
-  useEffect(() => {
-    if (Object.keys(roomOverrides).length > 0) {
-      localStorage.setItem('hms_room_overrides', JSON.stringify(roomOverrides));
-    }
-  }, [roomOverrides]);
 
   const filteredProperties = useMemo(() => {
     return properties.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.location.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -224,12 +210,10 @@ export default function AdminProperties() {
     });
   }, [selectedPropertyId, selectedFloor, selectedProperty, roomOverrides]);
 
-  const handleAddProperty = () => {
+    const handleAddProperty = async () => {
     if (!newProperty.name || !newProperty.location) return;
     
-    const newId = Math.max(...properties.map(p => p.id), 0) + 1;
     const addedProperty = {
-      id: newId,
       name: newProperty.name,
       location: newProperty.location,
       rooms: newProperty.roomsPerFloor.reduce((acc, curr) => acc + (parseInt(curr) || 0), 0),
@@ -243,17 +227,25 @@ export default function AdminProperties() {
       images: newProperty.images
     };
     
-    setProperties([...properties, addedProperty]);
-    setIsAddPropertyModalOpen(false);
-    setNewProperty({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] });
-    
-    setSuccessMessage(`Property "${addedProperty.name}" added successfully!`);
-    setSelectedPropertyId(newId);
-    setSelectedFloor(1);
-    
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 4000);
+    try {
+      const res = await fetch('/api/v1-properties', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(addedProperty)
+      });
+      const data = await res.json();
+      if (!data.doc) throw new Error("Failed to create property");
+      
+      setProperties([...properties, data.doc]);
+      setIsAddPropertyModalOpen(false);
+      setNewProperty({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] });
+      
+      setSuccessMessage(`Property "${data.doc.name}" added successfully!`);
+      setSelectedPropertyId(data.doc.id);
+      setSelectedFloor(1);
+      
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (e) { console.error(e); }
   };
 
   const handleEditPropertyStart = (prop: any) => {
@@ -307,11 +299,11 @@ export default function AdminProperties() {
     });
   }, [rooms, roomFilters]);
 
-  const handleDeleteProperty = (id: number) => {
+  const handleDeleteProperty = (id: any) => {
     setPropertyToDelete(id);
   };
 
-  const confirmDeleteProperty = () => {
+    const confirmDeleteProperty = async () => {
     if (propertyToDelete === null) return;
     
     const property = properties.find(p => p.id === propertyToDelete);
@@ -320,50 +312,51 @@ export default function AdminProperties() {
       return;
     }
     
-    const updatedProperties = properties.filter(p => p.id !== propertyToDelete);
-    setProperties(updatedProperties);
-    setSuccessMessage(`Property "${property.name}" deleted successfully!`);
-    
-    if (selectedPropertyId === propertyToDelete) {
-      setSelectedPropertyId(updatedProperties[0]?.id || 0);
-      setSelectedFloor(1);
-    }
-    
-    setPropertyToDelete(null);
-    
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 4000);
+    try {
+      await fetch(`/api/v1-properties/${propertyToDelete}`, { method: 'DELETE' });
+      const updatedProperties = properties.filter(p => p.id !== propertyToDelete);
+      setProperties(updatedProperties);
+      setSuccessMessage(`Property "${property.name}" deleted successfully!`);
+      
+      if (selectedPropertyId === propertyToDelete) {
+        setSelectedPropertyId(updatedProperties[0]?.id || 0);
+        setSelectedFloor(1);
+      }
+      
+      setPropertyToDelete(null);
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (e) { console.error(e); }
   };
 
-  const handleUpdateProperty = () => {
+    const handleUpdateProperty = async () => {
     if (!editPropertyForm.name || !editPropertyForm.location) return;
     
-    const updatedProperties = properties.map(p => {
-      if (p.id === editingPropertyId) {
-        return {
-          ...p,
-          name: editPropertyForm.name,
-          location: editPropertyForm.location,
-          rooms: editPropertyForm.roomsPerFloor.reduce((acc, curr) => acc + (parseInt(curr) || 0), 0),
-          floors: parseInt(editPropertyForm.floors) || 1,
-          roomsPerFloor: editPropertyForm.roomsPerFloor.map(v => parseInt(v) || 0),
-          isCustomBedsPerFloor: editPropertyForm.isCustomBedsPerFloor,
-          bedsPerFloor: editPropertyForm.bedsPerFloor.map(v => parseInt(v) || 2),
-          beds: parseInt(editPropertyForm.beds) || 2,
-          images: editPropertyForm.images
-        };
-      }
-      return p;
-    });
+    const updatedPropertyData = {
+      name: editPropertyForm.name,
+      location: editPropertyForm.location,
+      rooms: editPropertyForm.roomsPerFloor.reduce((acc, curr) => acc + (parseInt(curr) || 0), 0),
+      floors: parseInt(editPropertyForm.floors) || 1,
+      roomsPerFloor: editPropertyForm.roomsPerFloor.map(v => parseInt(v) || 0),
+      isCustomBedsPerFloor: editPropertyForm.isCustomBedsPerFloor,
+      bedsPerFloor: editPropertyForm.bedsPerFloor.map(v => parseInt(v) || 2),
+      beds: parseInt(editPropertyForm.beds) || 2,
+      images: editPropertyForm.images
+    };
     
-    setProperties(updatedProperties);
-    setEditingPropertyId(null);
-    setSuccessMessage(`Property "${editPropertyForm.name}" updated successfully!`);
-    
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 4000);
+    try {
+      const res = await fetch(`/api/v1-properties/${editingPropertyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedPropertyData)
+      });
+      const data = await res.json();
+      
+      const updatedProperties = properties.map(p => p.id === editingPropertyId ? data.doc : p);
+      setProperties(updatedProperties);
+      setEditingPropertyId(null);
+      setSuccessMessage(`Property "${data.doc.name}" updated successfully!`);
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (e) { console.error(e); }
   };
 
   const handleEditRoomStart = () => {
@@ -398,7 +391,7 @@ export default function AdminProperties() {
     setIsEditingRoom(true);
   };
 
-  const handleSaveRoomEdit = () => {
+    const handleSaveRoomEdit = async () => {
     if (!selectedRoom) return;
     if (editRoomData.freeBeds < 0 || editRoomData.filledBeds < 0 || editRoomData.freeBeds > editRoomData.beds || editRoomData.filledBeds > editRoomData.beds) {
       return;
@@ -406,66 +399,8 @@ export default function AdminProperties() {
     
     const overrideKey = `${selectedPropertyId}-${selectedRoom.roomNum}`;
     
-    setRoomOverrides(prev => ({
-      ...prev,
-      [overrideKey]: {
-        status: editRoomData.status,
-        beds: editRoomData.beds,
-        freeBeds: editRoomData.freeBeds,
-        filledBeds: editRoomData.filledBeds,
-        bedStatuses: editRoomData.bedStatuses,
-        bedOccupants: editRoomData.bedOccupants,
-        bedImages: editRoomData.bedImages,
-        bedDescriptions: editRoomData.bedDescriptions,
-        roomPrice: editRoomData.roomPrice,
-        roomFacilitiesList: editRoomData.roomFacilitiesList,
-        roomFacilitiesImages: editRoomData.roomFacilitiesImages,
-        roomFacilitiesDescription: editRoomData.roomFacilitiesDescription,
-        roomFacilitiesDescriptions: editRoomData.roomFacilitiesDescriptions
-      }
-    }));
-    
-    // Update student profiles in localStorage
-    const saved = localStorage.getItem('hms_students');
-    if (saved) {
-      let allStudents = JSON.parse(saved);
-      const originalOccupants = selectedRoom.bedOccupants || [];
-      const newOccupants = editRoomData.bedOccupants || [];
-      const propName = selectedProperty?.name;
-      const roomNumStr = selectedRoom.roomNum;
-
-      // Unassign students who were removed
-      originalOccupants.forEach(oldId => {
-         if (oldId && !newOccupants.some(nId => nId && nId.toString() === oldId.toString())) {
-             allStudents = allStudents.map((s: any) => {
-                 if (s.id.toString() === oldId.toString()) {
-                     return { ...s, room: 'Unassigned', property: undefined };
-                 }
-                 return s;
-             });
-         }
-      });
-
-      // Assign students who were added
-      newOccupants.forEach((newId, idx) => {
-         if (newId) {
-             allStudents = allStudents.map((s: any) => {
-                 if (s.id.toString() === newId.toString()) {
-                     const bedLabel = String.fromCharCode(65 + idx);
-                     const roomStr = `Room ${roomNumStr} - Bed ${bedLabel}`;
-                     return { ...s, room: roomStr, property: propName, status: 'Active' };
-                 }
-                 return s;
-             });
-         }
-      });
-      
-      localStorage.setItem('hms_students', JSON.stringify(allStudents));
-      setAvailableStudents(allStudents);
-    }
-
-    setSelectedRoom({
-      ...selectedRoom,
+    const overrideData = {
+      overrideKey,
       status: editRoomData.status,
       beds: editRoomData.beds,
       freeBeds: editRoomData.freeBeds,
@@ -479,6 +414,76 @@ export default function AdminProperties() {
       roomFacilitiesImages: editRoomData.roomFacilitiesImages,
       roomFacilitiesDescription: editRoomData.roomFacilitiesDescription,
       roomFacilitiesDescriptions: editRoomData.roomFacilitiesDescriptions
+    };
+    
+    try {
+      // Find if override exists
+      const currentOverride = roomOverrides[overrideKey];
+      
+      if (currentOverride && currentOverride.id) {
+         await fetch(`/api/v1-room-overrides/${currentOverride.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(overrideData)
+         });
+      } else {
+         const res = await fetch(`/api/v1-room-overrides`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(overrideData)
+         });
+         const data = await res.json();
+         if (data.doc) overrideData.id = data.doc.id;
+      }
+      
+      setRoomOverrides(prev => ({
+        ...prev,
+        [overrideKey]: overrideData
+      }));
+    } catch(e) { console.error(e); }
+    
+    // We update students on backend inside a loop (simplified)
+    const originalOccupants = selectedRoom.bedOccupants || [];
+    const newOccupants = editRoomData.bedOccupants || [];
+    const propName = selectedProperty?.name;
+    const roomNumStr = selectedRoom.roomNum;
+
+    const promises = [];
+    
+    // Unassign students
+    originalOccupants.forEach(oldId => {
+       if (oldId && !newOccupants.some(nId => nId && nId.toString() === oldId.toString())) {
+           promises.push(fetch(`/api/v1-students/${oldId}`, {
+               method: 'PATCH',
+               headers: {'Content-Type': 'application/json'},
+               body: JSON.stringify({ room: 'Unassigned', property: '' })
+           }));
+       }
+    });
+
+    // Assign students
+    newOccupants.forEach((newId, idx) => {
+       if (newId) {
+           const bedLabel = String.fromCharCode(65 + idx);
+           const roomStr = `Room ${roomNumStr} - Bed ${bedLabel}`;
+           promises.push(fetch(`/api/v1-students/${newId}`, {
+               method: 'PATCH',
+               headers: {'Content-Type': 'application/json'},
+               body: JSON.stringify({ room: roomStr, property: propName, status: 'Active' })
+           }));
+       }
+    });
+    
+    await Promise.all(promises);
+    
+    // Refresh students
+    fetch('/api/v1-students?limit=1000').then(res => res.json()).then(data => {
+      if (data && data.docs) setAvailableStudents(data.docs);
+    });
+
+    setSelectedRoom({
+      ...selectedRoom,
+      ...overrideData
     });
     
     setIsEditingRoom(false);

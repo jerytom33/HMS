@@ -29,34 +29,31 @@ export default function AdminPayments() {
     date: new Date().toISOString().split('T')[0]
   });
 
-  useEffect(() => {
+    useEffect(() => {
     const saved = localStorage.getItem('hms_payments');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      // Filter out previous demo data if it was already saved to localStorage
-      const filtered = parsed.filter((p: any) => !['TRX-9821', 'TRX-9820', 'TRX-9819'].includes(p.id));
-      setPayments(filtered);
-      if (parsed.length !== filtered.length) {
-        localStorage.setItem('hms_payments', JSON.stringify(filtered));
+      try {
+        setPayments(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse payments");
       }
-    } else {
-      setPayments(INITIAL_PAYMENTS);
-      localStorage.setItem('hms_payments', JSON.stringify(INITIAL_PAYMENTS));
     }
     
-    const savedStudents = localStorage.getItem('hms_students');
-    if (savedStudents) {
-      setStudents(JSON.parse(savedStudents));
-    }
-    
-    const savedProps = localStorage.getItem('hms_properties');
-    if (savedProps) {
-        setProperties(JSON.parse(savedProps));
-    }
-    const savedOverrides = localStorage.getItem('hms_room_overrides');
-    if (savedOverrides) {
-        setRoomOverrides(JSON.parse(savedOverrides));
-    }
+    fetch('/api/v1-students?limit=1000').then(res => res.json()).then(data => {
+      if (data && data.docs) setAvailableStudents(data.docs);
+    });
+
+    fetch('/api/v1-properties?limit=1000').then(res => res.json()).then(data => {
+      if (data && data.docs) setProperties(data.docs);
+    });
+
+    fetch('/api/v1-room-overrides?limit=1000').then(res => res.json()).then(data => {
+      if (data && data.docs) {
+        const overrides: any = {};
+        data.docs.forEach((doc: any) => overrides[doc.overrideKey] = doc);
+        setRoomOverrides(overrides);
+      }
+    });
   }, []);
 
   useEffect(() => {

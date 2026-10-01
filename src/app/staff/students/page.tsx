@@ -20,35 +20,33 @@ const INITIAL_STUDENTS: any[] = [
 export default function AdminStudents() {
   const [students, setStudents] = useState(INITIAL_STUDENTS);
   const [searchQuery, setSearchQuery] = useState('');
-  const [studentToDelete, setStudentToDelete] = useState<number | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<any>(null);
   const [properties, setProperties] = useState<any[]>([]);
   const [propertyFilter, setPropertyFilter] = useState('all');
   const [floorFilter, setFloorFilter] = useState('all');
 
-  useEffect(() => {
-    const saved = localStorage.getItem('hms_students');
-    if (saved) {
-      setStudents(JSON.parse(saved));
-    } else {
-      localStorage.setItem('hms_students', JSON.stringify(INITIAL_STUDENTS));
-    }
+    useEffect(() => {
+    fetch('/api/v1-students?limit=1000').then(res => res.json()).then(data => {
+      if (data && data.docs) setStudents(data.docs);
+    }).catch(e => console.error(e));
 
-    const savedProps = localStorage.getItem('hms_properties');
-    if (savedProps) {
-      try { setProperties(JSON.parse(savedProps)); } catch(e) {}
-    }
+    fetch('/api/v1-properties?limit=1000').then(res => res.json()).then(data => {
+      if (data && data.docs) setProperties(data.docs);
+    }).catch(e => console.error(e));
   }, []);
 
-  const handleDeleteStudent = (id: number) => {
+  const handleDeleteStudent = (id: any) => {
     setStudentToDelete(id);
   };
 
-  const confirmDeleteStudent = () => {
+    const confirmDeleteStudent = async () => {
     if (studentToDelete !== null) {
-      const updatedStudents = students.filter(s => s.id !== studentToDelete);
-      setStudents(updatedStudents);
-      localStorage.setItem('hms_students', JSON.stringify(updatedStudents));
-      setStudentToDelete(null);
+      try {
+        await fetch(`/api/v1-students/${studentToDelete}`, { method: 'DELETE' });
+        const updatedStudents = students.filter(s => s.id !== studentToDelete);
+        setStudents(updatedStudents);
+        setStudentToDelete(null);
+      } catch (e) { console.error(e); }
     }
   };
 
