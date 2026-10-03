@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Camera, ArrowLeft, User, Phone, MapPin, GraduationCap, HeartPulse, Save, Home, Lock } from 'lucide-react';
-import { roomNumber, floorLabel, roomLabel } from '@/lib/propertyTypes';
+import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString } from '@/lib/propertyTypes';
 
 export default function AddStudentPage() {
   const router = useRouter();
@@ -77,11 +77,11 @@ export default function AddStudentPage() {
             const prop = loadedProps.find(p => p.name === student.property);
             if (prop) {
                 setSelectedPropId(prop.id);
-                const match = student.room.match(/Room (\d)(\d+) - Bed ([A-Z0-9]+)/i);
-                if (match) {
-                    setSelectedFloor(match[1]);
-                    setSelectedRoom(match[1] + match[2]);
-                    setSelectedBed(match[3]);
+                const parsed = parseRoomString(student.room);
+                if (parsed) {
+                    setSelectedFloor(parsed.floor);
+                    setSelectedRoom(parsed.roomNum);
+                    setSelectedBed(parsed.bed);
                 }
             }
           }
@@ -182,11 +182,11 @@ export default function AddStudentPage() {
     if (oldRoomInfo && oldRoomInfo.room !== roomStr) {
       const p = properties.find(pr => pr.name === oldRoomInfo.property);
       if (p) {
-        const match = oldRoomInfo.room.match(/Room (\d)(\d+) - Bed ([A-Z0-9]+)/i);
-        if (match) {
+        const parsed = parseRoomString(oldRoomInfo.room);
+        if (parsed) {
           const oldPropId = p.id.toString();
-          const oldRoomNum = match[1] + match[2];
-          const oldBedStr = match[3];
+          const oldRoomNum = parsed.roomNum;
+          const oldBedStr = parsed.bed;
           const overrideKey = `${oldPropId}-${oldRoomNum}`;
           
           if (currentOverrides[overrideKey]) {
@@ -395,6 +395,7 @@ export default function AddStudentPage() {
                     {selectedPropId && Array.from({ length: properties.find(p => String(p.id) === String(selectedPropId))?.floors || 0 }).map((_, i) => (
                       <option key={i+1} value={i+1}>{floorLabel(properties.find(p => String(p.id) === String(selectedPropId)), i+1)}</option>
                     ))}
+{selectedPropId && standaloneRoomNums(roomOverrides, selectedPropId).length > 0 && <option value="S">Outside floors</option>}
                   </select>
                 </div>
 
@@ -411,6 +412,9 @@ export default function AddStudentPage() {
                       const rNum = String(roomNumber(selectedFloor, i));
                       return <option key={rNum} value={rNum}>{roomLabel(properties.find(p => String(p.id) === String(selectedPropId)), rNum, roomOverrides[`${selectedPropId}-${rNum}`])}</option>
                     })}
+{selectedFloor === 'S' && standaloneRoomNums(roomOverrides, selectedPropId).map(rNum => (
+  <option key={rNum} value={rNum}>{roomLabel(properties.find(p => String(p.id) === String(selectedPropId)), rNum, roomOverrides[`${selectedPropId}-${rNum}`])}</option>
+))}
                   </select>
                 </div>
 
@@ -428,7 +432,7 @@ export default function AddStudentPage() {
                       const override = roomOverrides[`${selectedPropId}-${selectedRoom}`];
                       const beds = override?.beds || (prop?.bedsPerFloor ? prop.bedsPerFloor[parseInt(selectedFloor) - 1] : prop?.bedsPerRoom) || 0;
                       return Array.from({ length: beds }).map((_, i) => (
-                        <option key={i+1} value={String.fromCharCode(65 + i)}>Bed {String.fromCharCode(65 + i)}</option>
+                        <option key={i+1} value={String.fromCharCode(65 + i)}>{bedDisplayLabel(override, i)}</option>
                       ));
                     })()}
                   </select>

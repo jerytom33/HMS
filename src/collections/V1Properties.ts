@@ -13,17 +13,6 @@ export const V1Properties: CollectionConfig = {
   },
   fields: [
     { name: 'name', type: 'text', required: true },
-    {
-      name: 'propertyType',
-      type: 'select',
-      required: true,
-      defaultValue: 'rooms',
-      options: [
-        { label: 'Rooms', value: 'rooms' },
-        { label: 'Studio', value: 'studio' },
-        { label: 'Apartment', value: 'apartment' },
-      ],
-    },
     { name: 'location', type: 'text' },
     { name: 'rooms', type: 'number' },
     { name: 'floors', type: 'number' },

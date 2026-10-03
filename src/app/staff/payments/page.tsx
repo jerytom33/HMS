@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { DollarSign, FileText, Download, MoreHorizontal, Plus, X } from 'lucide-react';
-import { roomNumber, floorLabel, roomLabel } from '@/lib/propertyTypes';
+import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString } from '@/lib/propertyTypes';
 
 const INITIAL_PAYMENTS: any[] = [];
 
@@ -114,14 +114,7 @@ export default function AdminPayments() {
     if (propertyFilter !== 'all' && p.property !== propertyFilter) match = false;
     
     if (floorFilter !== 'all' && p.room) {
-      const roomMatch = p.room.match(/\b(\d{3})\b/);
-      if (roomMatch) {
-        const roomNum = parseInt(roomMatch[1]);
-        const floor = Math.floor(roomNum / 100);
-        if (floor.toString() !== floorFilter) match = false;
-      } else {
-        match = false;
-      }
+      if (parseRoomString(p.room)?.floor !== floorFilter) match = false;
     }
 
     return match;
@@ -200,6 +193,7 @@ export default function AdminPayments() {
                 {Array.from({ length: properties.find(p => p.name === propertyFilter)?.floors || 1 }).map((_, i) => (
                   <option key={i} value={String(i + 1)}>{floorLabel(properties.find(p => p.name === propertyFilter), i + 1)}</option>
                 ))}
+                <option value="S">Outside floors</option>
               </select>
             )}
             <select
@@ -346,11 +340,11 @@ export default function AdminPayments() {
                                 const prop = properties.find(p => p.name === s.property);
                                 if (prop) {
                                   setSelectedPropId(prop.id.toString());
-                                  const match = s.room.match(/Room (\d)(\d+) - Bed ([A-Z0-9]+)/i);
-                                  if (match) {
-                                    setSelectedFloor(match[1]);
-                                    setSelectedRoom(match[1] + match[2]);
-                                    setSelectedBed(match[3]);
+                                  const parsed = parseRoomString(s.room);
+                                  if (parsed) {
+                                    setSelectedFloor(parsed.floor);
+                                    setSelectedRoom(parsed.roomNum);
+                                    setSelectedBed(parsed.bed);
                                   }
                                 }
                               } else {
@@ -398,6 +392,7 @@ export default function AdminPayments() {
                     {selectedPropId && Array.from({ length: properties.find(p => p.id.toString() === selectedPropId)?.floors || 0 }).map((_, i) => (
                       <option key={i+1} value={i+1}>{floorLabel(properties.find(p => p.id.toString() === selectedPropId), i+1)}</option>
                     ))}
+{selectedPropId && standaloneRoomNums(roomOverrides, selectedPropId).length > 0 && <option value="S">Outside floors</option>}
                   </select>
                 </div>
 
@@ -414,6 +409,9 @@ export default function AdminPayments() {
                       const rNum = String(roomNumber(selectedFloor, i));
                       return <option key={rNum} value={rNum}>{roomLabel(properties.find(p => p.id.toString() === selectedPropId), rNum, roomOverrides[`${selectedPropId}-${rNum}`])}</option>
                     })}
+{selectedFloor === 'S' && standaloneRoomNums(roomOverrides, selectedPropId).map(rNum => (
+  <option key={rNum} value={rNum}>{roomLabel(properties.find(p => p.id.toString() === selectedPropId), rNum, roomOverrides[`${selectedPropId}-${rNum}`])}</option>
+))}
                   </select>
                 </div>
 
@@ -431,7 +429,7 @@ export default function AdminPayments() {
                       const override = roomOverrides[`${selectedPropId}-${selectedRoom}`];
                       const beds = override?.beds || (prop?.bedsPerFloor ? prop.bedsPerFloor[parseInt(selectedFloor) - 1] : prop?.bedsPerRoom) || 0;
                       return Array.from({ length: beds }).map((_, i) => (
-                        <option key={i+1} value={String.fromCharCode(65 + i)}>Bed {String.fromCharCode(65 + i)}</option>
+                        <option key={i+1} value={String.fromCharCode(65 + i)}>{bedDisplayLabel(override, i)}</option>
                       ));
                     })()}
                   </select>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Users, X, Search, Plus, Mail, Phone, Home, Calendar, MapPin, GraduationCap, HeartPulse, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { floorLabel, parseRoomString } from '@/lib/propertyTypes';
 
 const INITIAL_STUDENTS: any[] = [
   { 
@@ -67,14 +68,7 @@ export default function AdminStudents() {
 
     let matchesFloor = true;
     if (floorFilter !== 'all' && s.room) {
-      const match = s.room.match(/\b(\d{3})\b/);
-      if (match) {
-        const roomNum = parseInt(match[1]);
-        const floor = Math.floor(roomNum / 100);
-        matchesFloor = floor.toString() === floorFilter;
-      } else {
-        matchesFloor = false;
-      }
+      matchesFloor = parseRoomString(s.room)?.floor === floorFilter;
     }
 
     return matchesSearch && matchesProperty && matchesFloor;
@@ -122,8 +116,9 @@ export default function AdminStudents() {
               >
                 <option value="all">All Floors</option>
                 {Array.from({ length: properties.find(p => p.name === propertyFilter)?.floors || 1 }).map((_, i) => (
-                  <option key={i} value={String(i + 1)}>Floor {i + 1}</option>
+                  <option key={i} value={String(i + 1)}>{floorLabel(properties.find(p => p.name === propertyFilter), i + 1)}</option>
                 ))}
+                <option value="S">Outside floors</option>
               </select>
             )}
 
