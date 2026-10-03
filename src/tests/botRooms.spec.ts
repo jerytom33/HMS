@@ -1,0 +1,102 @@
+// Pure tests for the WhatsApp bot room logic; no database needed. Run alone with:
+//   npx jest src/tests/botRooms.spec.ts --config '{"preset":"ts-jest","testEnvironment":"node"}'
+import { describe, expect, it } from '@jest/globals'
+
+import { listUnits, parseSharing, parseUnitId, searchRooms, whatsappImageUrl, type BotOverride, type BotProperty } from '../lib/botRooms'
+
+// Shapes taken from production documents on 2026-10-03
+const B = '6ac0d4a2a2ce1743975c0c64' // Bukowiecka 11
+const R = '6ac0f8a3b4be1797062cb41d' // Rajmunda 3
+const W = '6ac0f90eb4be1797062cb41f' // Bernerowo
+
+const properties: BotProperty[] = [
+  { id: W, name: 'Bernerowo', location: 'Warsaw, Poland', rooms: 5, floors: 2, roomsPerFloor: [3, 2], isCustomBedsPerFloor: true, bedsPerFloor: [2, 1], floorNames: ['1st Floor', '2nd Floor'], beds: 2, images: [] },
+  { id: R, name: 'Rajmunda 3', location: 'Warsaw ,Poland', rooms: 8, floors: 4, roomsPerFloor: [2, 3, 3, 0], isCustomBedsPerFloor: false, bedsPerFloor: [2, 2, 2, 2], floorNames: ['Ground Floor', '', '', ''], beds: 2, images: [] },
+  {
+    id: B, name: 'Bukowiecka 11', location: 'Warsaw ,Poland', rooms: 8, floors: 4, roomsPerFloor: [2, 2, 2, 2], isCustomBedsPerFloor: false, bedsPerFloor: [2, 2, 2, 2],
+    floorNames: ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor'], beds: 2,
+    images: ['https://res.cloudinary.com/dqojq3cle/image/upload/f_auto,q_auto/v1791024532/hms/n0hayn9oqt8uyvgbjzzp.heic'],
+  },
+]
+
+const free = (n: number) => Array(n).fill(false)
+const overrides: BotOverride[] = [
+  // Orphan: its hostel was deleted
+  { overrideKey: '6ac0ca0717c2f98f2bd2e00d-101', unitType: 'apartment', subRooms: [{ name: 'Bedroom 1', beds: 2 }], status: 'available', beds: 2, freeBeds: 2, bedStatuses: free(2) },
+  { overrideKey: `${B}-S1`, unitType: 'studio', standalone: true, status: 'available', beds: 2, freeBeds: 2, bedStatuses: free(2), roomName: 'Studio 2', roomPrice: '' },
+  { overrideKey: `${B}-S2`, unitType: 'studio', standalone: true, status: 'available', beds: 2, freeBeds: 2, bedStatuses: free(2), roomName: 'Studio 3', roomPrice: '1250' },
+  { overrideKey: `${B}-101`, roomName: 'FRONT studio 1', unitType: 'apartment', subRooms: [{ name: 'Bedroom 1', beds: 2 }, { name: 'Bedroom 2', beds: 2 }], status: 'available', beds: 4, freeBeds: 4, bedStatuses: free(4), roomPrice: '1100' },
+  { overrideKey: `${B}-202`, unitType: 'room', status: 'available', beds: 4, freeBeds: 4, bedStatuses: free(4), roomPrice: '870' },
+  { overrideKey: `${B}-302`, unitType: 'room', status: 'available', beds: 4, freeBeds: 4, bedStatuses: free(4) },
+  { overrideKey: `${B}-402`, unitType: 'room', status: 'available', beds: 4, freeBeds: 4, bedStatuses: free(4) },
+  { overrideKey: `${B}-102`, unitType: 'apartment', subRooms: [{ name: 'Bedroom 1', beds: 2 }, { name: 'Bedroom 2', beds: 2 }], status: 'available', beds: 4, freeBeds: 4, bedStatuses: free(4) },
+  { overrideKey: `${W}-101`, unitType: 'room', status: 'available', beds: 1, freeBeds: 1, bedStatuses: free(1) },
+  { overrideKey: `${W}-102`, unitType: 'room', status: 'available', beds: 3, freeBeds: 3, bedStatuses: free(3) },
+  { overrideKey: `${W}-103`, unitType: 'room', status: 'available', beds: 1, freeBeds: 1, bedStatuses: free(1) },
+]
+
+const units = listUnits(properties, overrides)
+const count = (n: number) => searchRooms(units, n).total
+
+describe('bot room availability', () => {
+  it('matches the production inventory per sharing type', () => {
+    expect(count(1)).toBe(4) // Bernerowo 101, 103, 201, 202
+    expect(count(2)).toBe(17) // 8 Rajmunda + Bukowiecka 201/301/401 + 2 studios + 4 apartment bedrooms
+    expect(count(3)).toBe(1) // Bernerowo 102
+    expect(count(4)).toBe(3) // Bukowiecka 202/302/402
+  })
+
+  it('skips rooms of deleted hostels', () => {
+    expect(units.some((u) => u.overrideKey.startsWith('6ac0ca07'))).toBe(false)
+  })
+
+  it('asks for a hostel when more than 10 rooms match', () => {
+    const two = searchRooms(units, 2)
+    expect(two.status).toBe('choose_hostel')
+    expect(two.rooms).toHaveLength(0)
+    expect(two.hostels.map((h) => h.title)).toEqual(['Bukowiecka 11', 'Rajmunda 3'])
+    const buk = searchRooms(units, 2, B)
+    expect(buk.status).toBe('rooms')
+    expect(buk.count).toBe(9)
+    expect(buk.rooms.every((r) => r.title.length <= 24 && r.description.length <= 72)).toBe(true)
+  })
+
+  it('books apartments per bedroom', () => {
+    const bedrooms = units.filter((u) => u.overrideKey === `${B}-101`)
+    expect(bedrooms.map((u) => [u.unit, u.sharing, u.freeBedIndices])).toEqual([
+      [`${B}-101~0`, 2, [0, 1]],
+      [`${B}-101~1`, 2, [2, 3]],
+    ])
+    expect(parseUnitId(`${B}-101~1`)).toEqual({ overrideKey: `${B}-101`, subRoomIndex: 1 })
+  })
+
+  it('treats a bedroom with taken beds correctly', () => {
+    const taken = overrides.map((o) => (o.overrideKey === `${B}-102` ? { ...o, bedStatuses: [true, true, true, false] } : o))
+    const u = listUnits(properties, taken).filter((x) => x.overrideKey === `${B}-102`)
+    expect(u.map((x) => x.freeBedIndices)).toEqual([[], [3]])
+  })
+
+  it('offers other sharing types or reports full', () => {
+    const allTaken = units.map((u) => (u.sharing === 3 ? { ...u, freeBeds: 0, freeBedIndices: [] } : u))
+    const three = searchRooms(allTaken, 3)
+    expect(three.status).toBe('choose_other_sharing')
+    expect(three.otherSharing.map((o) => o.title)).toEqual(['Single share', 'Two share', 'Four share'])
+    const none = searchRooms(units.map((u) => ({ ...u, freeBeds: 0, freeBedIndices: [] })), 2)
+    expect(none.status).toBe('not_available')
+  })
+
+  it('uses the hostel photo as a JPEG when the room has none', () => {
+    const four = searchRooms(units, 4)
+    expect(four.gallery).toHaveLength(3)
+    expect(four.gallery[0].image).toBe('https://res.cloudinary.com/dqojq3cle/image/upload/f_jpg,q_auto,w_1280,c_limit/v1791024532/hms/n0hayn9oqt8uyvgbjzzp.heic')
+    expect(whatsappImageUrl('https://example.com/a.png')).toBe('https://example.com/a.png')
+  })
+
+  it('reads the sharing answer from the list', () => {
+    expect(parseSharing('Single share')).toBe(1)
+    expect(parseSharing('Two share')).toBe(2)
+    expect(parseSharing('Three share')).toBe(3)
+    expect(parseSharing('4')).toBe(4)
+    expect(parseSharing('hello')).toBeNull()
+  })
+})

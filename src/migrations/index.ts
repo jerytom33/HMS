@@ -2,6 +2,7 @@ import * as migration_20261003_091611_property_types_and_names from './20261003_
 import * as migration_20261003_094457_unit_types from './20261003_094457_unit_types';
 import * as migration_20261003_105154_browser_image_urls from './20261003_105154_browser_image_urls';
 import * as migration_20261003_132908_amounts_in_pln from './20261003_132908_amounts_in_pln';
+import * as migration_20261003_164146_bot_bookings_indexes from './20261003_164146_bot_bookings_indexes';
 
 export const migrations = [
   {
@@ -22,6 +23,11 @@ export const migrations = [
   {
     up: migration_20261003_132908_amounts_in_pln.up,
     down: migration_20261003_132908_amounts_in_pln.down,
-    name: '20261003_132908_amounts_in_pln'
+    name: '20261003_132908_amounts_in_pln',
+  },
+  {
+    up: migration_20261003_164146_bot_bookings_indexes.up,
+    down: migration_20261003_164146_bot_bookings_indexes.down,
+    name: '20261003_164146_bot_bookings_indexes'
   },
 ];

@@ -51,6 +51,8 @@ const AutoCarousel = ({ images, name }: { images: string[], name: string }) => {
 export default function AdminProperties() {
   const [properties, setProperties] = useState<any[]>(INITIAL_PROPERTIES);
   const [propertiesStatus, setPropertiesStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  // WhatsApp-bot bed holds (held or paid) keyed by `${overrideKey}:${bedIndex}`
+  const [botHolds, setBotHolds] = useState<Record<string, { ref: string, status: string, name?: string, whatsapp?: string, arrivalDate?: string }>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [availableStudents, setAvailableStudents] = useState<any[]>(MOCK_STUDENTS);
 
@@ -181,9 +183,23 @@ export default function AdminProperties() {
     }
   }, []);
 
+  const loadBotHolds = useCallback(() => {
+    fetch('/api/v1-bot-bookings?where[type][equals]=bed_hold&where[status][in]=held,paid&limit=1000&depth=0')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        const holds: Record<string, any> = {};
+        (data?.docs || []).forEach((b: any) => {
+          if (b.overrideKey && typeof b.bedIndex === 'number') holds[`${b.overrideKey}:${b.bedIndex}`] = b;
+        });
+        setBotHolds(holds);
+      })
+      .catch(e => console.error(e));
+  }, []);
+
   useEffect(() => {
     loadProperties();
-  }, [loadProperties]);
+    loadBotHolds();
+  }, [loadProperties, loadBotHolds]);
 
   const filteredProperties = useMemo(() => {
     return properties.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.location.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -1319,6 +1335,11 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         const bedLabel = String.fromCharCode(65 + idx);
                         const isFilled = selectedRoom.bedStatuses ? selectedRoom.bedStatuses[idx] : idx < (selectedRoom.filledBeds || 0);
                         let mockStudentName = isFilled ? (selectedRoom.bedOccupants?.[idx] || 'Unknown Student') : null;
+                        // A bed taken by a WhatsApp-bot hold has no student yet
+                        const botHold = isFilled && !selectedRoom.bedOccupants?.[idx]
+                          ? botHolds[`${selectedPropertyId}-${selectedRoom.roomNum}:${idx}`]
+                          : undefined;
+                        if (botHold) mockStudentName = `${botHold.status === 'paid' ? 'Paid' : 'On hold'} (bot) – ${botHold.ref}`;
                         let mockStudentId = 1;
                         if (mockStudentName && availableStudents.some(s => String(s.id) === String(mockStudentName))) {
                             const foundStudent = availableStudents.find(s => s.id.toString() === String(mockStudentName));
@@ -1381,14 +1402,18 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                             )}
 
                               {isFilled ? (
-                                mockStudentName === 'Unknown Student' ? (
+                                (mockStudentName === 'Unknown Student' || botHold) ? (
                                   <div className="flex items-center gap-3 mt-1 p-1.5 -mx-1.5 rounded-lg">
                                     <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 text-gray-500 dark:text-gray-400 dark:text-gray-400 flex items-center justify-center font-bold text-sm shadow-sm">
                                       {displayInitial}
                                     </div>
                                     <div className="flex flex-col">
                                       <span className="text-sm font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{String(mockStudentName)}</span>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mt-0.5">No profile available</span>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mt-0.5">
+                                        {botHold
+                                          ? [botHold.name || 'WhatsApp', botHold.whatsapp && `+${botHold.whatsapp}`, botHold.arrivalDate && `arrives ${botHold.arrivalDate}`].filter(Boolean).join(' · ')
+                                          : 'No profile available'}
+                                      </span>
                                     </div>
                                   </div>
                                 ) : (

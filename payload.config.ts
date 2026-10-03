@@ -41,6 +41,7 @@ import { IntegrationLogs } from './src/collections/IntegrationLogs'
 import { V1Properties } from './src/collections/V1Properties'
 import { V1Students } from './src/collections/V1Students'
 import { V1RoomOverrides } from './src/collections/V1RoomOverrides'
+import { V1BotBookings } from './src/collections/V1BotBookings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -87,6 +88,7 @@ export default buildConfig({
     V1Properties,
     V1Students,
     V1RoomOverrides,
+    V1BotBookings,
   ],
   editor: lexicalEditor({}),
   secret: process.env.PAYLOAD_SECRET || '',
