@@ -144,3 +144,39 @@ export const bedTypeCounts = (bedTypes: string[] | undefined, beds: number) => {
   for (let i = 0; i < beds; i++) if (bedTypeAt(bedTypes, i) === 'bunk') bunk++
   return { bunk, independent: beds - bunk }
 }
+
+export type BunkPosition = 'lower' | 'upper'
+
+export const BUNK_POSITIONS: { value: BunkPosition; label: string }[] = [
+  { value: 'lower', label: 'Lower' },
+  { value: 'upper', label: 'Upper' },
+]
+
+/** Bunk position of a bed, or null when the bed is not a bunk. */
+export const bunkPositionAt = (
+  bedTypes: string[] | undefined,
+  bunkPositions: (string | null)[] | undefined,
+  index: number,
+): BunkPosition | null => {
+  if (bedTypeAt(bedTypes, index) !== 'bunk') return null
+  const stored = bunkPositions?.[index]
+  if (stored === 'upper' || stored === 'lower') return stored
+  return defaultBunkPosition(bedTypes, index)
+}
+
+/** New bunk beds alternate lower, upper, lower... in bed order. */
+export const defaultBunkPosition = (bedTypes: string[] | undefined, index: number): BunkPosition => {
+  let bunksBefore = 0
+  for (let i = 0; i < index; i++) if (bedTypeAt(bedTypes, i) === 'bunk') bunksBefore++
+  return bunksBefore % 2 === 0 ? 'lower' : 'upper'
+}
+
+/** "Independent Bed", "Bunk Bed · Upper", ... */
+export const bedTypeDisplay = (
+  bedTypes: string[] | undefined,
+  bunkPositions: (string | null)[] | undefined,
+  index: number,
+) => {
+  const position = bunkPositionAt(bedTypes, bunkPositions, index)
+  return position ? `Bunk Bed · ${position === 'upper' ? 'Upper' : 'Lower'}` : 'Independent Bed'
+}

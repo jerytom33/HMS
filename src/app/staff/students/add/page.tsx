@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Camera, ArrowLeft, User, Phone, MapPin, GraduationCap, HeartPulse, Save, Home, Lock } from 'lucide-react';
-import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString, bedTypeAt } from '@/lib/propertyTypes';
+import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString, bedTypeDisplay } from '@/lib/propertyTypes';
 
 export default function AddStudentPage() {
   const router = useRouter();
@@ -432,7 +432,7 @@ export default function AddStudentPage() {
                       const override = roomOverrides[`${selectedPropId}-${selectedRoom}`];
                       const beds = override?.beds || (prop?.bedsPerFloor ? prop.bedsPerFloor[parseInt(selectedFloor) - 1] : prop?.bedsPerRoom) || 0;
                       return Array.from({ length: beds }).map((_, i) => (
-                        <option key={i+1} value={String.fromCharCode(65 + i)}>{bedDisplayLabel(override, i)} ({bedTypeAt(override?.bedTypes, i) === 'bunk' ? 'Bunk' : 'Independent'})</option>
+                        <option key={i+1} value={String.fromCharCode(65 + i)}>{bedDisplayLabel(override, i)} ({bedTypeDisplay(override?.bedTypes, override?.bunkPositions, i).replace(' Bed', '')})</option>
                       ));
                     })()}
                   </select>

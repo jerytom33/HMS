@@ -2,7 +2,7 @@
 import { Search, MapPin, AlertTriangle, Building2, LayoutGrid, CheckCircle2, AlertCircle, X, Plus, Edit, Trash2, Upload, Share2, ArrowLeft } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, bedTypeLabel } from '@/lib/propertyTypes';
+import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, BUNK_POSITIONS, bunkPositionAt, defaultBunkPosition, bedTypeDisplay } from '@/lib/propertyTypes';
 import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
 import { cloudinaryUpload } from '@/lib/cloudinaryUpload';
 
@@ -116,7 +116,7 @@ export default function AdminProperties() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<any>(1);
   const [selectedFloor, setSelectedFloor] = useState(1);
   const [isAddPropertyModalOpen, setIsAddPropertyModalOpen] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<{ roomNum: number | string, roomName?: string, unitType?: string, subRooms?: SubRoom[], amenities?: Amenity[], standalone?: boolean, bedTypes?: string[], status: string, beds: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] } | null>(null);  
+  const [selectedRoom, setSelectedRoom] = useState<{ roomNum: number | string, roomName?: string, unitType?: string, subRooms?: SubRoom[], amenities?: Amenity[], standalone?: boolean, bedTypes?: string[], bunkPositions?: (string | null)[], status: string, beds: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] } | null>(null);  
 
   const [editingPropertyId, setEditingPropertyId] = useState<any>(null);
 
@@ -125,11 +125,11 @@ export default function AdminProperties() {
   const [editPropertyForm, setEditPropertyForm] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[] });
   
   // Track specific room edits (status and bed counts)
-  const [roomOverrides, setRoomOverrides] = useState<Record<string, { id?: any, roomName?: string, unitType?: string, subRooms?: SubRoom[], amenities?: Amenity[], standalone?: boolean, propertyId?: string, bedTypes?: string[], status?: string, beds?: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] }>>({});
+  const [roomOverrides, setRoomOverrides] = useState<Record<string, { id?: any, roomName?: string, unitType?: string, subRooms?: SubRoom[], amenities?: Amenity[], standalone?: boolean, propertyId?: string, bedTypes?: string[], bunkPositions?: (string | null)[], status?: string, beds?: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] }>>({});
   const [isEditFloorModalOpen, setIsEditFloorModalOpen] = useState(false);
   const [editFloorData, setEditFloorData] = useState({ floor: 1, name: '', rooms: 0, beds: 0, image: '', floorFacilitiesList: [] as { description: string, images: string[] }[] });
   const [isEditingRoom, setIsEditingRoom] = useState(false);
-  const [editRoomData, setEditRoomData] = useState({ roomName: '', unitType: 'room', subRooms: [] as SubRoom[], amenities: [] as Amenity[], bedTypes: [] as string[], status: '', beds: 0, freeBeds: 0, filledBeds: 0, bedStatuses: [] as boolean[], bedOccupants: [] as (string | null)[], bedImages: [] as string[][], bedDescriptions: [] as string[], roomPrice: '', roomFacilitiesList: [] as { images: string[], description: string }[], roomFacilitiesImages: [] as string[], roomFacilitiesDescription: '', roomFacilitiesDescriptions: [] as string[] });
+  const [editRoomData, setEditRoomData] = useState({ roomName: '', unitType: 'room', subRooms: [] as SubRoom[], amenities: [] as Amenity[], bedTypes: [] as string[], bunkPositions: [] as (string | null)[], status: '', beds: 0, freeBeds: 0, filledBeds: 0, bedStatuses: [] as boolean[], bedOccupants: [] as (string | null)[], bedImages: [] as string[][], bedDescriptions: [] as string[], roomPrice: '', roomFacilitiesList: [] as { images: string[], description: string }[], roomFacilitiesImages: [] as string[], roomFacilitiesDescription: '', roomFacilitiesDescriptions: [] as string[] });
   const [activeSearchBed, setActiveSearchBed] = useState<number | null>(null);
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<{name: string, room: number, bed: string, phone: string, course: string} | null>(null);
@@ -206,6 +206,7 @@ export default function AdminProperties() {
         amenities: override?.amenities,
         standalone: false,
         bedTypes: override?.bedTypes,
+        bunkPositions: override?.bunkPositions,
         status: override?.status || defaultStatus,
         beds: override?.unitType === 'apartment' ? unitBedCount(override) : (override?.beds || defaultBeds),
         freeBeds: override?.freeBeds !== undefined ? override.freeBeds : (defaultStatus === 'occupied' ? 0 : defaultBeds),
@@ -238,6 +239,7 @@ export default function AdminProperties() {
           amenities: o.amenities,
           standalone: true,
           bedTypes: o.bedTypes,
+          bunkPositions: o.bunkPositions,
           status: o.status || 'available',
           beds,
           freeBeds: o.freeBeds ?? beds,
@@ -327,6 +329,7 @@ export default function AdminProperties() {
       bedStatuses,
       bedOccupants: fit(prev.bedOccupants, () => null),
       bedTypes: fit(prev.bedTypes, () => 'independent'),
+      bunkPositions: fit(prev.bunkPositions, () => null),
       bedImages: fit(prev.bedImages, () => [] as string[]),
       bedDescriptions: fit(prev.bedDescriptions, () => ''),
       filledBeds,
@@ -508,6 +511,7 @@ export default function AdminProperties() {
       subRooms: selectedRoom.subRooms?.length ? selectedRoom.subRooms : (selectedRoom.unitType === 'apartment' ? defaultSubRooms() : []),
       amenities: selectedRoom.amenities || defaultAmenities(selectedRoom.unitType),
       bedTypes: Array.from({ length: selectedRoom.beds }, (_, i) => bedTypeAt(selectedRoom.bedTypes, i)),
+      bunkPositions: Array.from({ length: selectedRoom.beds }, (_, i) => bunkPositionAt(selectedRoom.bedTypes, selectedRoom.bunkPositions, i)),
       status: selectedRoom.status, 
       beds: selectedRoom.beds,
       freeBeds: selectedRoom.freeBeds !== undefined ? selectedRoom.freeBeds : selectedRoom.beds,
@@ -553,6 +557,7 @@ export default function AdminProperties() {
       filledBeds: editRoomData.filledBeds,
       bedStatuses: editRoomData.bedStatuses,
       bedTypes: editRoomData.bedTypes,
+      bunkPositions: editRoomData.bunkPositions,
       bedOccupants: editRoomData.bedOccupants,
       bedImages: editRoomData.bedImages,
       bedDescriptions: editRoomData.bedDescriptions,
@@ -675,7 +680,7 @@ Price: ${selectedRoom.roomPrice ? `₹${selectedRoom.roomPrice}` : 'Not set'}
 Total Beds: ${selectedRoom.beds} (${selectedRoom.freeBeds} Free)${roomFacilitiesText}
 
 🛏️ *${bedDisplayLabel(selectedRoom, bedIndex)} Details*
-Type: ${bedTypeLabel(bedTypeAt(selectedRoom.bedTypes, bedIndex))}
+Type: ${bedTypeDisplay(selectedRoom.bedTypes, selectedRoom.bunkPositions, bedIndex)}
 Status: ${isFilled ? 'Occupied' : 'Free'}
 ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 0 ? `Images:\n${bedImages.join('\n')}\n` : ''}`;
 
@@ -936,11 +941,11 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
           </div>
           <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 flex-1 overflow-auto pb-24">
             <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 min-w-full">
-              {filteredRooms.map(({ roomNum, roomName, unitType, subRooms, amenities, standalone, bedTypes, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions }) => (
+              {filteredRooms.map(({ roomNum, roomName, unitType, subRooms, amenities, standalone, bedTypes, bunkPositions, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions }) => (
                 <div 
                   key={roomNum} 
                   onClick={() => {
-                    setSelectedRoom({ roomNum, roomName, unitType, subRooms, amenities, standalone, bedTypes, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions });
+                    setSelectedRoom({ roomNum, roomName, unitType, subRooms, amenities, standalone, bedTypes, bunkPositions, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions });
                     setIsEditingRoom(false);
                   }}
                   className="property-glass-card group cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-red-500/20 flex flex-col h-full"
@@ -1267,7 +1272,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                                 <div className={`w-2 h-2 rounded-full ${isFilled ? 'bg-red-500' : 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]'}`}></div>
                                 <span className="font-bold text-gray-800 dark:text-gray-200 dark:text-gray-200 text-sm">{bedDisplayLabel(selectedRoom, idx)}</span>
                                 <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                                  <BedTypeIcon type={bedTypeAt(selectedRoom.bedTypes, idx)} withLabel className="w-3.5 h-3.5" />
+                                  <BedTypeIcon type={bedTypeAt(selectedRoom.bedTypes, idx)} position={bunkPositionAt(selectedRoom.bedTypes, selectedRoom.bunkPositions, idx)} withLabel className="w-3.5 h-3.5" />
                                 </span>
                                 <button 
                                   onClick={(e) => handleShareBed(idx, e)}
@@ -1647,7 +1652,9 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                                         onClick={() => setEditRoomData(prev => {
                                           const bedTypes = Array.from({ length: prev.beds }, (_, i) => bedTypeAt(prev.bedTypes, i));
                                           bedTypes[idx] = t.value;
-                                          return { ...prev, bedTypes };
+                                          const bunkPositions = Array.from({ length: prev.beds }, (_, i) => prev.bunkPositions?.[i] ?? null);
+                                          bunkPositions[idx] = t.value === 'bunk' ? (bunkPositions[idx] || defaultBunkPosition(bedTypes, idx)) : null;
+                                          return { ...prev, bedTypes, bunkPositions };
                                         })}
                                         className={`flex items-center gap-1 px-2 py-1 text-xs font-medium transition-colors ${
                                           active ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
@@ -1659,6 +1666,32 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                                     );
                                   })}
                                 </div>
+                                {bedTypeAt(editRoomData.bedTypes, idx) === 'bunk' && (
+                                  <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-700 overflow-hidden" role="group" aria-label="Bunk position">
+                                    {BUNK_POSITIONS.map(p => {
+                                      const active = bunkPositionAt(editRoomData.bedTypes, editRoomData.bunkPositions, idx) === p.value;
+                                      return (
+                                        <button
+                                          key={p.value}
+                                          type="button"
+                                          aria-pressed={active}
+                                          title={`${p.label} bunk`}
+                                          onClick={() => setEditRoomData(prev => {
+                                            const bunkPositions = Array.from({ length: prev.beds }, (_, i) => prev.bunkPositions?.[i] ?? null);
+                                            bunkPositions[idx] = p.value;
+                                            return { ...prev, bunkPositions };
+                                          })}
+                                          className={`flex items-center gap-1 px-2 py-1 text-xs font-medium transition-colors ${
+                                            active ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                          }`}
+                                        >
+                                          <BedTypeIcon type="bunk" position={p.value} className="w-3.5 h-3.5" />
+                                          {p.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </div>
                               {isFilled && occupant ? (
                                 <div className="flex items-center gap-2">

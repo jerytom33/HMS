@@ -42,6 +42,8 @@ export const V1RoomOverrides: CollectionConfig = {
     { name: 'bedStatuses', type: 'json' },
     // Per bed: 'independent' | 'bunk' (missing = independent)
     { name: 'bedTypes', type: 'json' },
+    // Per bed: 'lower' | 'upper' for bunk beds, null otherwise
+    { name: 'bunkPositions', type: 'json' },
     { name: 'bedOccupants', type: 'json' },
     { name: 'bedImages', type: 'json' },
     { name: 'bedDescriptions', type: 'json' },
