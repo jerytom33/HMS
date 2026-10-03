@@ -1,6 +1,7 @@
 import { Sparkles, MapPin, Search, Filter, Bed, Wifi, Shield, ArrowRight, CheckCircle2, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { RentIncludedNote } from '@/components/ui/RentIncludedNote';
+import { formatPLN } from '@/lib/currency';
 
 export default function HostelDetail({ params }: { params: { slug: string } }) {
   const hostel = {
@@ -101,7 +102,7 @@ export default function HostelDetail({ params }: { params: { slug: string } }) {
             <div className="sticky top-24 rounded-2xl border border-border bg-card p-6 shadow-lg">
               <div className="flex justify-between items-end mb-6">
                 <div>
-                  <span className="text-3xl font-display font-semibold">€{hostel.price}</span>
+                  <span className="text-3xl font-display font-semibold">{formatPLN(hostel.price)}</span>
                   <span className="text-muted-foreground"> / month</span>
                 </div>
               </div>

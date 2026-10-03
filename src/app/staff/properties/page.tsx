@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, BUNK_POSITIONS, bunkPositionAt, defaultBunkPosition, bedTypeDisplay, PRESET_AMENITIES, PROPERTY_FACILITIES, RENT_INCLUDES_TEXT } from '@/lib/propertyTypes';
 import { RentIncludedNote } from '@/components/ui/RentIncludedNote';
+import { formatPLN, normalizeAmount } from '@/lib/currency';
 import { AmenityIcon } from '@/components/ui/AmenityIcon';
 import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
 import { cloudinaryUpload } from '@/lib/cloudinaryUpload';
@@ -527,8 +528,8 @@ export default function AdminProperties() {
       bedOccupants: initialBedOccupants,
       bedImages: initialBedImages,
       bedDescriptions: initialBedDescriptions,
-      roomPrice: selectedRoom.roomPrice || '',
-      deposit: selectedRoom.deposit || '',
+      roomPrice: normalizeAmount(selectedRoom.roomPrice),
+      deposit: normalizeAmount(selectedRoom.deposit),
       roomFacilitiesList: selectedRoom.roomFacilitiesList || 
         (selectedRoom.roomFacilitiesImages?.length ? selectedRoom.roomFacilitiesImages.map((img, i) => ({
           images: [img],
@@ -569,8 +570,8 @@ export default function AdminProperties() {
       bedOccupants: editRoomData.bedOccupants,
       bedImages: editRoomData.bedImages,
       bedDescriptions: editRoomData.bedDescriptions,
-      roomPrice: editRoomData.roomPrice,
-      deposit: editRoomData.deposit,
+      roomPrice: normalizeAmount(editRoomData.roomPrice),
+      deposit: normalizeAmount(editRoomData.deposit),
       roomFacilitiesList: editRoomData.roomFacilitiesList,
       roomFacilitiesImages: editRoomData.roomFacilitiesImages,
       roomFacilitiesDescription: editRoomData.roomFacilitiesDescription,
@@ -685,7 +686,7 @@ ${propertyImages.length > 0 ? `Images:\n${propertyImages.join('\n')}` : ''}${flo
 
 🚪 *${unitDisplayName(selectedRoom)} Details* (${unitLabel(selectedRoom.unitType)})
 Floor: ${selectedRoom.standalone ? 'Outside floors' : floorDisplayName(selectedFloor)}
-Rent: ${selectedRoom.roomPrice || 'Not set'}\nDeposit: ${selectedRoom.deposit || 'Not set'}\n✅ ${RENT_INCLUDES_TEXT}
+Rent: ${formatPLN(selectedRoom.roomPrice) || 'Not set'}\nDeposit: ${formatPLN(selectedRoom.deposit) || 'Not set'}\n✅ ${RENT_INCLUDES_TEXT}
 Total Beds: ${selectedRoom.beds} (${selectedRoom.freeBeds} Free)${roomFacilitiesText}
 
 🛏️ *${bedDisplayLabel(selectedRoom, bedIndex)} Details*
@@ -1214,11 +1215,11 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                   
                   <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
                     <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Rent</span>
-                    <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{selectedRoom.roomPrice || 'Not set'}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{formatPLN(selectedRoom.roomPrice) || 'Not set'}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
                     <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Deposit</span>
-                    <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{selectedRoom.deposit || 'Not set'}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{formatPLN(selectedRoom.deposit) || 'Not set'}</span>
                   </div>
                   <RentIncludedNote variant="full" className="my-2" />
                   
@@ -1571,23 +1572,31 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
 
                   <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
                     <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Rent</span>
-                    <input 
-                      type="text"
-                      placeholder="e.g. 1250zl"
-                      value={editRoomData.roomPrice || ''}
-                      onChange={(e) => setEditRoomData({...editRoomData, roomPrice: e.target.value})}
-                      className="w-32 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="e.g. 1250"
+                        value={editRoomData.roomPrice || ''}
+                        onChange={(e) => setEditRoomData({...editRoomData, roomPrice: e.target.value.replace(/[^0-9.,]/g, '')})}
+                        className="w-28 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">PLN</span>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
                     <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Deposit</span>
-                    <input
-                      type="text"
-                      placeholder="e.g. 1250zl"
-                      value={editRoomData.deposit || ''}
-                      onChange={(e) => setEditRoomData({...editRoomData, deposit: e.target.value})}
-                      className="w-32 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="e.g. 1250"
+                        value={editRoomData.deposit || ''}
+                        onChange={(e) => setEditRoomData({...editRoomData, deposit: e.target.value.replace(/[^0-9.,]/g, '')})}
+                        className="w-28 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">PLN</span>
+                    </div>
                   </div>
                   <RentIncludedNote variant="inline" className="py-1" />
 

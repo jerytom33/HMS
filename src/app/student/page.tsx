@@ -1,5 +1,6 @@
 import { AlertCircle, CreditCard, Calendar, FileText, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { formatPLN } from '@/lib/currency';
 
 export default function StudentDashboard() {
   return (
@@ -45,7 +46,7 @@ export default function StudentDashboard() {
             <CreditCard className="w-5 h-5" />
           </div>
           <h3 className="font-semibold mb-1">Next Payment</h3>
-          <p className="text-2xl font-display mb-1">€400.00</p>
+          <p className="text-2xl font-display mb-1">{formatPLN(400, { decimals: true })}</p>
           <p className="text-xs text-orange-600 font-medium">Due in 5 days (Oct 1)</p>
         </Link>
 

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { Navbar } from '@/components/marketing/Navbar';
+import { formatPLN } from '@/lib/currency';
 
 export default function Home() {
   const horizontalScrollRef = useRef<HTMLDivElement>(null);
@@ -113,7 +114,7 @@ export default function Home() {
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-5 text-white">
                       <div className="text-[10px] uppercase tracking-[0.3em] opacity-80">Premium</div>
                       <div className="mt-1 font-display text-xl sm:text-2xl">The Grand Residence {i}</div>
-                      <div className="mt-1 text-sm opacity-90">From €400/month</div>
+                      <div className="mt-1 text-sm opacity-90">From {formatPLN(400)}/month</div>
                     </div>
                   </div>
                 </Link>
@@ -220,7 +221,7 @@ export default function Home() {
                   <div className="inline-block bg-[var(--color-gold)] text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-4">Flagship</div>
                   <h3 className="font-display text-4xl sm:text-5xl mb-3">Penthouse Suite</h3>
                   <p className="text-white/80 max-w-md mb-6">32-40 sq.m • Super King Bed • Private Terrace</p>
-                  <span className="text-xl font-medium">From €750/mo</span>
+                  <span className="text-xl font-medium">From {formatPLN(750)}/mo</span>
                 </div>
                 <div className="absolute top-8 right-8 h-12 w-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <ArrowRight className="h-6 w-6 text-white -rotate-45" />
@@ -242,7 +243,7 @@ export default function Home() {
                   <div className="absolute bottom-0 left-0 p-6 sm:p-8 text-white">
                     <h3 className="font-display text-2xl mb-2">Premium En-suite</h3>
                     <p className="text-white/80 text-sm mb-4">14-16 sq.m • Double Bed</p>
-                    <span className="text-lg font-medium">From €400/mo</span>
+                    <span className="text-lg font-medium">From {formatPLN(400)}/mo</span>
                   </div>
                 </motion.div>
 
@@ -260,7 +261,7 @@ export default function Home() {
                   <div className="absolute bottom-0 left-0 p-6 sm:p-8 text-white">
                     <h3 className="font-display text-2xl mb-2">Luxury Studio</h3>
                     <p className="text-white/80 text-sm mb-4">20-24 sq.m • Private Kitchen</p>
-                    <span className="text-lg font-medium">From €550/mo</span>
+                    <span className="text-lg font-medium">From {formatPLN(550)}/mo</span>
                   </div>
                 </motion.div>
               </div>

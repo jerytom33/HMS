@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, FileText, Download, MoreHorizontal, Plus, X } from 'lucide-react';
 import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString, bedTypeDisplay } from '@/lib/propertyTypes';
+import { formatPLN } from '@/lib/currency';
 
 const INITIAL_PAYMENTS: any[] = [];
 
@@ -150,17 +151,17 @@ export default function AdminPayments() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Revenue {monthFilter ? `(${monthFilter})` : '(All Time)'}</p>
-          <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">€{totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatPLN(totalRevenue, { decimals: true })}</p>
           <span className="text-xs font-medium text-green-600 mt-2 block">Completed Payments</span>
         </div>
         <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Pending Payments</p>
-          <p className="text-3xl font-bold text-orange-600">€{pendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="text-3xl font-bold text-orange-600">{formatPLN(pendingAmount, { decimals: true })}</p>
           <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-2 block">{pendingCount} students with past due</span>
         </div>
         <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Failed Transactions</p>
-          <p className="text-3xl font-bold text-red-600">€{failedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="text-3xl font-bold text-red-600">{formatPLN(failedAmount, { decimals: true })}</p>
           <span className="text-xs font-medium text-red-600 mt-2 block">Action required</span>
         </div>
       </div>
@@ -262,7 +263,7 @@ export default function AdminPayments() {
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
-                      €{trx.amount.toFixed(2)}
+                      {formatPLN(trx.amount, { decimals: true })}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-gray-500 dark:text-gray-400">{trx.date}</td>
                     <td className="whitespace-nowrap px-6 py-4">
@@ -435,7 +436,7 @@ export default function AdminPayments() {
                   </select>
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (€)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (PLN)</label>
                   <input 
                     type="number" 
                     step="0.01"

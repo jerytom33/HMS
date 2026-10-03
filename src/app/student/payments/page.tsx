@@ -1,4 +1,5 @@
 import { CreditCard, Download } from 'lucide-react';
+import { formatPLN } from '@/lib/currency';
 
 export default function StudentPayments() {
   const payments = [
@@ -17,7 +18,7 @@ export default function StudentPayments() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
           <h3 className="text-sm font-medium text-muted-foreground mb-2">Outstanding Balance</h3>
-          <p className="text-3xl font-display text-orange-600 font-semibold">€400.00</p>
+          <p className="text-3xl font-display text-orange-600 font-semibold">{formatPLN(400, { decimals: true })}</p>
         </div>
       </div>
 
@@ -40,7 +41,7 @@ export default function StudentPayments() {
                 </div>
               </div>
               <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                <span className="font-semibold text-lg">€{payment.amount.toFixed(2)}</span>
+                <span className="font-semibold text-lg">{formatPLN(payment.amount, { decimals: true })}</span>
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider ${
                   payment.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                 }`}>

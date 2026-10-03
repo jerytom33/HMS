@@ -96,7 +96,7 @@ export const Properties: CollectionConfig = {
     {
       name: 'currency',
       type: 'text',
-      defaultValue: 'USD',
+      defaultValue: 'PLN',
     },
     {
       name: 'timezone',

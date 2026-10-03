@@ -84,7 +84,7 @@ describe('HMS Invariants Verification', () => {
     invoiceId = invoice.id
 
     const { PaymentService } = await import('../../src/services/PaymentService')
-    const paymentData = { person: personId, property: propertyId, invoice: invoiceId, amount: 200, currency: 'USD', payment_method: 'CASH', payment_type: 'RENT', status: 'VERIFIED', transaction_reference: 'TXN-123' }
+    const paymentData = { person: personId, property: propertyId, invoice: invoiceId, amount: 200, currency: 'PLN', payment_method: 'CASH', payment_type: 'RENT', status: 'VERIFIED', transaction_reference: 'TXN-123' }
     
     await PaymentService.processPayment(payload, paymentData)
     // Duplicate process
@@ -102,7 +102,7 @@ describe('HMS Invariants Verification', () => {
     expect(inv.status).toBe('PARTIALLY_PAID')
 
     // Pay 400 (600 total, 100 overpaid)
-    await PaymentService.processPayment(payload, { person: personId, property: propertyId, invoice: invoiceId, amount: 400, currency: 'USD', payment_method: 'CASH', payment_type: 'RENT', status: 'VERIFIED', transaction_reference: 'TXN-456' })
+    await PaymentService.processPayment(payload, { person: personId, property: propertyId, invoice: invoiceId, amount: 400, currency: 'PLN', payment_method: 'CASH', payment_type: 'RENT', status: 'VERIFIED', transaction_reference: 'TXN-456' })
     
     inv = await payload.findByID({ collection: 'invoices', id: invoiceId })
     expect(inv.amount_paid).toBe(600)

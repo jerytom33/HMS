@@ -3,6 +3,7 @@
 import { Users, Building2, Bed, CreditCard, ArrowUpRight, ArrowDownRight, MoreHorizontal, Wrench, Calendar, FileText, AlertCircle, Mail, DollarSign, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
+import { formatPLN } from '@/lib/currency';
 
 export default function AdminDashboard() {
   const [properties, setProperties] = useState<any[]>([]);
@@ -117,7 +118,7 @@ export default function AdminDashboard() {
     { name: 'Total Occupancy', value: `${occupancyPercent}%`, change: '', trend: 'up' },
     { name: 'Active Bookings', value: filledBeds.toString(), change: '', trend: 'up' },
     { name: 'Vacant Beds', value: (totalBeds - filledBeds).toString(), change: '', trend: 'up' },
-    { name: 'Total Rent Revenue', value: `€${totalRentRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, change: '', trend: 'up' },
+    { name: 'Total Rent Revenue', value: formatPLN(totalRentRevenue, { decimals: true }), change: '', trend: 'up' },
   ];
 
   const recentBookings = filteredStudents.slice(-4).reverse().map((s) => ({
@@ -144,7 +145,7 @@ export default function AdminDashboard() {
       }
       return {
         student: p.student,
-        amount: `€${Number(p.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}`,
+        amount: formatPLN(Number(p.amount), { decimals: true }),
         days: daysText
       };
     });

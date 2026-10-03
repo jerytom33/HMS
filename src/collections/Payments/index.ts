@@ -55,7 +55,7 @@ export const Payments: CollectionConfig = {
     {
       name: 'currency',
       type: 'text',
-      defaultValue: 'USD',
+      defaultValue: 'PLN',
       required: true,
     },
     {

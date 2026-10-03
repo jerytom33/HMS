@@ -4,6 +4,7 @@ import { ChevronRight, ChevronLeft, Check, Sparkles, Building, Calendar, Bed, Us
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { RentIncludedNote } from '@/components/ui/RentIncludedNote';
+import { formatPLN } from '@/lib/currency';
 
 export default function BookingWizard() {
   const router = useRouter();
@@ -98,7 +99,7 @@ export default function BookingWizard() {
                     </div>
                     <div>
                       <h3 className="font-medium text-lg">{i === 1 ? 'The Grand Residence' : 'Riverside Student Halls'}</h3>
-                      <p className="text-sm text-muted-foreground">From €400/month</p>
+                      <p className="text-sm text-muted-foreground">From {formatPLN(400)}/month</p>
                     </div>
                   </div>
                 ))}
@@ -145,16 +146,16 @@ export default function BookingWizard() {
               <div className="bg-card border border-border rounded-xl p-6 text-left max-w-sm mx-auto">
                 <div className="flex justify-between mb-2">
                   <span className="text-sm text-muted-foreground">Rent (1st Month)</span>
-                  <span className="font-medium">€400.00</span>
+                  <span className="font-medium">{formatPLN(400, { decimals: true })}</span>
                 </div>
                 <RentIncludedNote variant="inline" className="mb-3" />
                 <div className="flex justify-between mb-4 pb-4 border-b border-border">
                   <span className="text-sm text-muted-foreground">Security Deposit</span>
-                  <span className="font-medium">€400.00</span>
+                  <span className="font-medium">{formatPLN(400, { decimals: true })}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-semibold">Total Due</span>
-                  <span className="font-semibold text-lg">€800.00</span>
+                  <span className="font-semibold text-lg">{formatPLN(800, { decimals: true })}</span>
                 </div>
               </div>
             </div>

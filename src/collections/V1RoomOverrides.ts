@@ -47,9 +47,9 @@ export const V1RoomOverrides: CollectionConfig = {
     { name: 'bedOccupants', type: 'json' },
     { name: 'bedImages', type: 'json' },
     { name: 'bedDescriptions', type: 'json' },
-    // Monthly rent, free text with currency (e.g. '1250zl'); shown as 'Rent'
+    // Monthly rent in PLN as a plain number string (e.g. '1250'); shown as 'Rent'
     { name: 'roomPrice', type: 'text' },
-    // Security deposit, free text with currency
+    // Security deposit in PLN as a plain number string (e.g. '2500')
     { name: 'deposit', type: 'text' },
     { name: 'roomFacilitiesList', type: 'json' },
     { name: 'roomFacilitiesImages', type: 'json' },

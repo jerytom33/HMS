@@ -1,6 +1,7 @@
 import React from 'react';
 import { Download, CreditCard, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { formatPLN } from '@/lib/currency';
 
 export interface PaymentRowProps {
   id: string;
@@ -42,7 +43,7 @@ export const PaymentRow = ({ id, description, amount, date, status }: PaymentRow
       </div>
       
       <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{date}</div>
-      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>${amount.toFixed(2)}</div>
+      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatPLN(amount, { decimals: true })}</div>
       <div>{getStatusBadge()}</div>
       
       <div>

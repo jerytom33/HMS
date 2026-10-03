@@ -1,13 +1,13 @@
 import React from 'react';
 import styles from './PaymentSummary.module.css';
+import { formatPLN } from '@/lib/currency';
 
 export interface PaymentSummaryProps {
   rentAmount: number;
   depositAmount: number;
-  currency?: string;
 }
 
-export const PaymentSummary = ({ rentAmount, depositAmount, currency = '$' }: PaymentSummaryProps) => {
+export const PaymentSummary = ({ rentAmount, depositAmount }: PaymentSummaryProps) => {
   const total = rentAmount + depositAmount;
 
   return (
@@ -16,16 +16,16 @@ export const PaymentSummary = ({ rentAmount, depositAmount, currency = '$' }: Pa
       
       <div className={styles.row}>
         <span>First Month Rent</span>
-        <span>{currency}{rentAmount}</span>
+        <span>{formatPLN(rentAmount)}</span>
       </div>
       <div className={styles.row}>
         <span>Security Deposit</span>
-        <span>{currency}{depositAmount}</span>
+        <span>{formatPLN(depositAmount)}</span>
       </div>
       
       <div className={`${styles.row} ${styles.total}`}>
         <span>Total Due (Upon Move-in)</span>
-        <span>{currency}{total}</span>
+        <span>{formatPLN(total)}</span>
       </div>
 
       <div className={styles.notice}>

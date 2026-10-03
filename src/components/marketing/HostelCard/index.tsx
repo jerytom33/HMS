@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { MapPin, Wifi, Shield, Dumbbell } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import styles from './HostelCard.module.css';
+import { formatPLN } from '@/lib/currency';
 
 export interface HostelCardProps {
   id: string;
@@ -12,7 +13,6 @@ export interface HostelCardProps {
   location: string;
   imageUrl: string;
   startingPrice: number;
-  currency?: string;
   availableBeds?: number;
 }
 
@@ -22,7 +22,6 @@ export const HostelCard = ({
   location,
   imageUrl,
   startingPrice,
-  currency = '$',
   availableBeds = 0,
 }: HostelCardProps) => {
   const isAvailable = availableBeds > 0;
@@ -60,7 +59,7 @@ export const HostelCard = ({
             <div>
               <div className={styles.priceLabel}>Starting from</div>
               <div className={styles.priceValue}>
-                {currency}{startingPrice} <span className={styles.priceUnit}>/ month</span>
+                {formatPLN(startingPrice)} <span className={styles.priceUnit}>/ month</span>
               </div>
             </div>
             {/* Arrow icon can be added here if desired */}

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Bed } from 'lucide-react';
 import styles from './BedSelector.module.css';
+import { formatPLN } from '@/lib/currency';
 
 export interface BedData {
   id: string;
@@ -68,7 +69,7 @@ export const BedSelector = ({ rooms, selectedBedId, onSelectBed }: BedSelectorPr
                     <div className={styles.bedAvailability}>Available from: {bed.availableDates}</div>
                   </div>
                   <div className={styles.bedPrice}>
-                    <span className={styles.priceValue}>${bed.price}</span>
+                    <span className={styles.priceValue}>{formatPLN(bed.price)}</span>
                     <span className={styles.priceUnit}>/ month</span>
                   </div>
                 </div>
