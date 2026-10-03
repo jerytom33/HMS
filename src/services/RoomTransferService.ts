@@ -77,17 +77,15 @@ export class RoomTransferService {
     })
 
     // Create Audit/Transfer Event explicitly (simulated via SystemAuditLogs here, or specific RoomTransfers collection if created)
-    await payload.create({
-      collection: 'system_audit_logs',
-      data: {
-        entity_collection: 'tenancies',
-        entity_id: String(tenancyId),
-        action: 'ROOM_TRANSFER',
-        actor: 'SYSTEM', // Replace with req.user in a real endpoint context
-        before_state: { bed: currentBedId },
-        after_state: { bed: targetBedId, reason },
-        description: `Transferred from bed ${currentBedId} to ${targetBedId}`,
-      }
+    const { AuditService } = await import('./AuditService')
+    await AuditService.log(payload, {
+      entity_collection: 'tenancies',
+      entity_id: String(tenancyId),
+      action: 'ROOM_TRANSFER',
+      actor: 'SYSTEM', // Replace with req.user in a real endpoint context
+      before_state: { bed: currentBedId },
+      after_state: { bed: targetBedId, reason },
+      description: `Transferred from bed ${currentBedId} to ${targetBedId}`,
     })
 
     return await payload.findByID({

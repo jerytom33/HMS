@@ -3,10 +3,15 @@ import type { CollectionAfterChangeHook } from 'payload'
 export const allocatePaymentToInvoice: CollectionAfterChangeHook = async ({
   doc,
   previousDoc,
-  req: { payload },
+  req,
   operation,
 }) => {
-  if (operation === 'update' && doc.status === 'VERIFIED' && previousDoc.status !== 'VERIFIED') {
+  const { payload } = req
+  const becameVerified =
+    doc.status === 'VERIFIED' &&
+    (operation === 'create' || (operation === 'update' && previousDoc?.status !== 'VERIFIED'))
+
+  if (becameVerified) {
     if (doc.invoice) {
       try {
         const invoiceId = typeof doc.invoice === 'object' ? doc.invoice.id : doc.invoice
@@ -15,6 +20,7 @@ export const allocatePaymentToInvoice: CollectionAfterChangeHook = async ({
         const invoice = await payload.findByID({
           collection: 'invoices',
           id: invoiceId,
+          req,
         })
 
         if (!invoice) return doc
@@ -29,6 +35,7 @@ export const allocatePaymentToInvoice: CollectionAfterChangeHook = async ({
             ]
           },
           pagination: false,
+          req,
         })
 
         const totalPaid = payments.docs.reduce((sum, payment) => sum + (payment.amount || 0), 0)
@@ -54,6 +61,7 @@ export const allocatePaymentToInvoice: CollectionAfterChangeHook = async ({
             amount_outstanding: amountOutstanding,
             amount_overpaid: amountOverpaid,
           },
+          req,
         })
       } catch (err) {
         payload.logger.error(`Failed to allocate payment ${doc.id} to invoice: ${err}`)

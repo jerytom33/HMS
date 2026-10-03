@@ -2,6 +2,17 @@ import { Payload } from 'payload'
 
 export class AuditService {
   /**
+   * Map a domain event name (e.g. BOOKING_CREATED, ROOM_TRANSFER) onto the
+   * collection's fixed action options.
+   */
+  private static toAction(event: string): 'CREATE' | 'UPDATE' | 'DELETE' | 'OTHER' {
+    if (/CREATED?$/.test(event)) return 'CREATE'
+    if (/DELETED?$/.test(event)) return 'DELETE'
+    if (/^BOOKING_|TRANSFER|RENEWAL/.test(event)) return 'UPDATE'
+    return 'OTHER'
+  }
+
+  /**
    * Automatically generate an append-only audit event.
    */
   static async log(
@@ -18,16 +29,20 @@ export class AuditService {
   ) {
     try {
       await payload.create({
-        collection: 'system_audit_logs',
+        collection: 'system-audit-logs',
         data: {
-          entity_collection: args.entity_collection,
-          entity_id: args.entity_id,
-          action: args.action,
-          actor: args.actor || 'SYSTEM',
-          before_state: args.before_state,
-          after_state: args.after_state,
-          description: args.description,
-        }
+          timestamp: new Date().toISOString(),
+          action: AuditService.toAction(args.action),
+          collection_slug: args.entity_collection,
+          document_id: args.entity_id,
+          changes: {
+            event: args.action,
+            actor: args.actor || 'SYSTEM',
+            before: args.before_state,
+            after: args.after_state,
+            description: args.description,
+          },
+        },
       })
     } catch (err) {
       payload.logger.error(`Failed to generate automatic audit log: ${err}`)

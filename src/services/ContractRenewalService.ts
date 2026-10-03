@@ -26,6 +26,8 @@ export class ContractRenewalService {
 
     // Create the new contract
     const newContractData = {
+      contract_number: `${oldContract.contract_number}-v${newVersion}`,
+      type: oldContract.type,
       person: typeof oldContract.person === 'object' ? oldContract.person.id : oldContract.person,
       property: typeof oldContract.property === 'object' ? oldContract.property.id : oldContract.property,
       tenancy: typeof oldContract.tenancy === 'object' ? oldContract.tenancy.id : oldContract.tenancy,
@@ -41,15 +43,13 @@ export class ContractRenewalService {
     })
 
     // Create an audit event
-    await payload.create({
-      collection: 'system_audit_logs',
-      data: {
-        entity_collection: 'contracts',
-        entity_id: String(newContract.id),
-        action: 'CONTRACT_RENEWAL',
-        actor: 'SYSTEM',
-        description: `Renewed contract ${oldContract.id} to new contract ${newContract.id} (v${newVersion})`,
-      }
+    const { AuditService } = await import('./AuditService')
+    await AuditService.log(payload, {
+      entity_collection: 'contracts',
+      entity_id: String(newContract.id),
+      action: 'CONTRACT_RENEWAL',
+      actor: 'SYSTEM',
+      description: `Renewed contract ${oldContract.id} to new contract ${newContract.id} (v${newVersion})`,
     })
 
     return newContract

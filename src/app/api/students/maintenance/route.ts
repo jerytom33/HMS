@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const payload = await getPayload({ config: configPromise });
 
     const requests = await payload.find({
-      collection: 'maintenance_requests',
+      collection: 'maintenance-requests',
       limit: 10,
       sort: '-createdAt',
     });
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const result = await payload.create({
-      collection: 'maintenance_requests',
+      collection: 'maintenance-requests',
       data: {
         title: body.title,
         description: body.description,

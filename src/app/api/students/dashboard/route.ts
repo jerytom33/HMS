@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     });
 
     const maintenance = await payload.find({
-      collection: 'maintenance_requests',
+      collection: 'maintenance-requests',
       where: { status: { not_equals: 'CLOSED' } },
       limit: 1, // Just to get a count ideally
     });
