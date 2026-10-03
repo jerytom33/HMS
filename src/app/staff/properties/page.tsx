@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, bedTypeLabel } from '@/lib/propertyTypes';
 import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
+import { cloudinaryUpload } from '@/lib/cloudinaryUpload';
 
 const INITIAL_PROPERTIES: any[] = [];
 
@@ -1591,16 +1592,9 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                                     if (file) {
                                         const formData = new FormData();
                                         formData.append('file', file);
-                                        const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
-                                        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-                                        formData.append('upload_preset', uploadPreset);
                                         
                                         try {
-                                            const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-                                                method: 'POST',
-                                                body: formData
-                                            });
-                                            const data = await res.json();
+                                            const data = await cloudinaryUpload(formData);
                                             if (data.secure_url) {
                                                 const newList = [...editRoomData.roomFacilitiesList];
                                                 newList[fIdx].images.push(data.secure_url);
@@ -1854,25 +1848,14 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                                         onChange={async (e) => {
                                           const file = e.target.files?.[0];
                                           if (file) {
-                                            const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-                                            const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
                                             
-                                            if (!cloudName || !uploadPreset) {
-                                              alert("Cloudinary credentials are not configured. Please restart the dev server.");
-                                              return;
-                                            }
 
                                             setIsUploading(true);
                                             const formData = new FormData();
                                             formData.append('file', file);
-                                            formData.append('upload_preset', uploadPreset);
 
                                             try {
-                                              const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-                                                method: 'POST',
-                                                body: formData,
-                                              });
-                                              const data = await res.json();
+                                              const data = await cloudinaryUpload(formData);
                                               if (data.secure_url) {
                                                 setEditRoomData(prev => {
                                                   const newImages = [...prev.bedImages];
@@ -2041,22 +2024,11 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-                            const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-                            if (!cloudName || !uploadPreset) {
-                              alert("Cloudinary credentials missing");
-                              return;
-                            }
                             setIsUploading(true);
                             const formData = new FormData();
                             formData.append('file', file);
-                            formData.append('upload_preset', uploadPreset);
                             try {
-                              const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-                                method: 'POST',
-                                body: formData,
-                              });
-                              const data = await res.json();
+                              const data = await cloudinaryUpload(formData);
                               if (data.secure_url) {
                                 setNewProperty({...newProperty, images: [...newProperty.images, data.secure_url]});
                               }
@@ -2263,22 +2235,11 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-                            const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-                            if (!cloudName || !uploadPreset) {
-                              alert("Cloudinary credentials missing");
-                              return;
-                            }
                             setIsUploading(true);
                             const formData = new FormData();
                             formData.append('file', file);
-                            formData.append('upload_preset', uploadPreset);
                             try {
-                              const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-                                method: 'POST',
-                                body: formData,
-                              });
-                              const data = await res.json();
+                              const data = await cloudinaryUpload(formData);
                               if (data.secure_url) {
                                 setEditPropertyForm({...editPropertyForm, images: [...editPropertyForm.images, data.secure_url]});
                               }
@@ -2553,12 +2514,8 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                           if (file) {
                             const formData = new FormData();
                             formData.append('file', file);
-                            const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
-                            const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-                            formData.append('upload_preset', uploadPreset);
                             try {
-                              const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formData });
-                              const data = await res.json();
+                              const data = await cloudinaryUpload(formData);
                               if (data.secure_url) setEditFloorData({ ...editFloorData, image: data.secure_url });
                             } catch (err) { console.error(err); }
                           }
@@ -2638,13 +2595,9 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                                 if (file) {
                                     const formData = new FormData();
                                     formData.append('file', file);
-                                    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
-                                    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-                                    formData.append('upload_preset', uploadPreset);
                                     
                                     try {
-                                        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formData });
-                                        const data = await res.json();
+                                        const data = await cloudinaryUpload(formData);
                                         if (data.secure_url) {
                                             setEditFloorData(prev => {
                                                 const newList = [...prev.floorFacilitiesList];
