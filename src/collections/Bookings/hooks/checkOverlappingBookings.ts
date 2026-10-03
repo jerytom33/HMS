@@ -1,8 +1,6 @@
 import type { CollectionBeforeChangeHook } from 'payload'
 import { APIError } from 'payload'
 
-import { sql } from 'drizzle-orm'
-
 export const checkOverlappingBookings: CollectionBeforeChangeHook = async ({
   data,
   req,
@@ -28,22 +26,19 @@ export const checkOverlappingBookings: CollectionBeforeChangeHook = async ({
     const { BookingService } = await import('../../../services/BookingService')
     await BookingService.validateBedStatus(payload, lockId)
 
-    // Acquire a transaction-level advisory lock on the bed
-    // This serializes concurrent booking requests for the same bed
-    if (req.payload.db.drizzle) {
-      const lockId = typeof bed === 'object' ? bed.id : bed
-      const str = String(lockId)
-      let hash = 0
-      for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i)
-        hash = ((hash << 5) - hash) + char
-        hash = hash & hash // Convert to 32bit integer
-      }
-      try {
-        await req.payload.db.drizzle.execute(sql`SELECT pg_advisory_xact_lock(${hash})`)
-      } catch (err) {
-        payload.logger.warn(`Failed to acquire advisory lock for bed ${lockId}`)
-      }
+    // Lock the bed by writing to its document inside the current transaction.
+    // MongoDB raises a write conflict for any concurrent transaction that touches
+    // the same bed, which serializes concurrent booking requests for that bed.
+    const transactionID = await req.transactionID
+    const session = transactionID ? payload.db.sessions?.[transactionID] : undefined
+    if (session?.inTransaction()) {
+      await payload.db.collections.beds.updateOne(
+        { _id: lockId },
+        { $set: { updatedAt: new Date() } },
+        { session },
+      )
+    } else {
+      payload.logger.warn(`No transaction available to lock bed ${lockId}`)
     }
 
 

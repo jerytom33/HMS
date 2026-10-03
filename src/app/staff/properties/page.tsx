@@ -86,7 +86,7 @@ export default function AdminProperties() {
              const newStatuses = [...parsed.editData.bedStatuses];
              const newOccupants = [...parsed.editData.bedOccupants];
              newStatuses[bedIdx] = true;
-             newOccupants[bedIdx] = parseInt(newlyCreatedStudentId);
+             newOccupants[bedIdx] = newlyCreatedStudentId;
 
              const newFilled = newStatuses.filter(v => v).length;
              const newFree = parsed.room.beds - newFilled;

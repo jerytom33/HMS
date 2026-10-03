@@ -2,7 +2,8 @@ import { beforeAll, afterAll } from '@jest/globals'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
-process.env.DATABASE_URI = 'postgres://postgres:postgres@127.0.0.1:5432/hms_test'
+// Point TEST_DATABASE_URI at a disposable MongoDB replica set; setup wipes every collection.
+process.env.DATABASE_URI = process.env.TEST_DATABASE_URI || 'mongodb://127.0.0.1:27017/hms_test'
 process.env.PAYLOAD_SECRET = 'hms-test-secret-123'
 
 beforeAll(async () => {

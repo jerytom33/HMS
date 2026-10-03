@@ -35,14 +35,14 @@
 # 04.TECHNOLOGY_STACK
 - **languages**: TypeScript (Primary), CSS
 - **frameworks**: Next.js (16.3.2) [V], React (19.2.8) [V]
-- **libraries**: Payload CMS (3.88.0) [V], Drizzle ORM (0.45.2) [V], Tailwind CSS (4.3.3) [V], Framer Motion (13.1.1) [V], GraphQL (16.14.2) [V]
+- **libraries**: Payload CMS (3.88.0) [V], Mongoose (via @payloadcms/db-mongodb 3.88.0) [V], Tailwind CSS (4.3.3) [V], Framer Motion (13.1.1) [V], GraphQL (16.14.2) [V]
 - **runtimes**: Node.js
-- **infrastructure**: PostgreSQL [V] (via `@payloadcms/db-postgres`)
+- **infrastructure**: MongoDB [V] (via `@payloadcms/db-mongodb`)
 - **purpose**: Provide a robust, typed backend with rapid CMS setup and modern React capabilities.
 
 # 05.DEPENDENCY_ARCHITECTURE
-- **dependency_graph**: Next.js -> Payload -> Drizzle ORM -> PostgreSQL
-- **critical_dependencies**: Next.js, Payload CMS, Drizzle ORM
+- **dependency_graph**: Next.js -> Payload -> Mongoose -> MongoDB
+- **critical_dependencies**: Next.js, Payload CMS, MongoDB
 - **internal_dependencies**: `src/app` heavily depends on `src/collections` and `src/services`.
 - **conflicts**: None detected.
 - **circular_dependencies**: None detected.
@@ -93,13 +93,13 @@
 - **errors**: JSON payload with `error` key and status codes [V].
 
 # 10.DATA_BLUEPRINT
-- **database**: PostgreSQL (via `@payloadcms/db-postgres`).
+- **database**: MongoDB, replica set required for transactions (via `@payloadcms/db-mongodb`).
 - **schemas**: 34 Core schemas defined in `src/collections/`.
 - **models**: Hierarchy: Properties -> Buildings -> Floors -> Rooms -> Beds.
   - Operational models: Bookings, Tenancies, Payments, Invoices, MaintenanceRequests.
 - **relationships**: Highly relational (e.g. Booking links Person, Property, Building, Floor, Room, Bed).
-- **migrations**: Handled dynamically by Payload/Drizzle integration.
-- **persistence_flows**: UI -> Next.js API/Action -> Payload Local API -> PostgreSQL.
+- **migrations**: Not needed for schema in MongoDB; Payload migrations only for data changes.
+- **persistence_flows**: UI -> Next.js API/Action -> Payload Local API -> MongoDB.
 
 # 11.STATE_BLUEPRINT
 - **state_sources**: Database (Single source of truth).
@@ -197,8 +197,8 @@ graph TD
     NextJS --> PayloadLocal
     PayloadLocal --> DomainServices[src/services]
     PayloadLocal --> Collections[Payload Collections]
-    Collections --> Drizzle[Drizzle ORM]
-    Drizzle --> PG[(PostgreSQL)]
+    Collections --> Mongoose[Mongoose]
+    Mongoose --> Mongo[(MongoDB)]
 ```
 
 # 28.FILE_INDEX
