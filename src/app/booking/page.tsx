@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ChevronRight, ChevronLeft, Check, Sparkles, Building, Calendar, Bed, User, FileText, CheckSquare, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { RentIncludedNote } from '@/components/ui/RentIncludedNote';
 
 export default function BookingWizard() {
   const router = useRouter();
@@ -146,6 +147,7 @@ export default function BookingWizard() {
                   <span className="text-sm text-muted-foreground">Rent (1st Month)</span>
                   <span className="font-medium">€400.00</span>
                 </div>
+                <RentIncludedNote variant="inline" className="mb-3" />
                 <div className="flex justify-between mb-4 pb-4 border-b border-border">
                   <span className="text-sm text-muted-foreground">Security Deposit</span>
                   <span className="font-medium">€400.00</span>

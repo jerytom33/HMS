@@ -1,5 +1,6 @@
 import { Sparkles, MapPin, Search, Filter, Bed, Wifi, Shield, ArrowRight, CheckCircle2, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
+import { RentIncludedNote } from '@/components/ui/RentIncludedNote';
 
 export default function HostelDetail({ params }: { params: { slug: string } }) {
   const hostel = {
@@ -104,6 +105,7 @@ export default function HostelDetail({ params }: { params: { slug: string } }) {
                   <span className="text-muted-foreground"> / month</span>
                 </div>
               </div>
+              <RentIncludedNote variant="full" className="mb-6" />
               
               <div className="rounded-xl border border-border p-4 mb-6">
                 <div className="flex justify-between items-center mb-2 pb-2 border-b border-border">

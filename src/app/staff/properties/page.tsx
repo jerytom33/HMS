@@ -2,7 +2,8 @@
 import { Search, MapPin, AlertTriangle, Building2, LayoutGrid, CheckCircle2, AlertCircle, X, Plus, Edit, Trash2, Upload, Share2, ArrowLeft } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, BUNK_POSITIONS, bunkPositionAt, defaultBunkPosition, bedTypeDisplay, PRESET_AMENITIES, PROPERTY_FACILITIES } from '@/lib/propertyTypes';
+import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, BUNK_POSITIONS, bunkPositionAt, defaultBunkPosition, bedTypeDisplay, PRESET_AMENITIES, PROPERTY_FACILITIES, RENT_INCLUDES_TEXT } from '@/lib/propertyTypes';
+import { RentIncludedNote } from '@/components/ui/RentIncludedNote';
 import { AmenityIcon } from '@/components/ui/AmenityIcon';
 import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
 import { cloudinaryUpload } from '@/lib/cloudinaryUpload';
@@ -680,7 +681,7 @@ ${propertyImages.length > 0 ? `Images:\n${propertyImages.join('\n')}` : ''}${flo
 
 🚪 *${unitDisplayName(selectedRoom)} Details* (${unitLabel(selectedRoom.unitType)})
 Floor: ${selectedRoom.standalone ? 'Outside floors' : floorDisplayName(selectedFloor)}
-Price: ${selectedRoom.roomPrice ? `₹${selectedRoom.roomPrice}` : 'Not set'}
+Price: ${selectedRoom.roomPrice || 'Not set'}\n✅ ${RENT_INCLUDES_TEXT}
 Total Beds: ${selectedRoom.beds} (${selectedRoom.freeBeds} Free)${roomFacilitiesText}
 
 🛏️ *${bedDisplayLabel(selectedRoom, bedIndex)} Details*
@@ -989,6 +990,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                       </div>
                       <div className="mt-auto pt-3 flex flex-col gap-1.5">
                         <div className="text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800 pb-1">
+                          <RentIncludedNote variant="icons" className="block mb-1" />
                           {beds} Total Bed{beds !== 1 ? 's' : ''}
                           {(() => {
                             const c = bedTypeCounts(bedTypes, beds);
@@ -1052,6 +1054,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         {unitLabel(unit.unitType)}{unit.unitType === 'apartment' && unit.subRooms?.length ? ` · ${unit.subRooms.length} room${unit.subRooms.length !== 1 ? 's' : ''}` : ''}
                       </span>
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        <RentIncludedNote variant="icons" className="block mb-1" />
                         {unit.beds} bed{unit.beds !== 1 ? 's' : ''} · {unit.freeBeds} free
                         {(() => {
                             const c = bedTypeCounts(unit.bedTypes, unit.beds);
@@ -1209,6 +1212,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Price</span>
                     <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{selectedRoom.roomPrice || 'Not set'}</span>
                   </div>
+                  <RentIncludedNote variant="full" className="my-2" />
                   
                   <div className="py-3 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
                     <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400 mb-3 block font-medium">Room Facilities</span>
@@ -1315,6 +1319,8 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                                 </div>
                               )}
                             </div>
+
+                            <RentIncludedNote variant="inline" className="mb-2" />
 
                             {selectedRoom.bedDescriptions && selectedRoom.bedDescriptions[idx] && (
                               <div className="mb-3 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800">
@@ -1565,6 +1571,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                       className="w-32 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                   </div>
+                  <RentIncludedNote variant="inline" className="py-1" />
 
                   <div className="pt-3 pb-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
                     <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mb-3 block">Room Facilities</span>

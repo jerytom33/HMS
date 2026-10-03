@@ -1,5 +1,6 @@
 import { Sparkles, MapPin, Search, Filter, Bed, Wifi, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { RentIncludedNote } from '@/components/ui/RentIncludedNote';
 
 export default function HostelsList() {
   const hostels = [
@@ -65,6 +66,7 @@ export default function HostelsList() {
                   <div className="text-right">
                     <span className="block text-xl font-semibold">€{h.price}</span>
                     <span className="text-xs text-muted-foreground">/ month</span>
+                    <RentIncludedNote variant="icons" className="flex justify-end mt-1" />
                   </div>
                 </div>
                 <p className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">

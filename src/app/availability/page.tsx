@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Sparkles, Calendar, MapPin, Search, ChevronRight, Check, Bed } from 'lucide-react';
 import Link from 'next/link';
+import { RentIncludedNote } from '@/components/ui/RentIncludedNote';
 
 export default function AvailabilityPage() {
   const [selectedProperty, setSelectedProperty] = useState('');
@@ -108,6 +109,7 @@ export default function AvailabilityPage() {
                               <span className="font-medium">{room.room}</span>
                               <span className="text-sm font-semibold text-primary">€{room.price}/mo</span>
                             </div>
+                            <RentIncludedNote variant="inline" className="mb-3" />
                             <div className="space-y-2">
                               {room.beds.map((bed, bdIdx) => (
                                 <div 

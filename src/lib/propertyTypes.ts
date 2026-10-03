@@ -196,3 +196,8 @@ export const PRESET_AMENITIES: Amenity[] = [
 
 /** Property-level facilities offered as one-click options (custom ones allowed too). */
 export const PROPERTY_FACILITIES = ['Parking', 'Metro', 'Bus', 'Tram']
+
+/** Utilities included in the rent of every unit and bed. */
+export const RENT_INCLUDES = ['Water', 'Electricity', 'Winter Heating']
+
+export const RENT_INCLUDES_TEXT = `${RENT_INCLUDES.slice(0, -1).join(', ')} and ${RENT_INCLUDES[RENT_INCLUDES.length - 1]} are included in the rent`
