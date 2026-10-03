@@ -180,3 +180,16 @@ export const bedTypeDisplay = (
   const position = bunkPositionAt(bedTypes, bunkPositions, index)
   return position ? `Bunk Bed · ${position === 'upper' ? 'Upper' : 'Lower'}` : 'Independent Bed'
 }
+
+/** One-click amenities offered in the unit editor (staff can still add custom ones). */
+export const PRESET_AMENITIES: Amenity[] = [
+  { name: 'Study Table', included: true },
+  { name: 'Wardrobe', included: true },
+  { name: 'Same floor Kitchen', included: true, shared: true },
+  { name: 'Same floor Washroom', included: true, shared: true },
+  { name: 'Kitchen', included: true },
+  { name: 'Washroom', included: true },
+  { name: 'Toilet', included: true },
+  { name: 'Washing Machine', included: true },
+  { name: 'WiFi', included: true },
+]

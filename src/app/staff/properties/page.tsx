@@ -2,7 +2,8 @@
 import { Search, MapPin, AlertTriangle, Building2, LayoutGrid, CheckCircle2, AlertCircle, X, Plus, Edit, Trash2, Upload, Share2, ArrowLeft } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, BUNK_POSITIONS, bunkPositionAt, defaultBunkPosition, bedTypeDisplay } from '@/lib/propertyTypes';
+import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, BUNK_POSITIONS, bunkPositionAt, defaultBunkPosition, bedTypeDisplay, PRESET_AMENITIES } from '@/lib/propertyTypes';
+import { AmenityIcon } from '@/components/ui/AmenityIcon';
 import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
 import { cloudinaryUpload } from '@/lib/cloudinaryUpload';
 
@@ -1183,7 +1184,8 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400 block mb-2">Amenities</span>
                     <div className="flex flex-wrap gap-2">
                       {(selectedRoom.amenities || defaultAmenities(selectedRoom.unitType)).filter(a => a.included && a.name).map((a, i) => (
-                        <span key={i} className="text-xs font-medium px-2 py-1 rounded-md bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800">
+                        <span key={i} className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800">
+                          <AmenityIcon name={a.name} className="w-3.5 h-3.5" />
                           {a.name}{a.shared ? ' (shared)' : ''}
                         </span>
                       ))}
@@ -1446,6 +1448,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                             className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                             aria-label="Included"
                           />
+                          <AmenityIcon name={a.name} className="w-4 h-4 text-gray-500 dark:text-gray-400 shrink-0" />
                           <input
                             type="text"
                             value={a.name}
@@ -1479,6 +1482,27 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                       >
                         <Plus className="w-4 h-4" /> Add amenity
                       </button>
+                      {(() => {
+                        const present = new Set(editRoomData.amenities.map(a => a.name.trim().toLowerCase()));
+                        const missing = PRESET_AMENITIES.filter(p => !present.has(p.name.toLowerCase()));
+                        if (missing.length === 0) return null;
+                        return (
+                          <div className="flex flex-wrap gap-1.5 pt-1" aria-label="Quick add amenities">
+                            {missing.map(p => (
+                              <button
+                                key={p.name}
+                                type="button"
+                                onClick={() => updateAmenities([...editRoomData.amenities, { ...p }])}
+                                className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+                              >
+                                <Plus className="w-3 h-3" />
+                                <AmenityIcon name={p.name} className="w-3.5 h-3.5" />
+                                {p.name}
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
