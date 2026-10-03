@@ -286,6 +286,7 @@ function UniversalSearch() {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navItems = [
     { name: 'Dashboard', href: '/staff', icon: Building2 },
@@ -347,7 +348,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </nav>
         </div>
         <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-          <button className="flex items-center gap-3 w-full rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+          <button
+            onClick={async () => {
+              await fetch('/api/users/logout', { method: 'POST' }).catch(() => {});
+              router.replace('/login');
+              router.refresh();
+            }}
+            className="flex items-center gap-3 w-full rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+          >
             <LogOut className="h-4 w-4" />
             Sign Out
           </button>

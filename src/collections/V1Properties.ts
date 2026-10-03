@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isStaff } from '../access'
 
 export const V1Properties: CollectionConfig = {
   slug: 'v1-properties',
@@ -6,10 +7,11 @@ export const V1Properties: CollectionConfig = {
     useAsTitle: 'name',
   },
   access: {
+    // Public listing for the website and bot; changes need a staff login
     read: () => true,
-    create: () => true,
-    update: () => true,
-    delete: () => true,
+    create: isStaff,
+    update: isStaff,
+    delete: isStaff,
   },
   fields: [
     { name: 'name', type: 'text', required: true },

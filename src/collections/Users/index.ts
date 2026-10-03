@@ -4,10 +4,14 @@ import { isAdmin, isAdminOrSelf, isStaff } from '../../access'
 export const Users: CollectionConfig = {
   slug: 'users',
   admin: {
-    useAsTitle: 'email',
+    useAsTitle: 'username',
   },
   auth: {
     useAPIKey: true,
+    loginWithUsername: {
+      allowEmailLogin: true,
+      requireEmail: false,
+    },
   },
   access: {
     read: isStaff,

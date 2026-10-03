@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isStaff } from '../access'
 
 export const V1Students: CollectionConfig = {
   slug: 'v1-students',
@@ -6,10 +7,11 @@ export const V1Students: CollectionConfig = {
     useAsTitle: 'name',
   },
   access: {
-    read: () => true,
-    create: () => true,
-    update: () => true,
-    delete: () => true,
+    // Personal data: staff login required to read or change
+    read: isStaff,
+    create: isStaff,
+    update: isStaff,
+    delete: isStaff,
   },
   fields: [
     { name: 'name', type: 'text' },

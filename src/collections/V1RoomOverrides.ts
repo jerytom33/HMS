@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isStaff } from '../access'
 
 export const V1RoomOverrides: CollectionConfig = {
   slug: 'v1-room-overrides',
@@ -6,10 +7,11 @@ export const V1RoomOverrides: CollectionConfig = {
     useAsTitle: 'overrideKey',
   },
   access: {
+    // Public listing for the website and bot; changes need a staff login
     read: () => true,
-    create: () => true,
-    update: () => true,
-    delete: () => true,
+    create: isStaff,
+    update: isStaff,
+    delete: isStaff,
   },
   fields: [
     { name: 'overrideKey', type: 'text', required: true, unique: true },

@@ -1,13 +1,20 @@
 import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
+import { getPayload } from 'payload';
+import config from '@payload-config';
 
 const UPLOAD_FOLDER = 'hms';
 
 /**
  * Signs a Cloudinary upload so the browser can upload directly without an
- * unsigned preset. The API secret never leaves the server.
+ * unsigned preset. The API secret never leaves the server. Staff login required.
  */
-export async function POST() {
+export async function POST(request: Request) {
+  const payload = await getPayload({ config });
+  const { user } = await payload.auth({ headers: request.headers });
+  if (!user || user.collection !== 'users') {
+    return NextResponse.json({ error: 'Sign in to upload images' }, { status: 401 });
+  }
   const cloudName = process.env.CLOUDINARY_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_SECRET_KEY;
