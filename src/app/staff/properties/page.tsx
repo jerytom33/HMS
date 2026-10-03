@@ -1,6 +1,6 @@
 'use client';
 import { Search, MapPin, AlertTriangle, Building2, LayoutGrid, CheckCircle2, AlertCircle, X, Plus, Edit, Trash2, Upload, Share2, ArrowLeft } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, BUNK_POSITIONS, bunkPositionAt, defaultBunkPosition, bedTypeDisplay, PRESET_AMENITIES, PROPERTY_FACILITIES, RENT_INCLUDES_TEXT } from '@/lib/propertyTypes';
 import { RentIncludedNote } from '@/components/ui/RentIncludedNote';
@@ -50,6 +50,7 @@ const AutoCarousel = ({ images, name }: { images: string[], name: string }) => {
 
 export default function AdminProperties() {
   const [properties, setProperties] = useState<any[]>(INITIAL_PROPERTIES);
+  const [propertiesStatus, setPropertiesStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [searchQuery, setSearchQuery] = useState('');
   const [availableStudents, setAvailableStudents] = useState<any[]>(MOCK_STUDENTS);
 
@@ -143,27 +144,46 @@ export default function AdminProperties() {
   const [isUploading, setIsUploading] = useState(false);
   const [isFullScreenMap, setIsFullScreenMap] = useState(false);
 
-    // Load from API on mount
-  useEffect(() => {
-    fetch('/api/v1-properties?limit=100').then(res => res.json()).then(data => {
-      if (data && data.docs) {
-        setProperties(data.docs);
-        if (data.docs.length > 0 && selectedPropertyId === 1) {
-            setSelectedPropertyId(data.docs[0].id);
+  // Load properties and units together; retry once, since the first request after the
+  // server has been idle can fail while it starts up
+  const loadProperties = useCallback(async () => {
+    setPropertiesStatus('loading');
+    const getJson = async (url: string) => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) return await res.json();
+        } catch (e) {
+          if (attempt === 1) throw e;
         }
+        await new Promise(r => setTimeout(r, 800));
       }
-    }).catch(e => console.error(e));
-    
-    fetch('/api/v1-room-overrides?limit=1000').then(res => res.json()).then(data => {
-      if (data && data.docs) {
-        const overrides: any = {};
-        data.docs.forEach((doc: any) => {
-          overrides[doc.overrideKey] = doc;
-        });
-        setRoomOverrides(overrides);
+      throw new Error(`Failed to load ${url}`);
+    };
+    try {
+      const [props, units] = await Promise.all([
+        getJson('/api/v1-properties?limit=100'),
+        getJson('/api/v1-room-overrides?limit=1000'),
+      ]);
+      setProperties(props.docs || []);
+      if (props.docs?.length > 0) {
+        setSelectedPropertyId((current: any) => (current === 1 ? props.docs[0].id : current));
       }
-    }).catch(e => console.error(e));
+      const overrides: any = {};
+      (units.docs || []).forEach((doc: any) => {
+        overrides[doc.overrideKey] = doc;
+      });
+      setRoomOverrides(overrides);
+      setPropertiesStatus('ready');
+    } catch (e) {
+      console.error(e);
+      setPropertiesStatus('error');
+    }
   }, []);
+
+  useEffect(() => {
+    loadProperties();
+  }, [loadProperties]);
 
   const filteredProperties = useMemo(() => {
     return properties.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.location.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -834,7 +854,30 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
             </div>
           </div>
           <div className="p-6 flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 dark:bg-gray-950/50">
-            {filteredProperties.length > 0 ? (
+            {propertiesStatus === 'loading' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-4" aria-busy="true" aria-label="Loading properties">
+                {[0, 1, 2].map(i => (
+                  <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden animate-pulse">
+                    <div className="h-48 bg-gray-200 dark:bg-gray-800" />
+                    <div className="p-6 space-y-3">
+                      <div className="h-5 w-2/3 rounded bg-gray-200 dark:bg-gray-800" />
+                      <div className="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-800" />
+                      <div className="h-16 rounded bg-gray-100 dark:bg-gray-800/60" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : propertiesStatus === 'error' ? (
+              <div className="p-8 text-center text-sm text-gray-600 dark:text-gray-400 space-y-3">
+                <p>Couldn't load properties. Check your connection and try again.</p>
+                <button
+                  onClick={loadProperties}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : filteredProperties.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredProperties.map((prop) => (
                   <div 
@@ -907,7 +950,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
               </div>
             ) : (
               <div className="p-8 text-center text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm">
-                No properties found matching "{searchQuery}"
+                {searchQuery ? `No properties found matching "${searchQuery}"` : 'No properties yet. Use Add Property to create one.'}
               </div>
             )}
           </div>

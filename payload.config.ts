@@ -95,5 +95,10 @@ export default buildConfig({
   },
   db: mongooseAdapter({
     url: process.env.DATABASE_URI || '',
+    connectOptions: {
+      // Indexes already exist in production; rebuilding them on every serverless cold
+      // start costs a database round trip per index. Dev and `payload migrate` still build them.
+      autoIndex: process.env.NODE_ENV !== 'production',
+    },
   }),
 })
