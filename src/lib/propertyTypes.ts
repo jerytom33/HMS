@@ -124,3 +124,23 @@ export const parseRoomString = (room?: string) => {
   const floor = roomNum.startsWith('S') ? 'S' : String(Math.floor(Number(roomNum) / 100))
   return { roomNum, floor, bed: match[2] }
 }
+
+export type BedType = 'independent' | 'bunk'
+
+export const BED_TYPES: { value: BedType; label: string }[] = [
+  { value: 'independent', label: 'Independent Bed' },
+  { value: 'bunk', label: 'Bunk Bed' },
+]
+
+export const bedTypeLabel = (type?: string) => BED_TYPES.find((t) => t.value === type)?.label || 'Independent Bed'
+
+/** Bed type at a bed index; beds without a stored type are independent. */
+export const bedTypeAt = (bedTypes: string[] | undefined, index: number): BedType =>
+  bedTypes?.[index] === 'bunk' ? 'bunk' : 'independent'
+
+/** Count of bunk and independent beds among the first `beds` beds. */
+export const bedTypeCounts = (bedTypes: string[] | undefined, beds: number) => {
+  let bunk = 0
+  for (let i = 0; i < beds; i++) if (bedTypeAt(bedTypes, i) === 'bunk') bunk++
+  return { bunk, independent: beds - bunk }
+}

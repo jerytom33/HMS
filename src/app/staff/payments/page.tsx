@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { DollarSign, FileText, Download, MoreHorizontal, Plus, X } from 'lucide-react';
-import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString } from '@/lib/propertyTypes';
+import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString, bedTypeAt } from '@/lib/propertyTypes';
 
 const INITIAL_PAYMENTS: any[] = [];
 
@@ -429,7 +429,7 @@ export default function AdminPayments() {
                       const override = roomOverrides[`${selectedPropId}-${selectedRoom}`];
                       const beds = override?.beds || (prop?.bedsPerFloor ? prop.bedsPerFloor[parseInt(selectedFloor) - 1] : prop?.bedsPerRoom) || 0;
                       return Array.from({ length: beds }).map((_, i) => (
-                        <option key={i+1} value={String.fromCharCode(65 + i)}>{bedDisplayLabel(override, i)}</option>
+                        <option key={i+1} value={String.fromCharCode(65 + i)}>{bedDisplayLabel(override, i)} ({bedTypeAt(override?.bedTypes, i) === 'bunk' ? 'Bunk' : 'Independent'})</option>
                       ));
                     })()}
                   </select>
