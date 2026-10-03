@@ -193,3 +193,6 @@ export const PRESET_AMENITIES: Amenity[] = [
   { name: 'Washing Machine', included: true },
   { name: 'WiFi', included: true },
 ]
+
+/** Property-level facilities offered as one-click options (custom ones allowed too). */
+export const PROPERTY_FACILITIES = ['Parking', 'Metro', 'Bus', 'Tram']

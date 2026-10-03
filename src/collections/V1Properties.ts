@@ -29,5 +29,7 @@ export const V1Properties: CollectionConfig = {
     { name: 'occupancy', type: 'text' },
     { name: 'status', type: 'text' },
     { name: 'images', type: 'json' },
+    // Facility names, e.g. ['Parking', 'Metro', 'Bus', 'Tram']
+    { name: 'facilities', type: 'json' },
   ],
 }

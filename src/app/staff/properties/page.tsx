@@ -2,7 +2,7 @@
 import { Search, MapPin, AlertTriangle, Building2, LayoutGrid, CheckCircle2, AlertCircle, X, Plus, Edit, Trash2, Upload, Share2, ArrowLeft } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, BUNK_POSITIONS, bunkPositionAt, defaultBunkPosition, bedTypeDisplay, PRESET_AMENITIES } from '@/lib/propertyTypes';
+import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, BUNK_POSITIONS, bunkPositionAt, defaultBunkPosition, bedTypeDisplay, PRESET_AMENITIES, PROPERTY_FACILITIES } from '@/lib/propertyTypes';
 import { AmenityIcon } from '@/components/ui/AmenityIcon';
 import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
 import { cloudinaryUpload } from '@/lib/cloudinaryUpload';
@@ -123,7 +123,7 @@ export default function AdminProperties() {
 
   const [propertyToDelete, setPropertyToDelete] = useState<any>(null);
   const [roomFilters, setRoomFilters] = useState({ occupied: false, available: false, maintenance: false });
-  const [editPropertyForm, setEditPropertyForm] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[] });
+  const [editPropertyForm, setEditPropertyForm] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[], facilities: [] as string[] });
   
   // Track specific room edits (status and bed counts)
   const [roomOverrides, setRoomOverrides] = useState<Record<string, { id?: any, roomName?: string, unitType?: string, subRooms?: SubRoom[], amenities?: Amenity[], standalone?: boolean, propertyId?: string, bedTypes?: string[], bunkPositions?: (string | null)[], status?: string, beds?: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] }>>({});
@@ -135,7 +135,7 @@ export default function AdminProperties() {
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<{name: string, room: number, bed: string, phone: string, course: string} | null>(null);
 
-  const [newProperty, setNewProperty] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[] });
+  const [newProperty, setNewProperty] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[], facilities: [] as string[] });
   const [successMessage, setSuccessMessage] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -360,7 +360,8 @@ export default function AdminProperties() {
       beds: parseInt(newProperty.beds) || 2,
       occupancy: '0%',
       status: 'Operational',
-      images: newProperty.images
+      images: newProperty.images,
+      facilities: newProperty.facilities
     };
     
     try {
@@ -374,7 +375,7 @@ export default function AdminProperties() {
       
       setProperties([...properties, data.doc]);
       setIsAddPropertyModalOpen(false);
-      setNewProperty({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] });
+      setNewProperty({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [], facilities: [] });
       
       setSuccessMessage(`Property "${data.doc.name}" added successfully!`);
       setSelectedPropertyId(data.doc.id);
@@ -416,7 +417,8 @@ export default function AdminProperties() {
       roomsPerFloor: fallbackRoomsPerFloor,
       isCustomBedsPerFloor: prop.isCustomBedsPerFloor || false,
       bedsPerFloor: fallbackBedsPerFloor,
-      images: prop.images || []
+      images: prop.images || [],
+      facilities: prop.facilities || []
     });
     setEditingPropertyId(prop.id);
   };
@@ -479,7 +481,8 @@ export default function AdminProperties() {
       isCustomBedsPerFloor: editPropertyForm.isCustomBedsPerFloor,
       bedsPerFloor: editPropertyForm.bedsPerFloor.map(v => parseInt(v) || 2),
       beds: parseInt(editPropertyForm.beds) || 2,
-      images: editPropertyForm.images
+      images: editPropertyForm.images,
+      facilities: editPropertyForm.facilities
     };
     
     try {
@@ -859,6 +862,16 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 flex items-center gap-1.5 mb-6">
                           <MapPin className="h-4 w-4 text-gray-400" /> {prop.location}
                         </p>
+                        {prop.facilities?.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 -mt-4 mb-5">
+                            {prop.facilities.map((f: string) => (
+                              <span key={f} className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                <AmenityIcon name={f} className="w-3.5 h-3.5" />
+                                {f}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         
                         <div className="grid grid-cols-2 gap-4 mt-auto border-t border-gray-200 dark:border-gray-800 dark:border-gray-800/50 pt-5">
                           <div className="flex flex-col">
@@ -2138,6 +2151,48 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                 </div>
               </div>
 
+              <div className="space-y-2 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Facilities &amp; Transport</label>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(new Set([...PROPERTY_FACILITIES, ...newProperty.facilities])).map(name => {
+                    const selected = newProperty.facilities.includes(name);
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setNewProperty({
+                          ...newProperty,
+                          facilities: selected ? newProperty.facilities.filter(f => f !== name) : [...newProperty.facilities, name],
+                        })}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                          selected
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <AmenityIcon name={name} className="w-4 h-4" />
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
+                <input
+                  type="text"
+                  placeholder="Add other facility and press Enter (e.g. Gym)"
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter') return;
+                    e.preventDefault();
+                    const name = e.currentTarget.value.trim();
+                    if (name && !newProperty.facilities.some(f => f.toLowerCase() === name.toLowerCase())) {
+                      setNewProperty({ ...newProperty, facilities: [...newProperty.facilities, name] });
+                    }
+                    e.currentTarget.value = '';
+                  }}
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
               <div className="space-y-3 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Floor Names &amp; Units per Floor</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -2347,6 +2402,48 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     placeholder="1" 
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Facilities &amp; Transport</label>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(new Set([...PROPERTY_FACILITIES, ...editPropertyForm.facilities])).map(name => {
+                    const selected = editPropertyForm.facilities.includes(name);
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => setEditPropertyForm({
+                          ...editPropertyForm,
+                          facilities: selected ? editPropertyForm.facilities.filter(f => f !== name) : [...editPropertyForm.facilities, name],
+                        })}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                          selected
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <AmenityIcon name={name} className="w-4 h-4" />
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
+                <input
+                  type="text"
+                  placeholder="Add other facility and press Enter (e.g. Gym)"
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter') return;
+                    e.preventDefault();
+                    const name = e.currentTarget.value.trim();
+                    if (name && !editPropertyForm.facilities.some(f => f.toLowerCase() === name.toLowerCase())) {
+                      setEditPropertyForm({ ...editPropertyForm, facilities: [...editPropertyForm.facilities, name] });
+                    }
+                    e.currentTarget.value = '';
+                  }}
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
               </div>
 
               <div className="space-y-3 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
