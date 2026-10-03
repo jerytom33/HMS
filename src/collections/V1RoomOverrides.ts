@@ -13,6 +13,8 @@ export const V1RoomOverrides: CollectionConfig = {
   },
   fields: [
     { name: 'overrideKey', type: 'text', required: true, unique: true },
+    // Optional display name; the room number in overrideKey stays the room's identity
+    { name: 'roomName', type: 'text' },
     { name: 'status', type: 'text' },
     { name: 'beds', type: 'number' },
     { name: 'freeBeds', type: 'number' },

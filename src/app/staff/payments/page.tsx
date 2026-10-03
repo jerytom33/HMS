@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { DollarSign, FileText, Download, MoreHorizontal, Plus, X } from 'lucide-react';
+import { roomNumber, floorLabel, roomLabel } from '@/lib/propertyTypes';
 
 const INITIAL_PAYMENTS: any[] = [];
 
@@ -197,7 +198,7 @@ export default function AdminPayments() {
               >
                 <option value="all">All Floors</option>
                 {Array.from({ length: properties.find(p => p.name === propertyFilter)?.floors || 1 }).map((_, i) => (
-                  <option key={i} value={String(i + 1)}>Floor {i + 1}</option>
+                  <option key={i} value={String(i + 1)}>{floorLabel(properties.find(p => p.name === propertyFilter), i + 1)}</option>
                 ))}
               </select>
             )}
@@ -395,7 +396,7 @@ export default function AdminPayments() {
                   >
                     <option value="">Select Floor</option>
                     {selectedPropId && Array.from({ length: properties.find(p => p.id.toString() === selectedPropId)?.floors || 0 }).map((_, i) => (
-                      <option key={i+1} value={i+1}>Floor {i+1}</option>
+                      <option key={i+1} value={i+1}>{floorLabel(properties.find(p => p.id.toString() === selectedPropId), i+1)}</option>
                     ))}
                   </select>
                 </div>
@@ -410,8 +411,8 @@ export default function AdminPayments() {
                   >
                     <option value="">Select Room</option>
                     {selectedFloor && Array.from({ length: properties.find(p => p.id.toString() === selectedPropId)?.roomsPerFloor?.[parseInt(selectedFloor) - 1] || 0 }).map((_, i) => {
-                      const rNum = `${selectedFloor}0${i+1}`;
-                      return <option key={rNum} value={rNum}>Room {rNum}</option>
+                      const rNum = String(roomNumber(selectedFloor, i));
+                      return <option key={rNum} value={rNum}>{roomLabel(properties.find(p => p.id.toString() === selectedPropId), rNum, roomOverrides[`${selectedPropId}-${rNum}`])}</option>
                     })}
                   </select>
                 </div>

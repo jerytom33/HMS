@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Camera, ArrowLeft, User, Phone, MapPin, GraduationCap, HeartPulse, Save, Home, Lock } from 'lucide-react';
+import { roomNumber, floorLabel, roomLabel } from '@/lib/propertyTypes';
 
 export default function AddStudentPage() {
   const router = useRouter();
@@ -392,7 +393,7 @@ export default function AddStudentPage() {
                   >
                     <option value="">Select Floor</option>
                     {selectedPropId && Array.from({ length: properties.find(p => String(p.id) === String(selectedPropId))?.floors || 0 }).map((_, i) => (
-                      <option key={i+1} value={i+1}>Floor {i+1}</option>
+                      <option key={i+1} value={i+1}>{floorLabel(properties.find(p => String(p.id) === String(selectedPropId)), i+1)}</option>
                     ))}
                   </select>
                 </div>
@@ -407,8 +408,8 @@ export default function AddStudentPage() {
                   >
                     <option value="">Select Room</option>
                     {selectedFloor && Array.from({ length: properties.find(p => String(p.id) === String(selectedPropId))?.roomsPerFloor?.[parseInt(selectedFloor) - 1] || 0 }).map((_, i) => {
-                      const rNum = `${selectedFloor}0${i+1}`;
-                      return <option key={rNum} value={rNum}>Room {rNum}</option>
+                      const rNum = String(roomNumber(selectedFloor, i));
+                      return <option key={rNum} value={rNum}>{roomLabel(properties.find(p => String(p.id) === String(selectedPropId)), rNum, roomOverrides[`${selectedPropId}-${rNum}`])}</option>
                     })}
                   </select>
                 </div>

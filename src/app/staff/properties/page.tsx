@@ -2,8 +2,10 @@
 import { Search, MapPin, AlertTriangle, Building2, LayoutGrid, CheckCircle2, AlertCircle, X, Plus, Edit, Trash2, Upload, Share2, ArrowLeft } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import { PROPERTY_TYPES, unitLabel, typeLabel, fitFloorNames } from '@/lib/propertyTypes';
 
 const INITIAL_PROPERTIES: any[] = [];
+
 
 const MOCK_STUDENTS: any[] = [];
 
@@ -112,25 +114,25 @@ export default function AdminProperties() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<any>(1);
   const [selectedFloor, setSelectedFloor] = useState(1);
   const [isAddPropertyModalOpen, setIsAddPropertyModalOpen] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<{ roomNum: number, status: string, beds: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] } | null>(null);  
+  const [selectedRoom, setSelectedRoom] = useState<{ roomNum: number, roomName?: string, status: string, beds: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] } | null>(null);  
 
   const [editingPropertyId, setEditingPropertyId] = useState<any>(null);
 
   const [propertyToDelete, setPropertyToDelete] = useState<any>(null);
   const [roomFilters, setRoomFilters] = useState({ occupied: false, available: false, maintenance: false });
-  const [editPropertyForm, setEditPropertyForm] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[] });
+  const [editPropertyForm, setEditPropertyForm] = useState({ name: '', propertyType: 'rooms', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[] });
   
   // Track specific room edits (status and bed counts)
-  const [roomOverrides, setRoomOverrides] = useState<Record<string, { id?: any, status?: string, beds?: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] }>>({});
+  const [roomOverrides, setRoomOverrides] = useState<Record<string, { id?: any, roomName?: string, status?: string, beds?: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] }>>({});
   const [isEditFloorModalOpen, setIsEditFloorModalOpen] = useState(false);
   const [editFloorData, setEditFloorData] = useState({ floor: 1, name: '', rooms: 0, beds: 0, image: '', floorFacilitiesList: [] as { description: string, images: string[] }[] });
   const [isEditingRoom, setIsEditingRoom] = useState(false);
-  const [editRoomData, setEditRoomData] = useState({ status: '', beds: 0, freeBeds: 0, filledBeds: 0, bedStatuses: [] as boolean[], bedOccupants: [] as (string | null)[], bedImages: [] as string[][], bedDescriptions: [] as string[], roomPrice: '', roomFacilitiesList: [] as { images: string[], description: string }[], roomFacilitiesImages: [] as string[], roomFacilitiesDescription: '', roomFacilitiesDescriptions: [] as string[] });
+  const [editRoomData, setEditRoomData] = useState({ roomName: '', status: '', beds: 0, freeBeds: 0, filledBeds: 0, bedStatuses: [] as boolean[], bedOccupants: [] as (string | null)[], bedImages: [] as string[][], bedDescriptions: [] as string[], roomPrice: '', roomFacilitiesList: [] as { images: string[], description: string }[], roomFacilitiesImages: [] as string[], roomFacilitiesDescription: '', roomFacilitiesDescriptions: [] as string[] });
   const [activeSearchBed, setActiveSearchBed] = useState<number | null>(null);
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<{name: string, room: number, bed: string, phone: string, course: string} | null>(null);
 
-  const [newProperty, setNewProperty] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[] });
+  const [newProperty, setNewProperty] = useState({ name: '', propertyType: 'rooms', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[] });
   const [successMessage, setSuccessMessage] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -163,6 +165,8 @@ export default function AdminProperties() {
   }, [searchQuery, properties]);
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId) || properties[0];
+  const selectedUnitLabel = unitLabel(selectedProperty?.propertyType);
+  const floorDisplayName = (floor: number) => selectedProperty?.floorNames?.[floor - 1] || `Floor ${floor}`;
 
   // Generate deterministic rooms based on property and floor, merged with any manual overrides
   const rooms = useMemo(() => {
@@ -193,6 +197,7 @@ export default function AdminProperties() {
       
       return { 
         roomNum, 
+        roomName: override?.roomName,
         status: override?.status || defaultStatus,
         beds: override?.beds || defaultBeds,
         freeBeds: override?.freeBeds !== undefined ? override.freeBeds : (defaultStatus === 'occupied' ? 0 : defaultBeds),
@@ -213,8 +218,11 @@ export default function AdminProperties() {
     const handleAddProperty = async () => {
     if (!newProperty.name || !newProperty.location) return;
     
+    const floorsCount = parseInt(newProperty.floors) || 1;
     const addedProperty = {
       name: newProperty.name,
+      propertyType: newProperty.propertyType,
+      floorNames: fitFloorNames(newProperty.floorNames.map(n => n.trim()), floorsCount),
       location: newProperty.location,
       rooms: newProperty.roomsPerFloor.reduce((acc, curr) => acc + (parseInt(curr) || 0), 0),
       floors: parseInt(newProperty.floors) || 1,
@@ -238,7 +246,7 @@ export default function AdminProperties() {
       
       setProperties([...properties, data.doc]);
       setIsAddPropertyModalOpen(false);
-      setNewProperty({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] });
+      setNewProperty({ name: '', propertyType: 'rooms', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] });
       
       setSuccessMessage(`Property "${data.doc.name}" added successfully!`);
       setSelectedPropertyId(data.doc.id);
@@ -272,6 +280,8 @@ export default function AdminProperties() {
     
     setEditPropertyForm({
       name: prop.name,
+      propertyType: prop.propertyType || 'rooms',
+      floorNames: fitFloorNames(prop.floorNames, floorsCount),
       location: prop.location,
       rooms: prop.rooms?.toString() || '0',
       floors: floorsCount.toString(),
@@ -331,8 +341,11 @@ export default function AdminProperties() {
     const handleUpdateProperty = async () => {
     if (!editPropertyForm.name || !editPropertyForm.location) return;
     
+    const floorsCount = parseInt(editPropertyForm.floors) || 1;
     const updatedPropertyData = {
       name: editPropertyForm.name,
+      propertyType: editPropertyForm.propertyType,
+      floorNames: fitFloorNames(editPropertyForm.floorNames.map(n => n.trim()), floorsCount),
       location: editPropertyForm.location,
       rooms: editPropertyForm.roomsPerFloor.reduce((acc, curr) => acc + (parseInt(curr) || 0), 0),
       floors: parseInt(editPropertyForm.floors) || 1,
@@ -368,6 +381,7 @@ export default function AdminProperties() {
     const initialBedDescriptions = selectedRoom.bedDescriptions || Array.from({ length: selectedRoom.beds }, () => '');
     
     setEditRoomData({ 
+      roomName: selectedRoom.roomName || '',
       status: selectedRoom.status, 
       beds: selectedRoom.beds,
       freeBeds: selectedRoom.freeBeds !== undefined ? selectedRoom.freeBeds : selectedRoom.beds,
@@ -401,6 +415,7 @@ export default function AdminProperties() {
     
     const overrideData: any = {
       overrideKey,
+      roomName: editRoomData.roomName.trim(),
       status: editRoomData.status,
       beds: editRoomData.beds,
       freeBeds: editRoomData.freeBeds,
@@ -504,7 +519,7 @@ export default function AdminProperties() {
     const floorFacilities = selectedProperty.floorFacilitiesLists?.[selectedFloor - 1] || [];
     let floorFacilitiesText = '';
     if (floorFacilities.length > 0) {
-      floorFacilitiesText = `\n\n🏢 *Floor ${selectedFloor} Facilities*\n` + floorFacilities.map((f: any) => 
+      floorFacilitiesText = `\n\n🏢 *${floorDisplayName(selectedFloor)} Facilities*\n` + floorFacilities.map((f: any) => 
         `- ${f.description || 'Facility'}${f.images?.length > 0 ? `\n  Images:\n  ${f.images.join('\n  ')}` : ''}`
       ).join('\n');
     }
@@ -522,8 +537,8 @@ Name: ${selectedProperty.name}
 Location: ${selectedProperty.location}
 ${propertyImages.length > 0 ? `Images:\n${propertyImages.join('\n')}` : ''}${floorFacilitiesText}
 
-🚪 *Room ${selectedRoom.roomNum} Details*
-Floor: ${selectedFloor}
+🚪 *${selectedRoom.roomName || `${selectedUnitLabel} ${selectedRoom.roomNum}`} Details*
+Floor: ${floorDisplayName(selectedFloor)}
 Price: ${selectedRoom.roomPrice ? `₹${selectedRoom.roomPrice}` : 'Not set'}
 Total Beds: ${selectedRoom.beds} (${selectedRoom.freeBeds} Free)${roomFacilitiesText}
 
@@ -702,13 +717,14 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                       </div>
                       <div className="pt-10 pb-6 px-6 flex-1 flex flex-col relative z-10">
                         <h4 className="font-bold text-xl text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-1 group-hover:text-red-600 transition-colors">{prop.name}</h4>
+                        <span className="inline-block mb-2 px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">{typeLabel(prop.propertyType)}</span>
                         <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 flex items-center gap-1.5 mb-6">
                           <MapPin className="h-4 w-4 text-gray-400" /> {prop.location}
                         </p>
                         
                         <div className="grid grid-cols-2 gap-4 mt-auto border-t border-gray-200 dark:border-gray-800 dark:border-gray-800/50 pt-5">
                           <div className="flex flex-col">
-                            <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mb-1 uppercase tracking-wider flex items-center gap-1"><LayoutGrid className="h-3 w-3" /> Rooms</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mb-1 uppercase tracking-wider flex items-center gap-1"><LayoutGrid className="h-3 w-3" /> {unitLabel(prop.propertyType)}s</span>
                             <span className="font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100 text-lg">{prop.rooms}</span>
                           </div>
                           <div className="flex flex-col">
@@ -754,7 +770,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                   <ArrowLeft className="w-5 h-5" />
                 </button>
               )}
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100">Room Map: {selectedProperty?.name}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100">{selectedUnitLabel} Map: {selectedProperty?.name}</h3>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -788,11 +804,11 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
           </div>
           <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 flex-1 overflow-auto pb-24">
             <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 min-w-full">
-              {filteredRooms.map(({ roomNum, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions }) => (
+              {filteredRooms.map(({ roomNum, roomName, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions }) => (
                 <div 
                   key={roomNum} 
                   onClick={() => {
-                    setSelectedRoom({ roomNum, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions });
+                    setSelectedRoom({ roomNum, roomName, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions });
                     setIsEditingRoom(false);
                   }}
                   className="property-glass-card group cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-red-500/20 flex flex-col h-full"
@@ -804,13 +820,13 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                   }`}>
                     {bedImages && bedImages.flat().filter(Boolean).length > 0 && (
                       <div className="h-80 sm:h-[350px] relative bg-black/5 flex items-center justify-center overflow-hidden shrink-0 border-b border-gray-200 dark:border-gray-800 dark:border-gray-800/50">
-                        <AutoCarousel images={bedImages.flat().filter(Boolean) as string[]} name={`Room ${roomNum}`} />
+                        <AutoCarousel images={bedImages.flat().filter(Boolean) as string[]} name={roomName || `${selectedUnitLabel} ${roomNum}`} />
                         <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent pointer-events-none z-10"></div>
                       </div>
                     )}
                     <div className="p-3 flex flex-col flex-1">
                       <div className="flex justify-between items-start">
-                        <div className="font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 group-hover:text-red-600 transition-colors">{roomNum}</div>
+                        <div className="font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 group-hover:text-red-600 transition-colors">{roomName || `${selectedUnitLabel} ${roomNum}`}</div>
                         {status === 'occupied' ? <CheckCircle2 className="h-4 w-4 text-gray-400" /> :
                          status === 'maintenance' ? <AlertCircle className="h-4 w-4 text-red-500" /> :
                          <span className="text-green-600 font-semibold text-xs">Free</span>}
@@ -872,7 +888,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
               <div className="mt-8 border-t border-gray-200 dark:border-gray-800 dark:border-gray-800 pt-8">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-6 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm"><Building2 className="w-4 h-4" /></span>
-                  Floor {selectedFloor} Facilities
+                  {floorDisplayName(selectedFloor)} Facilities
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {selectedProperty.floorFacilitiesLists[selectedFloor - 1].map((facility: any, idx: number) => (
@@ -904,7 +920,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6">
           <div className="bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="flex justify-between items-center p-4 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 shrink-0">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">Room {selectedRoom.roomNum} Details</h2>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{selectedRoom.roomName || `${selectedUnitLabel} ${selectedRoom.roomNum}`} Details</h2>
               <button onClick={() => { setSelectedRoom(null); setIsEditingRoom(false); }} className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 dark:hover:bg-gray-700 rounded-full p-1 transition-colors">
                 <X className="h-5 w-5" />
               </button>
@@ -1153,6 +1169,17 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     />
                   </div>
                   
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">{selectedUnitLabel} Name</span>
+                    <input
+                      type="text"
+                      placeholder={`${selectedUnitLabel} ${selectedRoom.roomNum}`}
+                      value={editRoomData.roomName || ''}
+                      onChange={(e) => setEditRoomData({...editRoomData, roomName: e.target.value})}
+                      className="w-40 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+
                   <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
                     <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Room Price</span>
                     <input 
@@ -1688,9 +1715,28 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                   )}
                 </div>
               </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Property Type</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {PROPERTY_TYPES.map(t => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      onClick={() => setNewProperty({...newProperty, propertyType: t.value})}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        newProperty.propertyType === t.value
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Total Rooms</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Total {unitLabel(newProperty.propertyType)}s</label>
                   <input 
                     type="number" 
                     readOnly value={newProperty.roomsPerFloor.reduce((acc, curr) => acc + (parseInt(curr) || 0), 0)}
@@ -1716,7 +1762,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         newRoomsPerFloor.length = newFloors;
                         newBedsPerFloor.length = newFloors;
                       }
-                      setNewProperty({...newProperty, floors: e.target.value, roomsPerFloor: newRoomsPerFloor, bedsPerFloor: newBedsPerFloor});
+                      setNewProperty({...newProperty, floors: e.target.value, roomsPerFloor: newRoomsPerFloor, bedsPerFloor: newBedsPerFloor, floorNames: fitFloorNames(newProperty.floorNames, newRoomsPerFloor.length)});
                     }}
                     className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
                     placeholder="1" 
@@ -1725,11 +1771,22 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
               </div>
 
               <div className="space-y-3 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Rooms per Floor</label>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Floor Names &amp; {unitLabel(newProperty.propertyType)}s per Floor</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {newProperty.roomsPerFloor.map((rooms, idx) => (
                     <div key={idx} className="flex flex-col gap-1">
                       <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Floor {idx + 1}</span>
+                      <input
+                        type="text"
+                        value={newProperty.floorNames[idx] || ''}
+                        placeholder={idx === 0 ? 'e.g. Ground Floor' : `Floor ${idx + 1} name`}
+                        onChange={(e) => {
+                          const names = fitFloorNames(newProperty.floorNames, newProperty.roomsPerFloor.length);
+                          names[idx] = e.target.value;
+                          setNewProperty({...newProperty, floorNames: names});
+                        }}
+                        className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
                       <input 
                         type="number" 
                         value={rooms}
@@ -1899,9 +1956,28 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                   )}
                 </div>
               </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Property Type</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {PROPERTY_TYPES.map(t => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      onClick={() => setEditPropertyForm({...editPropertyForm, propertyType: t.value})}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        editPropertyForm.propertyType === t.value
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Total Rooms</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Total {unitLabel(editPropertyForm.propertyType)}s</label>
                   <input 
                     type="number" 
                     readOnly value={editPropertyForm.roomsPerFloor.reduce((acc, curr) => acc + (parseInt(curr) || 0), 0)}
@@ -1927,7 +2003,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         newRoomsPerFloor.length = newFloors;
                         newBedsPerFloor.length = newFloors;
                       }
-                      setEditPropertyForm({...editPropertyForm, floors: e.target.value, roomsPerFloor: newRoomsPerFloor, bedsPerFloor: newBedsPerFloor});
+                      setEditPropertyForm({...editPropertyForm, floors: e.target.value, roomsPerFloor: newRoomsPerFloor, bedsPerFloor: newBedsPerFloor, floorNames: fitFloorNames(editPropertyForm.floorNames, newRoomsPerFloor.length)});
                     }}
                     className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
                     placeholder="1" 
@@ -1936,11 +2012,22 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
               </div>
 
               <div className="space-y-3 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Rooms per Floor</label>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Floor Names &amp; {unitLabel(editPropertyForm.propertyType)}s per Floor</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {editPropertyForm.roomsPerFloor.map((rooms, idx) => (
                     <div key={idx} className="flex flex-col gap-1">
                       <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Floor {idx + 1}</span>
+                      <input
+                        type="text"
+                        value={editPropertyForm.floorNames[idx] || ''}
+                        placeholder={idx === 0 ? 'e.g. Ground Floor' : `Floor ${idx + 1} name`}
+                        onChange={(e) => {
+                          const names = fitFloorNames(editPropertyForm.floorNames, editPropertyForm.roomsPerFloor.length);
+                          names[idx] = e.target.value;
+                          setEditPropertyForm({...editPropertyForm, floorNames: names});
+                        }}
+                        className="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
                       <input 
                         type="number" 
                         value={rooms}
@@ -2268,7 +2355,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                 Cancel
               </button>
               <button 
-                onClick={() => {
+                onClick={async () => {
                   const updatedProperties = properties.map(p => {
                     if (p.id === selectedPropertyId) {
                       const newRoomsPerFloor = [...(p.roomsPerFloor || [])];
@@ -2301,10 +2388,31 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     }
                     return p;
                   });
+                  const updated = updatedProperties.find(p => p.id === selectedPropertyId);
+                  if (updated) {
+                    try {
+                      const res = await fetch(`/api/v1-properties/${selectedPropertyId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          roomsPerFloor: updated.roomsPerFloor,
+                          bedsPerFloor: updated.bedsPerFloor,
+                          floorNames: updated.floorNames,
+                          floorImages: updated.floorImages,
+                          floorFacilitiesLists: updated.floorFacilitiesLists,
+                          rooms: updated.rooms,
+                          isCustomBedsPerFloor: updated.isCustomBedsPerFloor,
+                        }),
+                      });
+                      if (!res.ok) throw new Error(`Failed to save floor (${res.status})`);
+                    } catch (e) {
+                      console.error(e);
+                      return;
+                    }
+                  }
                   setProperties(updatedProperties);
-                  localStorage.setItem('hms_properties', JSON.stringify(updatedProperties));
                   setIsEditFloorModalOpen(false);
-                  setSuccessMessage(`Floor ${editFloorData.floor} details updated successfully!`);
+                  setSuccessMessage(`${editFloorData.name.trim() || `Floor ${editFloorData.floor}`} details updated successfully!`);
                 }}
                 className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
               >
