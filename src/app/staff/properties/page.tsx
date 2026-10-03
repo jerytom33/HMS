@@ -1584,7 +1584,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                             <div className="flex items-center">
                               <input 
                                 type="file" 
-                                accept="image/*"
+                                accept="image/*,.heic,.heif,.webp,.avif"
                                 id={`room-facility-upload-${fIdx}`}
                                 className="hidden"
                                 onChange={async (e) => {
@@ -1842,7 +1842,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                                       <Upload className="w-3 h-3" /> Upload File
                                       <input 
                                         type="file" 
-                                        accept="image/*"
+                                        accept="image/*,.heic,.heif,.webp,.avif"
                                         className="hidden"
                                         disabled={isUploading}
                                         onChange={async (e) => {
@@ -2018,7 +2018,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                       )}
                       <input 
                         type="file"
-                        accept="image/*"
+                        accept="image/*,.heic,.heif,.webp,.avif"
                         className="hidden"
                         disabled={isUploading}
                         onChange={async (e) => {
@@ -2229,7 +2229,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                       )}
                       <input 
                         type="file"
-                        accept="image/*"
+                        accept="image/*,.heic,.heif,.webp,.avif"
                         className="hidden"
                         disabled={isUploading}
                         onChange={async (e) => {
@@ -2507,7 +2507,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                       <Upload className="w-4 h-4" /> {editFloorData.image ? 'Change Image' : 'Upload Map Image'}
                       <input 
                         type="file" 
-                        accept="image/*" 
+                        accept="image/*,.heic,.heif,.webp,.avif" 
                         className="hidden" 
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
@@ -2587,7 +2587,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         <div className="flex items-center">
                           <input 
                             type="file" 
-                            accept="image/*"
+                            accept="image/*,.heic,.heif,.webp,.avif"
                             id={`floor-facility-upload-${fIdx}`}
                             className="hidden"
                             onChange={async (e) => {

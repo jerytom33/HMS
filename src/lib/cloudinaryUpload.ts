@@ -1,6 +1,7 @@
 /**
  * Upload the `file` in formData to Cloudinary using a server-issued signature.
- * Resolves with Cloudinary's response (e.g. { secure_url }); throws on failure.
+ * Resolves with Cloudinary's response; secure_url is a browser-displayable URL
+ * (see optimizedImageUrl). Throws on failure.
  */
 export async function cloudinaryUpload(formData: FormData): Promise<{ secure_url: string; [key: string]: unknown }> {
   const signRes = await fetch('/api/cloudinary/sign', { method: 'POST' })
@@ -17,5 +18,18 @@ export async function cloudinaryUpload(formData: FormData): Promise<{ secure_url
   const res = await fetch(`https://api.cloudinary.com/v1_1/${sign.cloudName}/image/upload`, { method: 'POST', body })
   const data = await res.json()
   if (!res.ok || !data.secure_url) throw new Error(data?.error?.message || `Upload failed (${res.status})`)
-  return data
+  return { ...data, secure_url: optimizedImageUrl(data.secure_url) }
+}
+
+/**
+ * Cloudinary delivery URL that converts to a format the browser can show:
+ * WebP/AVIF where supported, JPEG otherwise. Needed for HEIC (iPhone photos),
+ * which most browsers cannot display. Non-Cloudinary URLs pass through unchanged.
+ */
+export function optimizedImageUrl(url: string): string {
+  if (!url.startsWith('https://res.cloudinary.com/')) return url
+  const marker = '/image/upload/'
+  const i = url.indexOf(marker)
+  if (i === -1 || url.slice(i + marker.length).startsWith('f_auto')) return url
+  return `${url.slice(0, i + marker.length)}f_auto,q_auto/${url.slice(i + marker.length)}`
 }
