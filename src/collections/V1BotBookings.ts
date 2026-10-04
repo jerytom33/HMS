@@ -3,15 +3,16 @@ import { isStaff } from '../access'
 import { releaseHeldBed } from '../lib/botHolds'
 
 /**
- * When a bed hold is cancelled (by staff, or by the expiry cron), give its bed back:
- * clear bedStatuses[bedIndex] on the unit and recompute its counts. A hold that
- * becomes 'paid' keeps its bed.
+ * When a bed hold is cancelled (by staff, the student, or the expiry cron), give its bed
+ * back: clear bedStatuses[bedIndex] on the unit and recompute its counts. This applies to
+ * paid holds too (staff cancelling a paid booking); a bed staff assigned to a student stays
+ * taken (see releaseHeldBed). A hold that becomes 'paid' keeps its bed.
  */
 const releaseBedOnCancel: CollectionAfterChangeHook = async ({ doc, previousDoc, operation, req }) => {
   if (
     operation === 'update' &&
     doc.type === 'bed_hold' &&
-    previousDoc?.status === 'held' &&
+    (previousDoc?.status === 'held' || previousDoc?.status === 'paid') &&
     doc.status === 'cancelled' &&
     doc.overrideKey &&
     typeof doc.bedIndex === 'number'
