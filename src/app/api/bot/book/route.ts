@@ -4,7 +4,7 @@ import type { Payload } from 'payload'
 
 import { formatPLN } from '@/lib/currency'
 import { OVERRIDES, syncCounts, unitBedTotal } from '@/lib/botHolds'
-import { bookedBedLabel, fitBedStatuses, SHARING_LABELS, splitOverrideKey, type BotOverride, type BotUnit } from '@/lib/botRooms'
+import { bookedBedLabel, fitBedStatuses, GENDER_LABELS, parseContactPhone, parseGender, SHARING_LABELS, splitOverrideKey, type BotOverride, type BotUnit } from '@/lib/botRooms'
 import { botPayload, checkBotKey, clean, loadInventory, normalizePhone } from '@/lib/botServer'
 import { defaultAmenities } from '@/lib/propertyTypes'
 
@@ -50,7 +50,8 @@ async function ensureOverride(payload: Payload, unit: BotUnit, existing: BotOver
 
 /**
  * POST /api/bot/book   Header: x-api-key: <BOT_API_KEY>
- * Body: { unit, name, whatsapp, arrivalDate }  (unit = a `value` from /api/bot/rooms)
+ * Body: { unit, name, whatsapp, arrivalDate, phone?, gender? }  (unit = a `value` from /api/bot/rooms)
+ * `phone` is the number the student wants to be called on; defaults to the WhatsApp number.
  *
  * Holds one free bed in the unit until payment: the bed is marked taken in
  * v1-room-overrides (atomically, so two students can't get the same bed) and a
@@ -70,6 +71,8 @@ export async function POST(request: Request) {
   const whatsapp = normalizePhone(body.whatsapp)
   const name = clean(body.name, 120)
   const arrivalDate = clean(body.arrivalDate, 40)
+  const phone = parseContactPhone(body.phone) || whatsapp
+  const gender = parseGender(body.gender)
   if (!unitId || !whatsapp) {
     return NextResponse.json({ ok: false, reason: 'bad_request', error: 'unit and whatsapp are required' }, { status: 400 })
   }
@@ -138,6 +141,8 @@ export async function POST(request: Request) {
             status: 'held',
             name,
             whatsapp,
+            phone,
+            gender: gender ?? undefined,
             arrivalDate,
             sharing: unit.sharing,
             unit: unit.unit,
@@ -179,6 +184,9 @@ function confirmation(b: any, duplicate: boolean) {
     ok: true,
     duplicate,
     bookingRef: b.ref,
+    name: b.name || '',
+    phone: b.phone || b.whatsapp,
+    gender: b.gender ? GENDER_LABELS[b.gender as keyof typeof GENDER_LABELS] : '',
     hostel: b.hostel,
     room: b.room,
     floor: b.floor,
@@ -192,13 +200,16 @@ function confirmation(b: any, duplicate: boolean) {
       `📍 ${b.floor}\n` +
       `🛏 ${b.bed}\n` +
       (b.arrivalDate ? `📅 Arrival: ${b.arrivalDate}\n` : '') +
-      `💰 ${price}\n\n` +
+      `💰 ${price}\n` +
+      `👤 ${b.name || '-'} · 📞 +${b.phone || b.whatsapp}\n\n` +
       `We'll keep this bed for you until payment. Our team will contact you with the payment details soon.`,
     adminMessage:
       `🆕 New bed hold (WhatsApp bot)\n\n` +
       `Ref: ${b.ref}\n` +
       `Name: ${b.name || '-'}\n` +
+      (b.gender ? `Gender: ${GENDER_LABELS[b.gender as keyof typeof GENDER_LABELS]}\n` : '') +
       `WhatsApp: +${b.whatsapp}\n` +
+      (b.phone && b.phone !== b.whatsapp ? `Call on: +${b.phone}\n` : '') +
       `Hostel: ${b.hostel}\n` +
       `Room: ${b.room} (${b.floor})\n` +
       `Bed: ${b.bed}\n` +

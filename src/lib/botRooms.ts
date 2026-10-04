@@ -316,6 +316,56 @@ export function searchRooms(units: BotUnit[], sharing: number, hostelId?: string
   }
 }
 
+/**
+ * One unit's details for the booking summary the bot shows before confirming.
+ * `available` is false when the unit is gone or has no free bed left.
+ */
+export function unitDetails(units: BotUnit[], unitId: string) {
+  const u = units.find((x) => x.unit === unitId)
+  if (!u || u.freeBeds === 0) {
+    return {
+      available: false,
+      unit: unitId,
+      message: 'Sorry, that room was just booked by someone else 😔 Let me show you the rooms that are still free.',
+    }
+  }
+  return {
+    available: true,
+    unit: u.unit,
+    label: u.label,
+    hostel: u.hostel,
+    floor: u.floorName,
+    location: u.location,
+    sharing: u.sharing,
+    freeBeds: u.freeBeds,
+    price: priceText(u),
+    image: u.images[0] || null,
+    /** "Room 202 — Bukowiecka 11, 1st Floor · 870 PLN/month" */
+    summary: `${u.label} — ${u.hostel}, ${u.floorName} · ${priceText(u)}`,
+    caption: unitCaption(u),
+  }
+}
+
+/**
+ * A phone number a student typed: digits only, with a leading + or 00 dropped.
+ * Returns null unless it has 8–15 digits (E.164 length).
+ */
+export function parseContactPhone(input: unknown): string | null {
+  const digits = String(input ?? '').trim().replace(/^00/, '').replace(/\D/g, '')
+  return digits.length >= 8 && digits.length <= 15 ? digits : null
+}
+
+/** "Male", "female", "F", "Other" -> 'male' | 'female' | 'other'; null when not recognised. */
+export function parseGender(input: unknown): 'male' | 'female' | 'other' | null {
+  const text = String(input ?? '').trim().toLowerCase()
+  if (/^(m|male|man|boy)$/.test(text)) return 'male'
+  if (/^(f|female|woman|girl)$/.test(text)) return 'female'
+  if (/^(o|other|others|prefer not to say)$/.test(text)) return 'other'
+  return null
+}
+
+export const GENDER_LABELS = { male: 'Male', female: 'Female', other: 'Other' } as const
+
 /** "6ac0…-101~1" -> { overrideKey: "6ac0…-101", subRoomIndex: 1 }. */
 export function parseUnitId(unit: string): { overrideKey: string; subRoomIndex: number | null } {
   const [overrideKey, sub] = String(unit || '').split('~')

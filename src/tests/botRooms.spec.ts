@@ -2,7 +2,7 @@
 //   npx jest src/tests/botRooms.spec.ts --config '{"preset":"ts-jest","testEnvironment":"node"}'
 import { describe, expect, it } from '@jest/globals'
 
-import { listUnits, parseSharing, parseUnitId, searchRooms, whatsappImageUrl, type BotOverride, type BotProperty } from '../lib/botRooms'
+import { listUnits, parseContactPhone, parseGender, parseSharing, parseUnitId, searchRooms, unitDetails, whatsappImageUrl, type BotOverride, type BotProperty } from '../lib/botRooms'
 
 // Shapes taken from production documents on 2026-10-03
 const B = '6ac0d4a2a2ce1743975c0c64' // Bukowiecka 11
@@ -90,6 +90,29 @@ describe('bot room availability', () => {
     expect(four.gallery).toHaveLength(3)
     expect(four.gallery[0].image).toBe('https://res.cloudinary.com/dqojq3cle/image/upload/f_jpg,q_auto,w_1280,c_limit/v1791024532/hms/n0hayn9oqt8uyvgbjzzp.heic')
     expect(whatsappImageUrl('https://example.com/a.png')).toBe('https://example.com/a.png')
+  })
+
+  it('describes one room for the booking summary', () => {
+    const room = unitDetails(units, `${B}-202`)
+    expect(room.available).toBe(true)
+    expect(room.summary).toBe('Room 202 — Bukowiecka 11, 1st Floor · 870 PLN/month')
+    const full = units.map((u) => (u.unit === `${B}-202` ? { ...u, freeBeds: 0, freeBedIndices: [] } : u))
+    expect(unitDetails(full, `${B}-202`).available).toBe(false)
+    expect(unitDetails(units, 'nope').available).toBe(false)
+  })
+
+  it('reads a typed phone number', () => {
+    expect(parseContactPhone('+48 500 100 200')).toBe('48500100200')
+    expect(parseContactPhone('0048-500-100-200')).toBe('48500100200')
+    expect(parseContactPhone('12345')).toBeNull()
+    expect(parseContactPhone('call me')).toBeNull()
+  })
+
+  it('reads the gender answer', () => {
+    expect(parseGender('Male')).toBe('male')
+    expect(parseGender(' female ')).toBe('female')
+    expect(parseGender('Other')).toBe('other')
+    expect(parseGender('maybe')).toBeNull()
   })
 
   it('reads the sharing answer from the list', () => {

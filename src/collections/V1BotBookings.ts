@@ -35,7 +35,7 @@ export const V1BotBookings: CollectionConfig = {
   slug: 'v1-bot-bookings',
   admin: {
     useAsTitle: 'ref',
-    defaultColumns: ['ref', 'status', 'name', 'whatsapp', 'hostel', 'room', 'arrivalDate', 'createdAt'],
+    defaultColumns: ['ref', 'status', 'name', 'phone', 'hostel', 'room', 'arrivalDate', 'createdAt'],
   },
   access: {
     // Personal data: staff only. The bot writes through the server-side API with its own key.
@@ -74,6 +74,17 @@ export const V1BotBookings: CollectionConfig = {
     },
     { name: 'name', type: 'text' },
     { name: 'whatsapp', type: 'text', index: true },
+    // Number to call; the WhatsApp number unless the student gave another one
+    { name: 'phone', type: 'text' },
+    {
+      name: 'gender',
+      type: 'select',
+      options: [
+        { label: 'Male', value: 'male' },
+        { label: 'Female', value: 'female' },
+        { label: 'Other', value: 'other' },
+      ],
+    },
     // As the student typed it, DD/MM/YYYY
     { name: 'arrivalDate', type: 'text' },
     { name: 'sharing', type: 'number' },
