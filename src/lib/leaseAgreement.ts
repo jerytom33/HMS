@@ -31,7 +31,8 @@ export const propertyAddress = (property: { name?: string; location?: string } |
 /**
  * Values for the agreement from a bed hold, its property and the student's record.
  * Contract date and start date are the arrival date. Floors count from 0 (ground floor);
- * units outside floors have no floor number. Rent and deposit are the booking's.
+ * units outside floors have no floor number. Rent and deposit are the booking's
+ * (deposit defaults to the full price, like the unit's).
  */
 export function agreementValues(booking: any, property: any, student: any): AgreementValues {
   const arrival = polishDate(booking.arrivalDate || student?.arrivalDate)
@@ -53,7 +54,8 @@ export function agreementValues(booking: any, property: any, student: any): Agre
     floorNo: floor !== null && floor >= 0 ? String(floor) : '',
     bed: String(booking.bed || ''),
     rent: price !== null && price > UTILITIES_PLN ? String(price - UTILITIES_PLN) : '',
-    deposit: typeof booking.deposit === 'number' ? String(booking.deposit) : '',
+    // The booking's deposit; bookings made before deposits defaulted to the rent use the price
+    deposit: typeof booking.deposit === 'number' ? String(booking.deposit) : price !== null ? String(price) : '',
   }
 }
 

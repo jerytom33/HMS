@@ -8,7 +8,7 @@ import type { Payload } from 'payload'
 
 import { defaultFloorBeds, effectiveGenderPolicy, GENDER_POLICY_LABELS, whatsappImageUrl, type BotOverride, type BotProperty } from './botRooms'
 import { parseAmount } from './currency'
-import { bedDisplayLabel, bedTypeDisplay, defaultAmenities, floorLabel, parseRoomString, RENT_INCLUDES_TEXT, unitLabel, type Amenity } from './propertyTypes'
+import { bedDisplayLabel, bedTypeDisplay, defaultAmenities, floorLabel, parseRoomString, RENT_INCLUDES_TEXT, unitDeposit, unitLabel, type Amenity } from './propertyTypes'
 
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.flat(2).filter((s): s is string => typeof s === 'string' && s.trim() !== '') : [])
 
@@ -50,7 +50,7 @@ export async function studentRoom(payload: Payload, student: any) {
   const unitImages = [...strings(o?.roomFacilitiesImages), ...(o?.roomFacilitiesList || []).flatMap((f) => strings(f?.images))]
   const bedImage = strings(o?.bedImages?.[bedIndex])[0]
   const rent = parseAmount(o?.roomPrice)
-  const deposit = parseAmount(o?.deposit)
+  const deposit = unitDeposit(o)
 
   return {
     hostel: property.name || 'Hostel',

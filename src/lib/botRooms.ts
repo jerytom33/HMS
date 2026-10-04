@@ -8,7 +8,7 @@
 // their beds are a flat list grouped by subRooms, in order (see bedDisplayLabel).
 
 import { formatPLN, parseAmount } from './currency'
-import { bedDisplayLabel, bedTypeDisplay, floorLabel, roomNumber, unitLabel, type SubRoom } from './propertyTypes'
+import { bedDisplayLabel, bedTypeDisplay, floorLabel, roomNumber, unitDeposit, unitLabel, type SubRoom } from './propertyTypes'
 
 export type BotProperty = {
   id: string
@@ -198,7 +198,7 @@ export function listUnits(properties: BotProperty[], overrides: BotOverride[]): 
         floorName: slot.floor === null ? 'Outside floors' : floorLabel(property, slot.floor),
         unitType,
         price: parseAmount(o?.roomPrice),
-        deposit: parseAmount(o?.deposit),
+        deposit: unitDeposit(o),
         amenities: (o?.amenities || []).filter((a) => a?.included).map((a) => (a.shared ? `${a.name} (shared)` : a.name)),
         images: ownImages.length ? [...new Set(ownImages)] : hostelImages,
         hasOwnImages: ownImages.length > 0,

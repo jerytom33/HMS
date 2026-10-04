@@ -1,6 +1,8 @@
 // Units inside a property. A property mixes rooms, studios and apartments,
 // on floors or (studios/apartments only) outside any floor.
 
+import { parseAmount } from './currency'
+
 export type UnitType = 'room' | 'studio' | 'apartment'
 
 export type Amenity = { name: string; included: boolean; shared?: boolean }
@@ -196,6 +198,13 @@ export const PRESET_AMENITIES: Amenity[] = [
 
 /** Property-level facilities offered as one-click options (custom ones allowed too). */
 export const PROPERTY_FACILITIES = ['Parking', 'Metro', 'Bus', 'Tram']
+
+/**
+ * A unit's deposit: the amount staff set, else the same as the rent (the default).
+ * Both are plain number strings as stored; null when neither is set.
+ */
+export const unitDeposit = (unit: { roomPrice?: string | null; deposit?: string | null } | null | undefined) =>
+  parseAmount(unit?.deposit) ?? parseAmount(unit?.roomPrice)
 
 /** Utilities included in the rent of every unit and bed. */
 export const RENT_INCLUDES = ['Water', 'Electricity', 'Winter Heating']

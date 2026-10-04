@@ -2,7 +2,7 @@
 import { Search, MapPin, AlertTriangle, Building2, LayoutGrid, CheckCircle2, AlertCircle, X, Plus, Edit, Trash2, Upload, Share2, ArrowLeft } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, BUNK_POSITIONS, bunkPositionAt, defaultBunkPosition, bedTypeDisplay, PRESET_AMENITIES, PROPERTY_FACILITIES, RENT_INCLUDES_TEXT } from '@/lib/propertyTypes';
+import { UNIT_TYPES, STANDALONE_UNIT_TYPES, unitLabel, defaultAmenities, defaultSubRooms, unitBedCount, bedDisplayLabel, defaultFloorName, fitFloorNames, floorLabel, standaloneKey, isStandaloneKey, type Amenity, type SubRoom, BED_TYPES, bedTypeAt, bedTypeCounts, BUNK_POSITIONS, bunkPositionAt, defaultBunkPosition, bedTypeDisplay, PRESET_AMENITIES, PROPERTY_FACILITIES, RENT_INCLUDES_TEXT, unitDeposit } from '@/lib/propertyTypes';
 import { RentIncludedNote } from '@/components/ui/RentIncludedNote';
 import { formatPLN, normalizeAmount } from '@/lib/currency';
 import { AmenityIcon } from '@/components/ui/AmenityIcon';
@@ -571,7 +571,8 @@ export default function AdminProperties() {
       bedImages: initialBedImages,
       bedDescriptions: initialBedDescriptions,
       roomPrice: normalizeAmount(selectedRoom.roomPrice),
-      deposit: normalizeAmount(selectedRoom.deposit),
+      // Deposit defaults to the rent; staff may change it
+      deposit: normalizeAmount(selectedRoom.deposit) || normalizeAmount(selectedRoom.roomPrice),
       roomFacilitiesList: selectedRoom.roomFacilitiesList || 
         (selectedRoom.roomFacilitiesImages?.length ? selectedRoom.roomFacilitiesImages.map((img, i) => ({
           images: [img],
@@ -729,7 +730,7 @@ ${propertyImages.length > 0 ? `Images:\n${propertyImages.join('\n')}` : ''}${flo
 
 🚪 *${unitDisplayName(selectedRoom)} Details* (${unitLabel(selectedRoom.unitType)})
 Floor: ${selectedRoom.standalone ? 'Outside floors' : floorDisplayName(selectedFloor)}
-Rent: ${formatPLN(selectedRoom.roomPrice) || 'Not set'}\nDeposit: ${formatPLN(selectedRoom.deposit) || 'Not set'}\n✅ ${RENT_INCLUDES_TEXT}
+Rent: ${formatPLN(selectedRoom.roomPrice) || 'Not set'}\nDeposit: ${formatPLN(unitDeposit(selectedRoom)) || 'Not set'}\n✅ ${RENT_INCLUDES_TEXT}
 Total Beds: ${selectedRoom.beds} (${selectedRoom.freeBeds} Free)${roomFacilitiesText}
 
 🛏️ *${bedDisplayLabel(selectedRoom, bedIndex)} Details*
@@ -1292,7 +1293,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                   </div>
                   <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
                     <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Deposit</span>
-                    <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{formatPLN(selectedRoom.deposit) || 'Not set'}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{formatPLN(unitDeposit(selectedRoom)) || 'Not set'}</span>
                   </div>
                   <RentIncludedNote variant="full" className="my-2" />
                   
@@ -1674,7 +1675,12 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         inputMode="decimal"
                         placeholder="e.g. 1250"
                         value={editRoomData.roomPrice || ''}
-                        onChange={(e) => setEditRoomData({...editRoomData, roomPrice: e.target.value.replace(/[^0-9.,]/g, '')})}
+                        onChange={(e) => {
+                          const roomPrice = e.target.value.replace(/[^0-9.,]/g, '');
+                          // The deposit follows the rent until staff set a different amount
+                          const following = !editRoomData.deposit || editRoomData.deposit === editRoomData.roomPrice;
+                          setEditRoomData({ ...editRoomData, roomPrice, ...(following ? { deposit: roomPrice } : {}) });
+                        }}
                         className="w-28 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none"
                       />
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400">PLN</span>
@@ -1686,7 +1692,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                       <input
                         type="text"
                         inputMode="decimal"
-                        placeholder="e.g. 1250"
+                        placeholder="Same as rent"
                         value={editRoomData.deposit || ''}
                         onChange={(e) => setEditRoomData({...editRoomData, deposit: e.target.value.replace(/[^0-9.,]/g, '')})}
                         className="w-28 border border-gray-300 dark:border-gray-700 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 outline-none"
