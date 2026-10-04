@@ -37,6 +37,8 @@ const overrides: BotOverride[] = [
 
 const units = listUnits(properties, overrides)
 const count = (n: number) => searchRooms(units, n).total
+// The result is a union over available / taken; tests read fields of the case they expect
+const details = (...args: Parameters<typeof unitDetails>) => unitDetails(...args) as Record<string, any>
 
 describe('bot room availability', () => {
   it('matches the production inventory per sharing type', () => {
@@ -93,12 +95,43 @@ describe('bot room availability', () => {
   })
 
   it('describes one room for the booking summary', () => {
-    const room = unitDetails(units, `${B}-202`)
+    const room = details(units, `${B}-202`)
     expect(room.available).toBe(true)
     expect(room.summary).toBe('Room 202 — Bukowiecka 11, 1st Floor · 870 PLN/month')
     const full = units.map((u) => (u.unit === `${B}-202` ? { ...u, freeBeds: 0, freeBedIndices: [] } : u))
-    expect(unitDetails(full, `${B}-202`).available).toBe(false)
-    expect(unitDetails(units, 'nope').available).toBe(false)
+    expect(details(full, `${B}-202`).available).toBe(false)
+    expect(details(units, 'nope').available).toBe(false)
+  })
+
+  it('lists the free beds of a room and checks the chosen bed', () => {
+    const taken = overrides.map((o) => (o.overrideKey === `${B}-202` ? { ...o, bedStatuses: [true, false, false, false] } : o))
+    const u = listUnits(properties, taken)
+    const room = details(u, `${B}-202`)
+    expect(room.available).toBe(true)
+    expect(room.beds.map((b: { value: string; title: string }) => [b.value, b.title])).toEqual([['1', 'Bed B'], ['2', 'Bed C'], ['3', 'Bed D']])
+    expect(room.bedsText).toBe('3 of 4 beds free')
+    const bedC = details(u, `${B}-202`, '2')
+    expect(bedC.available).toBe(true)
+    expect(bedC.summary).toBe('Room 202, Bed C — Bukowiecka 11, 1st Floor · 870 PLN/month')
+    const bedA = details(u, `${B}-202`, 0)
+    expect(bedA.available).toBe(false)
+    expect(bedA.reason).toBe('bed_taken')
+  })
+
+  it('names the type of each free bed, bunk position included', () => {
+    const typed = overrides.map((o) =>
+      o.overrideKey === `${B}-202` ? { ...o, bedTypes: ['bunk', 'bunk', 'independent', 'independent'], bunkPositions: ['lower', 'upper', null, null] } : o,
+    )
+    const room = details(listUnits(properties, typed), `${B}-202`)
+    expect(room.beds.map((b: { bedType: string }) => b.bedType)).toEqual(['Bunk Bed · Lower', 'Bunk Bed · Upper', 'Independent Bed', 'Independent Bed'])
+    expect(room.beds[1].description.startsWith('Bunk Bed · Upper · Room 202')).toBe(true)
+    expect(room.beds.every((b: { description: string }) => b.description.length <= 72)).toBe(true)
+    expect(details(listUnits(properties, typed), `${B}-202`, '1').bedType).toBe('Bunk Bed · Upper')
+  })
+
+  it('labels apartment beds within their bedroom', () => {
+    const second = details(units, `${B}-101~1`)
+    expect(second.beds.map((b: { value: string; title: string }) => [b.value, b.title])).toEqual([['2', 'Bed A'], ['3', 'Bed B']])
   })
 
   it('reads a typed phone number', () => {

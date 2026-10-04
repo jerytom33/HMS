@@ -50,8 +50,9 @@ async function ensureOverride(payload: Payload, unit: BotUnit, existing: BotOver
 
 /**
  * POST /api/bot/book   Header: x-api-key: <BOT_API_KEY>
- * Body: { unit, name, whatsapp, arrivalDate, phone?, gender? }  (unit = a `value` from /api/bot/rooms)
- * `phone` is the number the student wants to be called on; defaults to the WhatsApp number.
+ * Body: { unit, bed?, name, whatsapp, arrivalDate, phone?, gender? }  (unit = a `value` from /api/bot/rooms)
+ * `bed` is the flat bed index the student chose (a `value` from /api/bot/unit `beds`); without it
+ * the first free bed is held. `phone` is the number to call; defaults to the WhatsApp number.
  *
  * Holds one free bed in the unit until payment: the bed is marked taken in
  * v1-room-overrides (atomically, so two students can't get the same bed) and a
@@ -73,6 +74,8 @@ export async function POST(request: Request) {
   const arrivalDate = clean(body.arrivalDate, 40)
   const phone = parseContactPhone(body.phone) || whatsapp
   const gender = parseGender(body.gender)
+  const bedText = clean(body.bed, 10)
+  const wantedBed = /^\d+$/.test(bedText) ? Number(bedText) : null
   if (!unitId || !whatsapp) {
     return NextResponse.json({ ok: false, reason: 'bad_request', error: 'unit and whatsapp are required' }, { status: 400 })
   }
@@ -80,7 +83,7 @@ export async function POST(request: Request) {
   try {
     const payload = await botPayload()
 
-    // A double tap or retry within 30 minutes returns the same hold
+    // A double tap or retry within 30 minutes returns the same hold (for the same bed, when one was chosen)
     const recent = await payload.find({
       collection: 'v1-bot-bookings',
       overrideAccess: true,
@@ -88,6 +91,7 @@ export async function POST(request: Request) {
       where: {
         whatsapp: { equals: whatsapp },
         unit: { equals: unitId },
+        ...(wantedBed !== null ? { bedIndex: { equals: wantedBed } } : {}),
         status: { equals: 'held' },
         createdAt: { greater_than: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
       },
@@ -105,14 +109,20 @@ export async function POST(request: Request) {
       message: 'Sorry, the last bed in that room was just taken 😔 Please choose another room.',
     }
     if (!unit.freeBedIndices.length) return NextResponse.json(noBeds)
+    const bedTaken = {
+      ok: false,
+      reason: 'bed_taken',
+      message: 'Sorry, that bed was just booked by someone else 😔 Please choose another bed.',
+    }
+    if (wantedBed !== null && !unit.freeBedIndices.includes(wantedBed)) return NextResponse.json(bedTaken)
 
     const existing = overrides.find((o) => o.overrideKey === unit.overrideKey)
     const total = existing && unit.unitType === 'apartment' ? unitBedTotal(existing) : existing ? Number(existing.beds) || unit.sharing : unit.sharing
     const Model = await ensureOverride(payload, unit, existing, total)
 
-    // Claim the first bed that is still free; the filter makes the claim atomic
+    // Claim the chosen bed, or else the first bed that is still free; the filter makes the claim atomic
     let claimed: { doc: any; bedIndex: number } | null = null
-    for (const bedIndex of unit.freeBedIndices) {
+    for (const bedIndex of wantedBed !== null ? [wantedBed] : unit.freeBedIndices) {
       // Native driver: no Mongoose casting on the json field's array paths
       const doc = await Model.collection.findOneAndUpdate(
         { overrideKey: unit.overrideKey, status: { $ne: 'maintenance' }, [`bedStatuses.${bedIndex}`]: { $ne: true } },
@@ -124,7 +134,7 @@ export async function POST(request: Request) {
         break
       }
     }
-    if (!claimed) return NextResponse.json(noBeds)
+    if (!claimed) return NextResponse.json(wantedBed !== null ? bedTaken : noBeds)
     await syncCounts(Model, claimed.doc)
 
     const { roomNum } = splitOverrideKey(unit.overrideKey)

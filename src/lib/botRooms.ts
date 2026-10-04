@@ -8,7 +8,7 @@
 // their beds are a flat list grouped by subRooms, in order (see bedDisplayLabel).
 
 import { formatPLN, parseAmount } from './currency'
-import { bedDisplayLabel, floorLabel, roomNumber, unitLabel, type SubRoom } from './propertyTypes'
+import { bedDisplayLabel, bedTypeDisplay, floorLabel, roomNumber, unitLabel, type SubRoom } from './propertyTypes'
 
 export type BotProperty = {
   id: string
@@ -36,6 +36,10 @@ export type BotOverride = {
   freeBeds?: number
   filledBeds?: number
   bedStatuses?: boolean[]
+  /** Per bed: 'independent' | 'bunk' */
+  bedTypes?: string[]
+  /** Per bed: 'lower' | 'upper' for bunk beds */
+  bunkPositions?: (string | null)[]
   bedImages?: string[][]
   roomFacilitiesImages?: string[]
   roomFacilitiesList?: { images?: string[]; description?: string }[]
@@ -65,6 +69,8 @@ export type BotUnit = {
   freeBeds: number
   /** Flat bed indices of this unit that are free. */
   freeBedIndices: number[]
+  /** The free beds with their labels ("Bed B", "Bedroom 2 · Bed A"), type ("Bunk Bed · Upper") and photo, if any. */
+  freeBedList: { index: number; label: string; type: string; image: string | null }[]
   price: number | null
   deposit: number | null
   amenities: string[]
@@ -168,6 +174,12 @@ export function listUnits(properties: BotProperty[], overrides: BotOverride[]): 
       if (total <= 0) continue
 
       const taken = fitBedStatuses(o, total)
+      const bedInfo = (b: number) => {
+        const photo = strings(o?.bedImages?.[b])[0]
+        // An apartment bedroom's label already names the bedroom, so keep just "Bed A"
+        const label = bedDisplayLabel({ unitType, subRooms }, b).split(' · ').pop()!
+        return { index: b, label, type: bedTypeDisplay(o?.bedTypes, o?.bunkPositions, b), image: photo ? whatsappImageUrl(photo) : null }
+      }
       const ownImages = [...strings(o?.roomFacilitiesImages), ...strings(o?.bedImages), ...(o?.roomFacilitiesList || []).flatMap((f) => strings(f?.images))].map(whatsappImageUrl)
       const baseLabel = o?.roomName?.trim() || `${unitLabel(unitType)} ${slot.roomNum}`
       const base = {
@@ -201,12 +213,13 @@ export function listUnits(properties: BotProperty[], overrides: BotOverride[]): 
             sharing: beds,
             freeBeds: free.length,
             freeBedIndices: free,
+            freeBedList: free.map(bedInfo),
           })
           start += beds
         })
       } else {
         const free = taken.flatMap((t, i) => (t ? [] : [i]))
-        units.push({ ...base, unit: slot.key, label: baseLabel, subRoomIndex: null, subRoomName: null, sharing: total, freeBeds: free.length, freeBedIndices: free })
+        units.push({ ...base, unit: slot.key, label: baseLabel, subRoomIndex: null, subRoomName: null, sharing: total, freeBeds: free.length, freeBedIndices: free, freeBedList: free.map(bedInfo) })
       }
     }
   }
@@ -317,20 +330,29 @@ export function searchRooms(units: BotUnit[], sharing: number, hostelId?: string
 }
 
 /**
- * One unit's details for the booking summary the bot shows before confirming.
- * `available` is false when the unit is gone or has no free bed left.
+ * One unit's details and its free beds, for the bed choice and the booking summary.
+ * With `bed` (a flat bed index), `available` says whether that bed is still free and the
+ * summary names it; without, whether the unit has any free bed.
  */
-export function unitDetails(units: BotUnit[], unitId: string) {
+export function unitDetails(units: BotUnit[], unitId: string, bed?: string | number | null) {
   const u = units.find((x) => x.unit === unitId)
+  const wantedBed = bed === undefined || bed === null || String(bed).trim() === '' ? null : Number(bed)
   if (!u || u.freeBeds === 0) {
     return {
       available: false,
       unit: unitId,
-      message: 'Sorry, that room was just booked by someone else 😔 Let me show you the rooms that are still free.',
+      reason: 'room_full',
+      message: 'Sorry, all beds in that room were just booked 😔 Let me show you the rooms that are still free.',
+      beds: [] as { value: string; title: string; description: string; bedType: string }[],
     }
   }
-  return {
-    available: true,
+  const beds = u.freeBedList.map((b) => ({
+    value: String(b.index),
+    title: clip(b.label, 24),
+    description: clip(`${b.type} · ${u.label} — ${u.hostel} · ${priceText(u)}`, 72),
+    bedType: b.type,
+  }))
+  const base = {
     unit: u.unit,
     label: u.label,
     hostel: u.hostel,
@@ -338,11 +360,36 @@ export function unitDetails(units: BotUnit[], unitId: string) {
     location: u.location,
     sharing: u.sharing,
     freeBeds: u.freeBeds,
+    bedCount: u.sharing,
     price: priceText(u),
     image: u.images[0] || null,
-    /** "Room 202 — Bukowiecka 11, 1st Floor · 870 PLN/month" */
-    summary: `${u.label} — ${u.hostel}, ${u.floorName} · ${priceText(u)}`,
     caption: unitCaption(u),
+    /** Rows for a dynamic WhatsApp list of the free beds: title / description / value. */
+    beds,
+    bedsText: `${u.freeBeds} of ${u.sharing} ${u.sharing === 1 ? 'bed' : 'beds'} free`,
+  }
+  if (wantedBed === null) {
+    return { ...base, available: true, summary: `${u.label} — ${u.hostel}, ${u.floorName} · ${priceText(u)}` }
+  }
+  const chosen = u.freeBedList.find((b) => b.index === wantedBed)
+  if (!chosen) {
+    return {
+      ...base,
+      available: false,
+      reason: 'bed_taken',
+      message: 'Sorry, that bed was just booked by someone else 😔 Please choose another bed.',
+    }
+  }
+  return {
+    ...base,
+    available: true,
+    bed: chosen.index,
+    bedLabel: chosen.label,
+    /** "Independent Bed", "Bunk Bed · Upper" */
+    bedType: chosen.type,
+    bedImage: chosen.image,
+    /** "Room 202, Bed B — Bukowiecka 11, 1st Floor · 870 PLN/month" */
+    summary: `${u.label}, ${chosen.label} — ${u.hostel}, ${u.floorName} · ${priceText(u)}`,
   }
 }
 
