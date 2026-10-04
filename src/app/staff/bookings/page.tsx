@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BadgeCheck, CalendarCheck, CheckCircle2, FileText, MessageCircle, Phone, RefreshCw, Search, XCircle } from 'lucide-react';
-import { formatPLN } from '@/lib/currency';
+import { formatPLN, parseAmount } from '@/lib/currency';
+import { unitDeposit } from '@/lib/propertyTypes';
 
 // Bed holds and call requests from the WhatsApp bot and the student portal (v1-bot-bookings).
 // Staff mark holds paid or cancel them (cancelling frees the bed) and tick off call requests.
@@ -10,7 +11,7 @@ import { formatPLN } from '@/lib/currency';
 type Booking = {
   id: string; ref: string; type: 'bed_hold' | 'call_request'; status: string; source?: string;
   name?: string; whatsapp?: string; phone?: string; email?: string; gender?: string;
-  arrivalDate?: string; minStayAgreed?: boolean; hostel?: string; room?: string; floor?: string; bed?: string;
+  arrivalDate?: string; minStayAgreed?: boolean; hostel?: string; room?: string; floor?: string; bed?: string; overrideKey?: string;
   price?: number; deposit?: number; notes?: string; createdAt: string;
 };
 
@@ -70,6 +71,8 @@ export default function AdminBookings() {
   const [saving, setSaving] = useState('');
   const [notice, setNotice] = useState<{ ok: boolean; message: string } | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  // Units' current rent and deposit, for bookings made before the unit had a rent
+  const [units, setUnits] = useState<Record<string, { roomPrice?: string; deposit?: string }>>({});
   // Passport being rejected (booking id) and the reason typed for the student
   const [rejecting, setRejecting] = useState('');
   const [reason, setReason] = useState('');
@@ -80,8 +83,9 @@ export default function AdminBookings() {
       const res = await fetch('/api/v1-bot-bookings?limit=1000&sort=-createdAt&depth=0');
       if (!res.ok) throw new Error(String(res.status));
       setBookings((await res.json()).docs || []);
-      const st = await fetch('/api/v1-students?limit=2000&depth=0');
+      const [st, un] = await Promise.all([fetch('/api/v1-students?limit=2000&depth=0'), fetch('/api/v1-room-overrides?limit=2000&depth=0')]);
       if (st.ok) setStudents((await st.json()).docs || []);
+      if (un.ok) setUnits(Object.fromEntries(((await un.json()).docs || []).map((u: any) => [u.overrideKey, u])));
     } catch {
       setError("Couldn't load bookings. Check that you are signed in and try again.");
     } finally {
@@ -270,7 +274,20 @@ export default function AdminBookings() {
                       <div><dt className="text-xs text-gray-500">Hostel</dt><dd>{b.hostel || '–'}</dd></div>
                       <div><dt className="text-xs text-gray-500">Room / bed</dt><dd>{b.room || '–'}{b.bed ? `, ${b.bed}` : ''}{b.floor ? <span className="text-gray-500"> · {b.floor}</span> : null}</dd></div>
                       <div><dt className="text-xs text-gray-500">Arrival</dt><dd>{b.arrivalDate || '–'}</dd></div>
-                      <div><dt className="text-xs text-gray-500">Rent / deposit</dt><dd>{typeof b.price === 'number' ? `${formatPLN(b.price)}/mo` : '–'} · {typeof b.deposit === 'number' ? formatPLN(b.deposit) : '–'}</dd></div>
+                      {(() => {
+                        // Agreed at booking; bookings made before the unit had a rent show the unit's current amounts
+                        const unit = b.overrideKey ? units[b.overrideKey] : undefined;
+                        const rent = typeof b.price === 'number' ? b.price : parseAmount(unit?.roomPrice);
+                        const deposit = typeof b.deposit === 'number' ? b.deposit : typeof b.price === 'number' ? b.price : unitDeposit(unit);
+                        const fromUnit = typeof b.price !== 'number' && rent !== null;
+                        return (
+                          <div><dt className="text-xs text-gray-500">Rent / deposit</dt>
+                            <dd>{rent !== null ? `${formatPLN(rent)}/mo` : '–'} · {deposit !== null ? formatPLN(deposit) : '–'}
+                              {fromUnit && <span className="block text-xs text-gray-500">current unit price</span>}
+                            </dd>
+                          </div>
+                        );
+                      })()}
                       <div><dt className="text-xs text-gray-500">Minimum stay</dt><dd>{b.minStayAgreed ? 'Agreed' : 'Not confirmed'}</dd></div>
                     </dl>
                   )}

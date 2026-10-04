@@ -5,6 +5,8 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate'
 
 import { splitOverrideKey } from './botRooms'
+import { parseAmount } from './currency'
+import { unitDeposit } from './propertyTypes'
 
 /** Monthly utilities in the agreement (§4.3); the advertised price includes them, so the contract rent is price minus this. */
 export const UTILITIES_PLN = 200
@@ -31,14 +33,16 @@ export const propertyAddress = (property: { name?: string; location?: string } |
 /**
  * Values for the agreement from a bed hold, its property and the student's record.
  * Contract date and start date are the arrival date. Floors count from 0 (ground floor);
- * units outside floors have no floor number. Rent and deposit are the booking's
- * (deposit defaults to the full price, like the unit's).
+ * units outside floors have no floor number. Rent and deposit are the ones agreed at booking;
+ * a booking made before the unit had a rent uses the unit's current rent and deposit (`unit`,
+ * its v1-room-overrides document). The deposit defaults to the full price, like the unit's.
  */
-export function agreementValues(booking: any, property: any, student: any): AgreementValues {
+export function agreementValues(booking: any, property: any, student: any, unit?: { roomPrice?: string; deposit?: string } | null): AgreementValues {
   const arrival = polishDate(booking.arrivalDate || student?.arrivalDate)
   const { roomNum } = splitOverrideKey(String(booking.overrideKey || ''))
   const floor = /^\d+$/.test(roomNum) ? Math.floor(Number(roomNum) / 100) - 1 : null
-  const price = typeof booking.price === 'number' ? booking.price : null
+  const price = typeof booking.price === 'number' ? booking.price : parseAmount(unit?.roomPrice)
+  const deposit = typeof booking.deposit === 'number' ? booking.deposit : typeof booking.price === 'number' ? booking.price : unitDeposit(unit)
   const phone = String(booking.phone || booking.whatsapp || student?.whatsapp || '').replace(/\D/g, '')
   return {
     contractDate: arrival,
@@ -54,8 +58,7 @@ export function agreementValues(booking: any, property: any, student: any): Agre
     floorNo: floor !== null && floor >= 0 ? String(floor) : '',
     bed: String(booking.bed || ''),
     rent: price !== null && price > UTILITIES_PLN ? String(price - UTILITIES_PLN) : '',
-    // The booking's deposit; bookings made before deposits defaulted to the rent use the price
-    deposit: typeof booking.deposit === 'number' ? String(booking.deposit) : price !== null ? String(price) : '',
+    deposit: deposit !== null ? String(deposit) : '',
   }
 }
 

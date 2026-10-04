@@ -30,11 +30,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
   if (!booking || booking.type !== 'bed_hold') return NextResponse.json({ ok: false, error: 'Booking not found' }, { status: 404 })
 
-  const [property, student] = await Promise.all([
+  const [property, student, unit] = await Promise.all([
     booking.propertyId
       ? payload.findByID({ collection: 'v1-properties', id: booking.propertyId, overrideAccess: true, depth: 0 }).catch(() => null)
       : null,
     booking.whatsapp ? findStudentByWhatsapp(payload, booking.whatsapp) : null,
+    // The unit's current rent, for bookings made before it had one
+    booking.overrideKey
+      ? payload
+          .find({ collection: 'v1-room-overrides', where: { overrideKey: { equals: booking.overrideKey } }, limit: 1, depth: 0, overrideAccess: true })
+          .then((r) => (r.docs[0] as any) || null)
+      : null,
   ])
 
   if (booking.status !== 'paid') {
@@ -45,7 +51,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 
   const template = await readFile(path.join(process.cwd(), 'src/templates/lease-agreement.docx'))
-  const file = fillAgreement(new Uint8Array(template), agreementValues(booking, property, student))
+  const file = fillAgreement(new Uint8Array(template), agreementValues(booking, property, student, unit))
   return new Response(Buffer.from(file), {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

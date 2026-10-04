@@ -40,6 +40,16 @@ describe('agreement values', () => {
     expect(agreementValues({ ...booking, overrideKey: 'p1-S2' }, property, null)).toMatchObject({ roomNo: 'S2', floorNo: '' })
   })
 
+  it('uses the unit\u2019s current rent when the booking was made before the unit had one', () => {
+    const unpriced = { ...booking, price: undefined, deposit: undefined }
+    expect(agreementValues(unpriced, property, null, { roomPrice: '1250' })).toMatchObject({ rent: '1050', deposit: '1250' })
+    expect(agreementValues(unpriced, property, null, { roomPrice: '1250', deposit: '1000' })).toMatchObject({ rent: '1050', deposit: '1000' })
+  })
+
+  it('keeps the price agreed at booking over a later unit price', () => {
+    expect(agreementValues(booking, property, null, { roomPrice: '1400', deposit: '1400' })).toMatchObject({ rent: '900', deposit: '1100' })
+  })
+
   it('leaves rent and deposit blank when unknown', () => {
     expect(agreementValues({ ...booking, price: undefined, deposit: undefined }, property, null)).toMatchObject({ rent: '', deposit: '' })
   })

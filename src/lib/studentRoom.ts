@@ -45,13 +45,16 @@ export function bookingAssignment(booking: any, properties: BotProperty[], overr
   return { property, override: overrides.find((o) => o.overrideKey === booking.overrideKey), roomNum, bedIndex: booking.bedIndex as number }
 }
 
-/** The booking details shown with the room: agreed rent and deposit are the booking's. */
-const bookingSummary = (b: any) => ({
+/**
+ * The booking details shown with the room: rent and deposit agreed at booking, or the unit's
+ * current ones (`unit`) for a booking made before the unit had a rent.
+ */
+const bookingSummary = (b: any, unit?: BotOverride) => ({
   ref: b.ref as string,
   status: b.status as string,
   arrivalDate: (b.arrivalDate as string) || '',
-  rent: typeof b.price === 'number' ? (b.price as number) : null,
-  deposit: typeof b.deposit === 'number' ? (b.deposit as number) : typeof b.price === 'number' ? (b.price as number) : null,
+  rent: typeof b.price === 'number' ? (b.price as number) : parseAmount(unit?.roomPrice),
+  deposit: typeof b.deposit === 'number' ? (b.deposit as number) : typeof b.price === 'number' ? (b.price as number) : unitDeposit(unit),
   minStayAgreed: Boolean(b.minStayAgreed),
 })
 
@@ -98,14 +101,14 @@ export async function studentRoom(payload: Payload, student: any) {
     bedType: bedTypeDisplay(o?.bedTypes, o?.bunkPositions, bedIndex),
     sharing: beds,
     // Agreed at booking when the room comes from a paid booking, else the unit's current amounts
-    rent: paid ? bookingSummary(paid).rent ?? rent : rent,
-    deposit: paid ? bookingSummary(paid).deposit ?? deposit : deposit,
+    rent: paid ? bookingSummary(paid, o).rent ?? rent : rent,
+    deposit: paid ? bookingSummary(paid, o).deposit ?? deposit : deposit,
     rentIncludes: RENT_INCLUDES_TEXT,
     amenities: amenities.filter((a) => a?.included).map((a) => (a.shared ? `${a.name} (shared)` : a.name)),
     genderPolicy: GENDER_POLICY_LABELS[effectiveGenderPolicy(property.genderPolicy, o?.genderPolicy)],
     bedImage: bedImage ? whatsappImageUrl(bedImage) : null,
     images: [...new Set((unitImages.length ? unitImages : strings(property.images)).map(whatsappImageUrl))],
-    booking: paid ? bookingSummary(paid) : null,
+    booking: paid ? bookingSummary(paid, o) : null,
   }
   return { room, pending }
 }
