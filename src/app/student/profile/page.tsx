@@ -63,10 +63,10 @@ function PassportCard({ passport, onSaved }: { passport: PassportInfo; onSaved: 
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+    <div id="documents" className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden scroll-mt-4">
       <div className="bg-secondary/5 px-6 py-4 border-b border-border flex items-center gap-2">
         <FileText className="h-5 w-5 text-primary" />
-        <h2 className="font-medium text-lg">Passport (for your agreement)</h2>
+        <h2 className="font-medium text-lg">Documents: passport copy</h2>
       </div>
       <div className="p-6 space-y-4">
         {passport.status === 'verified' ? (

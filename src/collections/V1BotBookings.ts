@@ -1,6 +1,7 @@
 import type { CollectionAfterChangeHook, CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 import { isStaff } from '../access'
 import { releaseHeldBed } from '../lib/botHolds'
+import { notifyFromBooking } from '../lib/notify'
 
 /**
  * When a bed hold is cancelled (by staff, the student, or the expiry cron), give its bed
@@ -32,6 +33,20 @@ const releaseBedOnCancel: CollectionAfterChangeHook = async ({ doc, previousDoc,
 // Bed holds and call requests made through the WhatsApp bot (/api/bot/*).
 // A 'held' booking keeps its bed marked taken in v1-room-overrides until staff
 // confirm payment or it is cancelled (by staff, or after HOLD_EXPIRY_HOURS by the cron).
+/**
+ * When a bed hold becomes paid (Bookings page, /admin or anything else), tell the student on
+ * WhatsApp, with the link to upload their passport. Once per transition; never fails the update.
+ */
+const notifyOnPaid: CollectionAfterChangeHook = async ({ doc, previousDoc, operation, req }) => {
+  if (operation === 'update' && doc.type === 'bed_hold' && doc.status === 'paid' && previousDoc?.status !== 'paid') {
+    const host = req.headers?.get?.('host')
+    const origin = host ? `${host.startsWith('localhost') ? 'http' : 'https'}://${host}` : null
+    // `req` keeps the note in this update's transaction
+    await notifyFromBooking('booking_paid', doc, req.payload, { origin, req })
+  }
+  return doc
+}
+
 /** Record when a booking is marked paid (the Payments page lists paid bookings by this date). */
 const stampPaidAt: CollectionBeforeChangeHook = ({ data, originalDoc }) => {
   if (data?.status === 'paid' && originalDoc?.status !== 'paid' && !data.paidAt) data.paidAt = new Date().toISOString()
@@ -53,7 +68,7 @@ export const V1BotBookings: CollectionConfig = {
   },
   hooks: {
     beforeChange: [stampPaidAt],
-    afterChange: [releaseBedOnCancel],
+    afterChange: [releaseBedOnCancel, notifyOnPaid],
   },
   fields: [
     { name: 'ref', type: 'text', required: true, unique: true },

@@ -572,6 +572,7 @@ export const PL: Record<string, string> = {
   'To change these, message us on WhatsApp.': 'Aby je zmienić, napisz do nas na WhatsAppie.',
   'Contact & Studies': 'Kontakt i studia',
   'Passport (for your agreement)': 'Paszport (do umowy)',
+  'Documents: passport copy': 'Dokumenty: kopia paszportu',
   'Once your booking is paid, you\'ll add your passport details here. We need them for your lease agreement.': 'Po opłaceniu rezerwacji dodasz tu dane paszportu. Potrzebujemy ich do umowy najmu.',
   'Your booking is paid. Please add your passport details for your lease agreement.': 'Twoja rezerwacja jest opłacona. Dodaj dane paszportu do umowy najmu.',
   'Waiting for our team to check. You can still correct the details below.': 'Czekamy na weryfikację przez nasz zespół. Nadal możesz poprawić dane poniżej.',

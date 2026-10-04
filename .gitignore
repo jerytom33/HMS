@@ -50,3 +50,4 @@ payload-types.ts
 bot-credentials.env
 
 hms-otp-webhook.env
+hms-notify-webhook.env
