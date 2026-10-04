@@ -4,7 +4,7 @@ import type { Payload } from 'payload'
 
 import { formatPLN } from '@/lib/currency'
 import { OVERRIDES, syncCounts, unitBedTotal } from '@/lib/botHolds'
-import { AMBIGUOUS_ROOM_MESSAGE, bookedBedLabel, depositText, findUnit, fitBedStatuses, GENDER_LABELS, parseContactPhone, parseGender, parseSharing, resolveBed, SHARING_LABELS, splitOverrideKey, type BotOverride, type BotUnit } from '@/lib/botRooms'
+import { AMBIGUOUS_ROOM_MESSAGE, bookedBedLabel, depositText, findUnit, fitBedStatuses, GENDER_LABELS, parseContactPhone, parseEmail, parseGender, parseSharing, resolveBed, SHARING_LABELS, splitOverrideKey, type BotOverride, type BotUnit } from '@/lib/botRooms'
 import { botPayload, checkBotKey, clean, loadInventory, normalizePhone } from '@/lib/botServer'
 import { defaultAmenities } from '@/lib/propertyTypes'
 
@@ -50,7 +50,7 @@ async function ensureOverride(payload: Payload, unit: BotUnit, existing: BotOver
 
 /**
  * POST /api/bot/book   Header: x-api-key: <BOT_API_KEY>
- * Body: { unit, bed?, sharing?, hostel?, name, whatsapp, arrivalDate, phone?, gender? }
+ * Body: { unit, bed?, sharing?, hostel?, name, whatsapp, arrivalDate, phone?, email?, gender? }
  * `unit` is a room `value` from /api/bot/rooms or the room list title the student tapped
  * ("Room 402"; `sharing` and `hostel` tell rooms with the same name apart). `bed` is a bed
  * `value` or title from /api/bot/unit ("Bed B"); without it the first free bed is held. `phone` is the number to call; defaults to the WhatsApp number.
@@ -74,6 +74,7 @@ export async function POST(request: Request) {
   const name = clean(body.name, 120)
   const arrivalDate = clean(body.arrivalDate, 40)
   const phone = parseContactPhone(body.phone) || whatsapp
+  const email = parseEmail(body.email)
   const gender = parseGender(body.gender)
   const bedText = clean(body.bed, 40)
   if (!unitId || !whatsapp) {
@@ -159,6 +160,7 @@ export async function POST(request: Request) {
             name,
             whatsapp,
             phone,
+            email: email ?? undefined,
             gender: gender ?? undefined,
             arrivalDate,
             sharing: unit.sharing,
@@ -205,6 +207,7 @@ function confirmation(b: any, duplicate: boolean) {
     bookingRef: b.ref,
     name: b.name || '',
     phone: b.phone || b.whatsapp,
+    email: b.email || '',
     gender: b.gender ? GENDER_LABELS[b.gender as keyof typeof GENDER_LABELS] : '',
     hostel: b.hostel,
     room: b.room,
@@ -221,7 +224,9 @@ function confirmation(b: any, duplicate: boolean) {
       `🛏 ${b.bed}\n` +
       (b.arrivalDate ? `📅 Arrival: ${b.arrivalDate}\n` : '') +
       `💰 ${price} · 🔒 ${deposit}\n` +
-      `👤 ${b.name || '-'} · 📞 +${b.phone || b.whatsapp}\n\n` +
+      `👤 ${b.name || '-'} · 📞 +${b.phone || b.whatsapp}\n` +
+      (b.email ? `✉️ ${b.email}\n` : '') +
+      `\n` +
       `We'll keep this bed for you until payment. Our team will contact you with the payment details soon.`,
     adminMessage:
       `🆕 New bed hold (WhatsApp bot)\n\n` +
@@ -230,6 +235,7 @@ function confirmation(b: any, duplicate: boolean) {
       (b.gender ? `Gender: ${GENDER_LABELS[b.gender as keyof typeof GENDER_LABELS]}\n` : '') +
       `WhatsApp: +${b.whatsapp}\n` +
       (b.phone && b.phone !== b.whatsapp ? `Call on: +${b.phone}\n` : '') +
+      (b.email ? `Email: ${b.email}\n` : '') +
       `Hostel: ${b.hostel}\n` +
       `Room: ${b.room} (${b.floor})\n` +
       `Bed: ${b.bed}\n` +

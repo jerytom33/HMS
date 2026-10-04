@@ -76,6 +76,8 @@ export const V1BotBookings: CollectionConfig = {
     { name: 'whatsapp', type: 'text', index: true },
     // Number to call; the WhatsApp number unless the student gave another one
     { name: 'phone', type: 'text' },
+    // As the student typed it in the bot, lower-cased; empty when it didn't look like an email
+    { name: 'email', type: 'text' },
     {
       name: 'gender',
       type: 'select',

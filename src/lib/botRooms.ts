@@ -497,6 +497,12 @@ export function parseContactPhone(input: unknown): string | null {
   return digits.length >= 8 && digits.length <= 15 ? digits : null
 }
 
+/** An email address a student typed, lower-cased; null unless it looks like one. */
+export function parseEmail(input: unknown): string | null {
+  const text = String(input ?? '').trim().toLowerCase()
+  return text.length <= 254 && /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(text) ? text : null
+}
+
 /** "Male", "female", "F", "Other" -> 'male' | 'female' | 'other'; null when not recognised. */
 export function parseGender(input: unknown): 'male' | 'female' | 'other' | null {
   const text = String(input ?? '').trim().toLowerCase()
