@@ -2,24 +2,46 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BedSingle, CheckCircle2, Info, MapPin, Search } from 'lucide-react';
+import { BadgeCheck, BedSingle, CheckCircle2, Clock, FileText, Info, MapPin, Search } from 'lucide-react';
 import { formatPLN } from '@/lib/currency';
-import { studentGet, type StudentRoom } from '@/lib/studentClient';
+import { studentGet, type PassportInfo, type PendingBooking, type StudentProfile, type StudentRoom } from '@/lib/studentClient';
 
 export default function StudentRoomPage() {
   const [room, setRoom] = useState<StudentRoom | null>(null);
+  const [pending, setPending] = useState<PendingBooking | null>(null);
+  const [passport, setPassport] = useState<PassportInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    studentGet<{ room: StudentRoom | null }>('/api/student/room', '/student/room')
-      .then((r) => setRoom(r.room))
+    Promise.all([
+      studentGet<{ room: StudentRoom | null; pending: PendingBooking | null }>('/api/student/room', '/student/room'),
+      studentGet<StudentProfile>('/api/student/me', '/student/room'),
+    ])
+      .then(([r, me]) => { setRoom(r.room); setPending(r.pending); setPassport(me.passport); })
       .catch((e) => { if (e?.message !== 'signed out') setError("Couldn't load your room. Please refresh the page."); })
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (error) return <p className="text-sm text-destructive">{error}</p>;
+
+  if (!room && pending) {
+    return (
+      <div className="max-w-4xl space-y-6">
+        <h1 className="font-display text-3xl font-medium">My Room</h1>
+        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 space-y-3">
+          <span className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-amber-800 bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 px-2 py-1 rounded">
+            <Clock className="h-3.5 w-3.5" /> Reserved – waiting for payment confirmation
+          </span>
+          <h2 className="font-display text-2xl">{pending.room}, {pending.bed}</h2>
+          <p className="text-sm text-muted-foreground">{pending.hostel} · Booking {pending.ref}{pending.arrivalDate ? ` · Arrival ${pending.arrivalDate}` : ''}</p>
+          <p className="text-sm">Your room details appear here once our team confirms your payment.</p>
+          <Link href="/student/bookings" className="inline-block text-sm text-primary hover:underline">See your booking</Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!room) {
     return (
@@ -28,7 +50,7 @@ export default function StudentRoomPage() {
         <div className="bg-card border border-border rounded-2xl p-6 sm:p-8">
           <h2 className="font-display text-xl">No room assigned yet</h2>
           <p className="text-sm text-muted-foreground mt-1 mb-4">
-            Your room appears here once our staff assign your bed. If you have booked a bed, it is listed under Bookings until then.
+            Book a bed, and once our team confirms your payment, your room appears here.
           </p>
           <Link href="/student/rooms" className="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium">
             <Search className="h-4 w-4" /> Find a Room
@@ -56,6 +78,38 @@ export default function StudentRoomPage() {
         <h1 className="font-display text-3xl font-medium mb-1">My Room</h1>
         <p className="text-muted-foreground text-sm">The room and bed assigned to you.</p>
       </div>
+
+      {room.booking && (
+        <div className="bg-card border border-border rounded-2xl shadow-sm p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-xl">Your booking</h2>
+            <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300 px-3 py-1 rounded-full text-xs font-semibold">
+              <BadgeCheck className="h-4 w-4" /> Paid – confirmed
+            </span>
+          </div>
+          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+            <div><dt className="text-xs text-muted-foreground mb-1">Booking ref</dt><dd className="font-medium">{room.booking.ref}</dd></div>
+            <div><dt className="text-xs text-muted-foreground mb-1">Arrival</dt><dd className="font-medium">{room.booking.arrivalDate || '–'}</dd></div>
+            <div><dt className="text-xs text-muted-foreground mb-1">Rent</dt><dd className="font-medium">{room.booking.rent !== null ? `${formatPLN(room.booking.rent)}/month` : 'On request'}</dd></div>
+            <div><dt className="text-xs text-muted-foreground mb-1">Deposit</dt><dd className="font-medium">{room.booking.deposit !== null ? formatPLN(room.booking.deposit) : 'On request'}</dd></div>
+          </dl>
+          {passport && (
+            <div className="border-t border-border pt-4 text-sm space-y-1">
+              <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Next steps</h3>
+              {passport.status === 'verified' ? (
+                <p className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Passport verified. Our team is preparing your lease agreement for signing.</p>
+              ) : passport.status === 'submitted' ? (
+                <p className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary" /> Passport sent. Our team is checking it; then we prepare your lease agreement.</p>
+              ) : (
+                <p className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" />
+                  {passport.status === 'rejected' ? 'Please check your passport details' : 'Add your passport details for your lease agreement'}
+                  {' '}on <Link href="/student/profile" className="text-primary hover:underline">My Profile</Link>.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
         {photos[0] && <img src={photos[0]} alt={room.label} className="w-full h-56 sm:h-72 object-cover" />}

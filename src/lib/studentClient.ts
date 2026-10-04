@@ -19,7 +19,12 @@ export type StudentRoom = {
   hostel: string; location: string; facilities: string[]; unitType: string; label: string; roomNum: string;
   floorName: string; bed: string; bedType: string; sharing: number; rent: number | null; deposit: number | null;
   rentIncludes: string; amenities: string[]; genderPolicy: string; bedImage: string | null; images: string[];
+  /** The paid booking this room comes from (null for a bed staff assigned by hand). */
+  booking: { ref: string; status: string; arrivalDate: string; rent: number | null; deposit: number | null; minStayAgreed: boolean } | null;
 };
+
+/** A booking still on hold, waiting for payment confirmation. */
+export type PendingBooking = { ref: string; room: string; bed: string; hostel: string; arrivalDate: string };
 
 export const BOOKING_STATUS: Record<string, string> = { held: 'On hold — awaiting payment', paid: 'Paid', cancelled: 'Cancelled' };
 

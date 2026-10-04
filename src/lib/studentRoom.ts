@@ -1,4 +1,5 @@
-// The room and bed staff assigned to a student, with the unit's details for the student portal.
+// The room and bed of a student, with the unit's details for the student portal: the bed
+// staff assigned, or else the bed of the student's paid booking.
 //
 // Staff assign a bed on the student's page: the bed's slot in the unit's bedOccupants holds the
 // student id, and the student record gets room "Room 203 - Bed B" and property <property name>.
@@ -6,7 +7,8 @@
 
 import type { Payload } from 'payload'
 
-import { defaultFloorBeds, effectiveGenderPolicy, GENDER_POLICY_LABELS, whatsappImageUrl, type BotOverride, type BotProperty } from './botRooms'
+import { activeBooking } from './bedHold'
+import { defaultFloorBeds, effectiveGenderPolicy, GENDER_POLICY_LABELS, splitOverrideKey, whatsappImageUrl, type BotOverride, type BotProperty } from './botRooms'
 import { parseAmount } from './currency'
 import { bedDisplayLabel, bedTypeDisplay, defaultAmenities, floorLabel, parseRoomString, RENT_INCLUDES_TEXT, unitDeposit, unitLabel, type Amenity } from './propertyTypes'
 
@@ -31,14 +33,46 @@ export function findAssignment(student: any, properties: BotProperty[], override
   return { property, override, roomNum: parsed.roomNum, bedIndex }
 }
 
-/** The student's assigned unit and bed, ready to show; null when staff haven't assigned one. */
+/**
+ * Where the student lives, from a paid booking when staff haven't assigned a bed by hand:
+ * the booked unit and bed (apartment bookings carry the flat bed index too).
+ */
+export function bookingAssignment(booking: any, properties: BotProperty[], overrides: BotOverride[]) {
+  if (!booking?.overrideKey || typeof booking.bedIndex !== 'number') return null
+  const { propertyId, roomNum } = splitOverrideKey(booking.overrideKey)
+  const property = properties.find((p) => String(p.id) === String(booking.propertyId || propertyId))
+  if (!property) return null
+  return { property, override: overrides.find((o) => o.overrideKey === booking.overrideKey), roomNum, bedIndex: booking.bedIndex as number }
+}
+
+/** The booking details shown with the room: agreed rent and deposit are the booking's. */
+const bookingSummary = (b: any) => ({
+  ref: b.ref as string,
+  status: b.status as string,
+  arrivalDate: (b.arrivalDate as string) || '',
+  rent: typeof b.price === 'number' ? (b.price as number) : null,
+  deposit: typeof b.deposit === 'number' ? (b.deposit as number) : typeof b.price === 'number' ? (b.price as number) : null,
+  minStayAgreed: Boolean(b.minStayAgreed),
+})
+
+/**
+ * The student's room for the portal: the bed staff assigned, else the bed of their paid
+ * booking. `room` is null until then; `pending` is a booking still on hold (awaiting payment).
+ */
 export async function studentRoom(payload: Payload, student: any) {
-  const [properties, overrides] = await Promise.all([
+  const [properties, overrides, booking] = await Promise.all([
     payload.find({ collection: 'v1-properties', pagination: false, depth: 0, overrideAccess: true }),
     payload.find({ collection: 'v1-room-overrides', pagination: false, depth: 0, overrideAccess: true }),
+    student.whatsapp ? activeBooking(payload, student.whatsapp) : Promise.resolve(null),
   ])
-  const found = findAssignment(student, properties.docs as unknown as BotProperty[], overrides.docs as unknown as BotOverride[])
-  if (!found) return null
+  const props = properties.docs as unknown as BotProperty[]
+  const overs = overrides.docs as unknown as BotOverride[]
+  const paid = booking?.status === 'paid' ? booking : null
+  const found = findAssignment(student, props, overs) || (paid ? bookingAssignment(paid, props, overs) : null)
+  const pending = booking?.status === 'held'
+    ? { ref: booking.ref as string, room: booking.room as string, bed: booking.bed as string, hostel: booking.hostel as string, arrivalDate: (booking.arrivalDate as string) || '' }
+    : null
+  if (!found) return { room: null, pending }
   const { property, override: o, roomNum, bedIndex } = found as { property: BotProperty & { facilities?: string[] }; override?: BotOverride; roomNum: string; bedIndex: number }
 
   const floor = roomNum.startsWith('S') ? null : Math.floor(Number(roomNum) / 100)
@@ -52,7 +86,7 @@ export async function studentRoom(payload: Payload, student: any) {
   const rent = parseAmount(o?.roomPrice)
   const deposit = unitDeposit(o)
 
-  return {
+  const room = {
     hostel: property.name || 'Hostel',
     location: property.location || '',
     facilities: strings(property.facilities),
@@ -63,12 +97,15 @@ export async function studentRoom(payload: Payload, student: any) {
     bed: bedDisplayLabel({ unitType, subRooms }, bedIndex),
     bedType: bedTypeDisplay(o?.bedTypes, o?.bunkPositions, bedIndex),
     sharing: beds,
-    rent,
-    deposit,
+    // Agreed at booking when the room comes from a paid booking, else the unit's current amounts
+    rent: paid ? bookingSummary(paid).rent ?? rent : rent,
+    deposit: paid ? bookingSummary(paid).deposit ?? deposit : deposit,
     rentIncludes: RENT_INCLUDES_TEXT,
     amenities: amenities.filter((a) => a?.included).map((a) => (a.shared ? `${a.name} (shared)` : a.name)),
     genderPolicy: GENDER_POLICY_LABELS[effectiveGenderPolicy(property.genderPolicy, o?.genderPolicy)],
     bedImage: bedImage ? whatsappImageUrl(bedImage) : null,
     images: [...new Set((unitImages.length ? unitImages : strings(property.images)).map(whatsappImageUrl))],
+    booking: paid ? bookingSummary(paid) : null,
   }
+  return { room, pending }
 }

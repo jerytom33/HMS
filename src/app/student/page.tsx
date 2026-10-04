@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Bed, ChevronRight, Search, User } from 'lucide-react';
-import { BOOKING_STATUS, studentGet, type StudentBooking, type StudentProfile, type StudentRoom } from '@/lib/studentClient';
+import { BOOKING_STATUS, studentGet, type PendingBooking, type StudentBooking, type StudentProfile, type StudentRoom } from '@/lib/studentClient';
 
 export default function StudentDashboard() {
   const [me, setMe] = useState<StudentProfile | null>(null);
   const [room, setRoom] = useState<StudentRoom | null>(null);
+  const [pending, setPending] = useState<PendingBooking | null>(null);
   const [bookings, setBookings] = useState<StudentBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,10 +16,10 @@ export default function StudentDashboard() {
   useEffect(() => {
     Promise.all([
       studentGet<StudentProfile>('/api/student/me', '/student'),
-      studentGet<{ room: StudentRoom | null }>('/api/student/room', '/student'),
+      studentGet<{ room: StudentRoom | null; pending: PendingBooking | null }>('/api/student/room', '/student'),
       studentGet<{ bookings: StudentBooking[] }>('/api/student/bookings', '/student'),
     ])
-      .then(([m, r, b]) => { setMe(m); setRoom(r.room); setBookings(b.bookings); })
+      .then(([m, r, b]) => { setMe(m); setRoom(r.room); setPending(r.pending); setBookings(b.bookings); })
       .catch((e) => { if (e?.message !== 'signed out') setError("Couldn't load your details. Please refresh the page."); })
       .finally(() => setLoading(false));
   }, []);
@@ -53,7 +54,7 @@ export default function StudentDashboard() {
         {room ? (
           <div className="flex flex-wrap justify-between items-start gap-4">
             <div>
-              <span className="text-xs uppercase tracking-wider font-semibold text-primary bg-primary/10 px-2 py-1 rounded">Your Room</span>
+              <span className="text-xs uppercase tracking-wider font-semibold text-primary bg-primary/10 px-2 py-1 rounded">{room.booking ? 'Your Room · Paid' : 'Your Room'}</span>
               <h2 className="font-display text-2xl mt-3">{room.hostel}</h2>
               <p className="text-sm text-muted-foreground mt-1">{[room.location, room.floorName].filter(Boolean).join(' · ')}</p>
             </div>
@@ -64,6 +65,12 @@ export default function StudentDashboard() {
                 Room details <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
+          </div>
+        ) : pending ? (
+          <div>
+            <span className="text-xs uppercase tracking-wider font-semibold text-amber-800 bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 px-2 py-1 rounded">Reserved – waiting for payment confirmation</span>
+            <h2 className="font-display text-2xl mt-3">{pending.room}, {pending.bed}</h2>
+            <p className="text-sm text-muted-foreground mt-1">{pending.hostel} · Booking {pending.ref}. Your room details appear once our team confirms your payment.</p>
           </div>
         ) : (
           <div className="flex flex-wrap justify-between items-center gap-4">

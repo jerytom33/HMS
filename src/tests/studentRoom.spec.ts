@@ -2,7 +2,7 @@
 //   npx jest src/tests/studentRoom.spec.ts --config '{"preset":"ts-jest","testEnvironment":"node","moduleNameMapper":{"^@/(.*)$":"<rootDir>/src/$1"}}'
 import { describe, expect, it } from '@jest/globals'
 
-import { findAssignment } from '@/lib/studentRoom'
+import { bookingAssignment, findAssignment } from '@/lib/studentRoom'
 
 const properties: any[] = [
   { id: 'p1', name: 'Bukowiecka 11', floors: 2, roomsPerFloor: [2, 2] },
@@ -33,5 +33,25 @@ describe('findAssignment', () => {
   it('returns null when nothing is assigned', () => {
     expect(findAssignment({ id: 'stu4', room: 'Unassigned', property: '' }, properties, [])).toBeNull()
     expect(findAssignment({ id: 'stu5', room: 'Room 101 - Bed A', property: 'Unknown' }, properties, [])).toBeNull()
+  })
+})
+
+describe('bookingAssignment', () => {
+  it('takes the unit and bed of a paid booking', () => {
+    const overrides: any[] = [{ overrideKey: 'p1-102' }]
+    const found = bookingAssignment({ overrideKey: 'p1-102', propertyId: 'p1', bedIndex: 2 }, properties, overrides)
+    expect(found).toMatchObject({ roomNum: '102', bedIndex: 2 })
+    expect(found!.property.id).toBe('p1')
+    expect(found!.override).toBe(overrides[0])
+  })
+
+  it('works for a floor room staff never edited and for apartments', () => {
+    expect(bookingAssignment({ overrideKey: 'p2-101', bedIndex: 0 }, properties, [])).toMatchObject({ roomNum: '101', override: undefined })
+  })
+
+  it('needs a known property and a bed', () => {
+    expect(bookingAssignment({ overrideKey: 'zz-101', bedIndex: 0 }, properties, [])).toBeNull()
+    expect(bookingAssignment({ overrideKey: 'p1-101' }, properties, [])).toBeNull()
+    expect(bookingAssignment(null, properties, [])).toBeNull()
   })
 })
