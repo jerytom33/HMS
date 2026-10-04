@@ -25,7 +25,10 @@ export async function POST(request: Request) {
 
   try {
     const check = await checkPortalBooking(payload, student, body)
-    if (!check.ok) return NextResponse.json({ ok: false, reason: check.reason, message: check.message }, { status: check.status })
+    if (!check.ok) {
+      const { status, ...refusal } = check
+      return NextResponse.json(refusal, { status })
+    }
 
     const result = await holdBed(payload, {
       unit: check.unit,

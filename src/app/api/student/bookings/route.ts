@@ -34,6 +34,8 @@ export async function GET(request: Request) {
       price: typeof b.price === 'number' ? `${formatPLN(b.price)}/month` : 'Price on request',
       deposit: depositText(b.deposit),
       createdAt: b.createdAt,
+      // Only bookings on hold can be cancelled by the student; paid ones go through staff
+      canCancel: b.status === 'held',
     })),
   })
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { cancelBooking } from '@/lib/studentClient';
 import { BedSingle, CheckCircle2, Info, MapPin, Users } from 'lucide-react';
 
 type Bed = { index: number; label: string; type: string; image: string | null };
@@ -8,7 +9,7 @@ type Room = {
   unit: string; label: string; hostel: string; location: string; floor: string; sharingLabel: string; freeBeds: number;
   price: string; deposit: string; amenities: string[]; image: string | null; genderPolicy: string; beds: Bed[];
 };
-type Booking = { ref: string; status: string; hostel: string; room: string; floor: string; bed: string; arrivalDate?: string; price: string; deposit: string };
+type Booking = { ref: string; status: string; hostel: string; room: string; floor: string; bed: string; arrivalDate?: string; price: string; deposit: string; canCancel?: boolean };
 
 const STATUS: Record<string, string> = { held: 'On hold — awaiting payment', paid: 'Paid', cancelled: 'Cancelled' };
 
@@ -55,6 +56,18 @@ export default function FindRoomPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // One booking per student: while one is on hold or paid, booking another is blocked
+  const current = bookings.find((b) => b.status === 'held' || b.status === 'paid');
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const cancelCurrent = async () => {
+    if (!current) return;
+    setBooking(true);
+    setResult(await cancelBooking(current.ref));
+    setConfirmCancel(false);
+    setBooking(false);
+    load();
+  };
+
   const pick = (unit: string, bed: number) => {
     setPicked({ unit, bed });
     setResult(null);
@@ -91,6 +104,29 @@ export default function FindRoomPage() {
         <div className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <span>We don&apos;t know your gender yet, so you only see mixed rooms. Tell our WhatsApp assistant to see every room available to you.</span>
+        </div>
+      )}
+
+      {current && (
+        <div className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+          <p>
+            You already have a booking: <strong>{current.ref}</strong> ({current.room}, {current.bed} — {current.hostel}).
+            You can book only one bed.{' '}
+            {current.canCancel ? 'To book a different bed, cancel this booking first.' : 'It is paid; to change it, please contact our team.'}
+          </p>
+          {current.canCancel && (confirmCancel ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span>Cancel {current.ref} and free that bed?</span>
+              <button onClick={cancelCurrent} disabled={booking} className="rounded-lg bg-destructive px-3 py-1.5 font-medium text-white disabled:opacity-50">
+                {booking ? 'Cancelling…' : 'Yes, cancel'}
+              </button>
+              <button onClick={() => setConfirmCancel(false)} className="rounded-lg border border-border bg-background px-3 py-1.5">Keep it</button>
+            </div>
+          ) : (
+            <button onClick={() => { setConfirmCancel(true); setResult(null); }} className="rounded-lg border border-amber-400 bg-background px-3 py-1.5 font-medium">
+              Cancel my booking
+            </button>
+          ))}
         </div>
       )}
 
@@ -163,11 +199,13 @@ export default function FindRoomPage() {
                       <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1" />
                       <span>I agree to the minimum stay of <strong>6 months (1 semester)</strong>.</span>
                     </label>
-                    <button onClick={book} disabled={booking || !agreed || !arrivalDate}
+                    <button onClick={book} disabled={booking || !agreed || !arrivalDate || Boolean(current)}
                       className="w-full rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50">
                       {booking ? 'Holding your bed…' : 'Hold this bed'}
                     </button>
-                    <p className="text-xs text-muted-foreground">We keep the bed for you until payment; our team will contact you with the payment details.</p>
+                    <p className="text-xs text-muted-foreground">
+                      {current ? 'Cancel your current booking first to book this bed.' : 'We keep the bed for you until payment; our team will contact you with the payment details.'}
+                    </p>
                   </div>
                 )}
               </div>

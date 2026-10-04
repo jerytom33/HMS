@@ -18,6 +18,8 @@ export const dynamic = 'force-dynamic'
  * `arrivalDate` (DD/MM/YYYY), when given, must be after today (Poland time) and within 6 months,
  * else reason 'invalid_arrival_date' with a message naming the dates that work.
  *
+ * A student may have only one booking: with one on hold or paid, reason 'already_booked'
+ * (`bookingRef`, `canCancel`); the bot offers /api/bot/cancel, then books again.
  * Holds one free bed in the unit until payment (see holdBed) and saves the name, gender and
  * arrival date to the student's record (an `email` field, if sent, is ignored). Always answers 200 with `ok` for the bot to branch on.
  */

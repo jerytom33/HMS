@@ -71,6 +71,79 @@ export type HoldInput = {
 export type HoldResult =
   | { ok: true; booking: any; duplicate: boolean }
   | { ok: false; reason: 'no_free_beds' | 'bed_taken'; message: string }
+  | { ok: false; reason: 'already_booked'; message: string; bookingRef: string; bookingStatus: string; canCancel: boolean }
+
+/** Bed holds that count as the student's one booking: on hold or paid. */
+export const ACTIVE_STATUSES = ['held', 'paid']
+
+/** The student's current booking (on hold or paid), or null. A student may have only one. */
+export async function activeBooking(payload: Payload, whatsapp: string) {
+  const found = await payload.find({
+    collection: 'v1-bot-bookings',
+    overrideAccess: true,
+    depth: 0,
+    limit: 1,
+    sort: '-createdAt',
+    where: { whatsapp: { equals: whatsapp }, type: { equals: 'bed_hold' }, status: { in: ACTIVE_STATUSES } },
+  })
+  return (found.docs[0] as any) || null
+}
+
+/** "Room 101, Bed A — Bukowiecka 11" */
+const bookingPlace = (b: any) => `${b.room}, ${b.bed} — ${b.hostel}`
+
+/** Refusal for a second booking, naming the one the student already has. */
+export function alreadyBookedResult(b: any) {
+  const canCancel = b.status === 'held'
+  return {
+    ok: false as const,
+    reason: 'already_booked' as const,
+    bookingRef: b.ref as string,
+    bookingStatus: b.status as string,
+    canCancel,
+    message: canCancel
+      ? `You already have a booking: ${b.ref} (${bookingPlace(b)}).\n\nYou can book only one bed. To book a different bed, cancel this booking first, then book again.`
+      : `You already have a paid booking: ${b.ref} (${bookingPlace(b)}).\n\nYou can book only one bed. To change it, please contact our team.`,
+  }
+}
+
+export type CancelResult =
+  | { ok: true; bookingRef: string; message: string }
+  | { ok: false; reason: 'not_found' | 'not_cancellable'; message: string }
+
+/**
+ * Cancel the student's booking that is on hold (by ref, or their current one). Cancelling
+ * frees the bed through the v1-bot-bookings hook. Paid bookings are left to staff.
+ */
+export async function cancelOwnBooking(payload: Payload, whatsapp: string, ref: string | null, by: BookingSource): Promise<CancelResult> {
+  const found = ref
+    ? (
+        await payload.find({
+          collection: 'v1-bot-bookings',
+          overrideAccess: true,
+          depth: 0,
+          limit: 1,
+          where: { whatsapp: { equals: whatsapp }, type: { equals: 'bed_hold' }, ref: { equals: ref.toUpperCase() } },
+        })
+      ).docs[0]
+    : await activeBooking(payload, whatsapp)
+  const b: any = found
+  if (!b) return { ok: false, reason: 'not_found', message: "We couldn't find a booking to cancel." }
+  if (b.status === 'cancelled') return { ok: false, reason: 'not_cancellable', message: `Booking ${b.ref} is already cancelled. You can book a bed now.` }
+  if (b.status !== 'held') {
+    return { ok: false, reason: 'not_cancellable', message: `Booking ${b.ref} is paid, so it can't be cancelled here. Please contact our team.` }
+  }
+  await payload.update({
+    collection: 'v1-bot-bookings',
+    id: b.id,
+    overrideAccess: true,
+    data: {
+      status: 'cancelled',
+      notes: [b.notes, `Cancelled by the student (${by === 'portal' ? 'student portal' : 'WhatsApp bot'}) ${new Date().toISOString()}.`].filter(Boolean).join('\n'),
+    } as any,
+  })
+  return { ok: true, bookingRef: b.ref, message: `Booking ${b.ref} (${bookingPlace(b)}) is cancelled and the bed is free again. You can book another bed now.` }
+}
 
 /** Hold one free bed (the chosen one, or the first free) in `unit` until payment. */
 export async function holdBed(payload: Payload, input: HoldInput): Promise<HoldResult> {
@@ -90,6 +163,10 @@ export async function holdBed(payload: Payload, input: HoldInput): Promise<HoldR
     },
   })
   if (recent.docs[0]) return { ok: true, booking: recent.docs[0], duplicate: true }
+
+  // One booking per student: a different bed needs the current booking cancelled first
+  const current = await activeBooking(payload, whatsapp)
+  if (current) return alreadyBookedResult(current)
 
   const noBeds = { ok: false as const, reason: 'no_free_beds' as const, message: 'Sorry, the last bed in that room was just taken 😔 Please choose another room.' }
   const bedTaken = { ok: false as const, reason: 'bed_taken' as const, message: 'Sorry, that bed was just booked by someone else 😔 Please choose another bed.' }

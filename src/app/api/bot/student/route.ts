@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { activeBooking, alreadyBookedResult } from '@/lib/bedHold'
 import { GENDER_LABELS, parseGender } from '@/lib/botRooms'
 import { botPayload, checkBotKey, clean } from '@/lib/botServer'
 import { linkToken, normalizeWhatsapp, parseArrivalDate, passwordVersion, saveStudentFromBot } from '@/lib/studentAuth'
@@ -18,6 +19,8 @@ export const dynamic = 'force-dynamic'
  * link, where they set a password and then see their rooms and book; until then it is ''.
  * It works for 7 days and for one password; call again for a new link (forgotten password).
  * `hasPassword` tells the bot whether the student set one already.
+ * A student may have only one booking: `bookingRef` is their current one ('' when none), and
+ * `bookingMessage` asks them to cancel it (/api/bot/cancel) before booking another bed.
  */
 export async function POST(request: Request) {
   const denied = checkBotKey(request)
@@ -48,6 +51,8 @@ export async function POST(request: Request) {
     const portalLink = registered
       ? `${new URL(request.url).origin}/student/start?t=${linkToken(String(student.id), normalizeWhatsapp(student.whatsapp) || whatsapp, passwordVersion(student))}`
       : ''
+    const current = await activeBooking(payload, normalizeWhatsapp(student.whatsapp) || whatsapp)
+    const refusal = current ? alreadyBookedResult(current) : null
     return NextResponse.json({
       ok: true,
       name: student.name || '',
@@ -60,6 +65,10 @@ export async function POST(request: Request) {
       arrivalMessage: arrival && !arrival.ok ? arrival.message : '',
       portalLink,
       hasPassword: passwordVersion(student) > 0,
+      bookingRef: current?.ref || '',
+      bookingStatus: current?.status || '',
+      canCancelBooking: refusal?.canCancel ?? false,
+      bookingMessage: refusal?.message || '',
     })
   } catch (error) {
     console.error('Bot student API error:', error)

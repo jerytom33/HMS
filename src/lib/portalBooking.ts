@@ -1,14 +1,15 @@
-// Checks shared by the portal's "send me a code" step and the hold itself, so a code is
-// only sent (a paid WhatsApp message) for a booking that would go through.
+// Checks before the portal holds a bed: one booking per student, a valid arrival date,
+// a room the student's gender may stay in and a bed that is still free.
 import type { Payload } from 'payload'
 
+import { activeBooking, alreadyBookedResult } from './bedHold'
 import { allowedForGender, findUnit, genderNotAllowedMessage, parseAgreement } from './botRooms'
 import { clean, loadInventory } from './botServer'
 import { parsePortalArrivalDate, studentGender } from './studentAuth'
 
 export type BookingCheck =
   | { ok: true; unit: ReturnType<typeof findUnit>['unit'] & {}; overrides: Awaited<ReturnType<typeof loadInventory>>['overrides']; bed: number; arrivalDate: string; minStayAgreed: boolean }
-  | { ok: false; status: number; reason: string; message: string }
+  | { ok: false; status: number; reason: string; message: string; bookingRef?: string; canCancel?: boolean }
 
 /** Body { unit, bed, arrivalDate, minStayAgreed } checked against the inventory and the student's gender. */
 export async function checkPortalBooking(payload: Payload, student: any, body: any): Promise<BookingCheck> {
@@ -18,6 +19,13 @@ export async function checkPortalBooking(payload: Payload, student: any, body: a
   const arrival = parsePortalArrivalDate(body?.arrivalDate)
   if (!arrival.ok) return { ok: false, status: 400, reason: 'invalid_arrival_date', message: arrival.message }
   if (!unitId || !/^\d+$/.test(bedText)) return { ok: false, status: 400, reason: 'bad_request', message: 'Choose a room and a bed.' }
+
+  // One booking per student; checked first so a double tap names the booking just made
+  const current = await activeBooking(payload, student.whatsapp)
+  if (current) {
+    const { ok, ...refusal } = alreadyBookedResult(current)
+    return { ok, status: 409, ...refusal }
+  }
 
   const { overrides, units } = await loadInventory(payload)
   // The portal sends unit ids, never titles
