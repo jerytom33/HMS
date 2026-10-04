@@ -89,6 +89,8 @@ export const V1BotBookings: CollectionConfig = {
     },
     // As the student typed it, DD/MM/YYYY
     { name: 'arrivalDate', type: 'text' },
+    // Whether the student agreed in the bot to the minimum stay (6 months / 1 semester)
+    { name: 'minStayAgreed', type: 'checkbox', defaultValue: false },
     { name: 'sharing', type: 'number' },
     { name: 'unit', type: 'text' },
     { name: 'overrideKey', type: 'text', index: true },

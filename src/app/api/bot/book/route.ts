@@ -4,11 +4,14 @@ import type { Payload } from 'payload'
 
 import { formatPLN } from '@/lib/currency'
 import { OVERRIDES, syncCounts, unitBedTotal } from '@/lib/botHolds'
-import { AMBIGUOUS_ROOM_MESSAGE, bookedBedLabel, depositText, findUnit, fitBedStatuses, GENDER_LABELS, parseContactPhone, parseEmail, parseGender, parseSharing, resolveBed, SHARING_LABELS, splitOverrideKey, type BotOverride, type BotUnit } from '@/lib/botRooms'
+import { AMBIGUOUS_ROOM_MESSAGE, bookedBedLabel, depositText, findUnit, fitBedStatuses, GENDER_LABELS, parseAgreement, parseContactPhone, parseEmail, parseGender, parseSharing, resolveBed, SHARING_LABELS, splitOverrideKey, type BotOverride, type BotUnit } from '@/lib/botRooms'
 import { botPayload, checkBotKey, clean, loadInventory, normalizePhone } from '@/lib/botServer'
 import { defaultAmenities } from '@/lib/propertyTypes'
 
 export const dynamic = 'force-dynamic'
+
+/** Shown to the student before booking (the bot asks them to agree) and in both confirmations; whether they agreed is stored as minStayAgreed. */
+const MIN_STAY = '6 months (1 semester)'
 
 /** Booking reference, e.g. "KLS-7Q4M2X" (no 0/O/1/I). */
 function newRef() {
@@ -50,7 +53,8 @@ async function ensureOverride(payload: Payload, unit: BotUnit, existing: BotOver
 
 /**
  * POST /api/bot/book   Header: x-api-key: <BOT_API_KEY>
- * Body: { unit, bed?, sharing?, hostel?, name, whatsapp, arrivalDate, phone?, email?, gender? }
+ * Body: { unit, bed?, sharing?, hostel?, name, whatsapp, arrivalDate, phone?, email?, gender?, minStayAgreed? }
+ * `minStayAgreed` is true (or "yes" / "I agree") when the student agreed to the minimum stay; bookings without it are still held.
  * `unit` is a room `value` from /api/bot/rooms or the room list title the student tapped
  * ("Room 402"; `sharing` and `hostel` tell rooms with the same name apart). `bed` is a bed
  * `value` or title from /api/bot/unit ("Bed B"); without it the first free bed is held. `phone` is the number to call; defaults to the WhatsApp number.
@@ -76,6 +80,7 @@ export async function POST(request: Request) {
   const phone = parseContactPhone(body.phone) || whatsapp
   const email = parseEmail(body.email)
   const gender = parseGender(body.gender)
+  const minStayAgreed = parseAgreement(body.minStayAgreed)
   const bedText = clean(body.bed, 40)
   if (!unitId || !whatsapp) {
     return NextResponse.json({ ok: false, reason: 'bad_request', error: 'unit and whatsapp are required' }, { status: 400 })
@@ -162,6 +167,7 @@ export async function POST(request: Request) {
             phone,
             email: email ?? undefined,
             gender: gender ?? undefined,
+            minStayAgreed,
             arrivalDate,
             sharing: unit.sharing,
             unit: unit.unit,
@@ -216,6 +222,8 @@ function confirmation(b: any, duplicate: boolean) {
     price,
     deposit,
     arrivalDate: b.arrivalDate,
+    minStay: MIN_STAY,
+    minStayAgreed: Boolean(b.minStayAgreed),
     message:
       `✅ Your bed is on hold!\n\n` +
       `Booking ref: ${b.ref}\n` +
@@ -227,6 +235,7 @@ function confirmation(b: any, duplicate: boolean) {
       `👤 ${b.name || '-'} · 📞 +${b.phone || b.whatsapp}\n` +
       (b.email ? `✉️ ${b.email}\n` : '') +
       `\n` +
+      `📌 Minimum stay: ${MIN_STAY}\n\n` +
       `We'll keep this bed for you until payment. Our team will contact you with the payment details soon.`,
     adminMessage:
       `🆕 New bed hold (WhatsApp bot)\n\n` +
@@ -243,6 +252,7 @@ function confirmation(b: any, duplicate: boolean) {
       `Arrival: ${b.arrivalDate || '-'}\n` +
       `Price: ${price}\n` +
       `${deposit}\n\n` +
+      (b.minStayAgreed ? `Agreed to the minimum stay of ${MIN_STAY}.\n` : `Minimum stay agreement: not confirmed\n`) +
       `Bed is marked taken until payment.`,
   }
 }

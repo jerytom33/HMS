@@ -503,6 +503,15 @@ export function parseEmail(input: unknown): string | null {
   return text.length <= 254 && /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(text) ? text : null
 }
 
+/**
+ * Whether the student agreed: true, "true", "yes", "y", "1", "agree", "agreed", "I agree"
+ * (any case, as a bot platform may send the button text). Anything else is false.
+ */
+export function parseAgreement(input: unknown): boolean {
+  if (input === true) return true
+  return /^(true|yes|y|1|agree|agreed|i agree|ok|okay)$/.test(String(input ?? '').trim().toLowerCase())
+}
+
 /** "Male", "female", "F", "Other" -> 'male' | 'female' | 'other'; null when not recognised. */
 export function parseGender(input: unknown): 'male' | 'female' | 'other' | null {
   const text = String(input ?? '').trim().toLowerCase()

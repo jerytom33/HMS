@@ -4,7 +4,7 @@ import { describe, expect, it } from '@jest/globals'
 
 import { formatPLN } from '../lib/currency'
 
-import { AMBIGUOUS_ROOM_MESSAGE, findUnit, listUnits, resolveBed, resolveHostelId, resolveUnit, roomTitle, parseContactPhone, parseEmail, parseGender, parseSharing, parseUnitId, searchRooms, unitDetails, whatsappImageUrl, type BotOverride, type BotProperty } from '../lib/botRooms'
+import { AMBIGUOUS_ROOM_MESSAGE, findUnit, listUnits, resolveBed, resolveHostelId, resolveUnit, roomTitle, parseAgreement, parseContactPhone, parseEmail, parseGender, parseSharing, parseUnitId, searchRooms, unitDetails, whatsappImageUrl, type BotOverride, type BotProperty } from '../lib/botRooms'
 
 // Shapes taken from production documents on 2026-10-03
 const B = '6ac0d4a2a2ce1743975c0c64' // Bukowiecka 11
@@ -187,6 +187,11 @@ describe('bot room availability', () => {
     expect(details(units, 'Room 201', null, { sharing: 2, hostel: 'Bukowiecka 11' }).summary).toMatch(/^Room 201 — Bukowiecka 11/)
     // An exact id is never ambiguous
     expect(findUnit(units, `${R}-201`)).toMatchObject({ ambiguous: false, unit: { propertyId: R } })
+  })
+
+  it('reads the minimum-stay agreement', () => {
+    for (const yes of [true, 'true', 'Yes', ' I agree ', 'agreed', '1', 'OK']) expect(parseAgreement(yes)).toBe(true)
+    for (const no of [false, undefined, null, '', 'no', 'later', 0]) expect(parseAgreement(no)).toBe(false)
   })
 
   it('reads a typed email address', () => {
