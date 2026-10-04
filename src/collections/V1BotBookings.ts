@@ -1,4 +1,4 @@
-import type { CollectionAfterChangeHook, CollectionConfig } from 'payload'
+import type { CollectionAfterChangeHook, CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 import { isStaff } from '../access'
 import { releaseHeldBed } from '../lib/botHolds'
 
@@ -32,6 +32,12 @@ const releaseBedOnCancel: CollectionAfterChangeHook = async ({ doc, previousDoc,
 // Bed holds and call requests made through the WhatsApp bot (/api/bot/*).
 // A 'held' booking keeps its bed marked taken in v1-room-overrides until staff
 // confirm payment or it is cancelled (by staff, or after HOLD_EXPIRY_HOURS by the cron).
+/** Record when a booking is marked paid (the Payments page lists paid bookings by this date). */
+const stampPaidAt: CollectionBeforeChangeHook = ({ data, originalDoc }) => {
+  if (data?.status === 'paid' && originalDoc?.status !== 'paid' && !data.paidAt) data.paidAt = new Date().toISOString()
+  return data
+}
+
 export const V1BotBookings: CollectionConfig = {
   slug: 'v1-bot-bookings',
   admin: {
@@ -46,6 +52,7 @@ export const V1BotBookings: CollectionConfig = {
     delete: isStaff,
   },
   hooks: {
+    beforeChange: [stampPaidAt],
     afterChange: [releaseBedOnCancel],
   },
   fields: [
@@ -114,6 +121,10 @@ export const V1BotBookings: CollectionConfig = {
     { name: 'price', type: 'number' },
     // Deposit in PLN at the time of booking, when staff have set one for the room
     { name: 'deposit', type: 'number' },
+    // When staff marked the booking paid
+    { name: 'paidAt', type: 'date', admin: { readOnly: true } },
+    // When staff generated the lease agreement (once; the file is kept in lease-agreements)
+    { name: 'agreementGeneratedAt', type: 'date', admin: { readOnly: true } },
     { name: 'notes', type: 'textarea' },
   ],
 }

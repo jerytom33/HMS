@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, FileText, Download, MoreHorizontal, Plus, X } from 'lucide-react';
 import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString, bedTypeDisplay } from '@/lib/propertyTypes';
+import { bookingPayments } from '@/lib/bookingPayments';
 import { formatPLN } from '@/lib/currency';
 
 const INITIAL_PAYMENTS: any[] = [];
 
 export default function AdminPayments() {
   const [payments, setPayments] = useState<any[]>([]);
+  // Paid bookings (bot and portal), shown as their rent and deposit payments (see bookingPayments)
+  const [paidBookings, setPaidBookings] = useState<any[]>([]);
   const [monthFilter, setMonthFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -41,6 +44,11 @@ export default function AdminPayments() {
       }
     }
     
+    fetch('/api/v1-bot-bookings?where[type][equals]=bed_hold&where[status][equals]=paid&limit=1000&depth=0&sort=-updatedAt')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (data?.docs) setPaidBookings(data.docs); })
+      .catch(e => console.error(e));
+
     fetch('/api/v1-students?limit=1000').then(res => res.json()).then(data => {
       if (data && data.docs) setStudents(data.docs);
     });
@@ -106,7 +114,10 @@ export default function AdminPayments() {
     closeAndResetModal();
   };
 
-  const filteredPayments = payments.filter(p => {
+  const bookingRows = bookingPayments(paidBookings, roomOverrides);
+  const allPayments = [...bookingRows, ...payments].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+  const filteredPayments = allPayments.filter(p => {
     let match = true;
     if (monthFilter && !p.date.startsWith(monthFilter)) match = false;
     if (statusFilter && p.status !== statusFilter) match = false;
@@ -252,7 +263,10 @@ export default function AdminPayments() {
               {filteredPayments.length > 0 ? (
                 filteredPayments.map((trx) => (
                   <tr key={trx.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950">
-                    <td className="whitespace-nowrap px-6 py-4 font-mono text-gray-500 dark:text-gray-400">{trx.id}</td>
+                    <td className="whitespace-nowrap px-6 py-4 font-mono text-gray-500 dark:text-gray-400">
+                      {trx.id}
+                      {trx.bookingRef && <div className="font-sans text-xs text-blue-600 dark:text-blue-400">Booking {trx.bookingRef} (paid)</div>}
+                    </td>
                     <td className="whitespace-nowrap px-6 py-4">
                       <div className="font-medium text-gray-900 dark:text-gray-100">{trx.student}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">{trx.property}{trx.room ? ` - ${trx.room}` : ''}</div>

@@ -42,9 +42,9 @@ export default function BookingWizard() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="inline-flex items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-full border border-gold">
-              <span className="font-display text-lg leading-none text-gold">H</span>
+              <span className="font-display text-lg leading-none text-gold">PV</span>
             </span>
-            <span className="font-display text-xl tracking-wide hidden sm:block">HMS Booking</span>
+            <span className="font-display text-xl tracking-wide hidden sm:block">Polska Veed Booking</span>
           </Link>
           <Link href="/" className="text-sm text-muted-foreground hover:text-primary">Cancel</Link>
         </div>

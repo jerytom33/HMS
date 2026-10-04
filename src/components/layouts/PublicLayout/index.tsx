@@ -8,7 +8,7 @@ export const PublicLayout = ({ children }: { children: React.ReactNode }) => {
     <div className={styles.layout}>
       <header className={styles.header}>
         <Link href="/" className={styles.logo}>
-          HMS
+          Polska Veed
         </Link>
         <nav className={styles.nav}>
           <Link href="/hostels" className={styles.navLink}>Accommodations</Link>

@@ -16,7 +16,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "HMS | Premium Student Accommodation",
+  title: "Polska Veed | Premium Student Accommodation",
   description: "Luxury student accommodation and hostel management platform.",
 };
 

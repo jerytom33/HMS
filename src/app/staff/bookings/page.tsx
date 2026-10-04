@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BadgeCheck, CalendarCheck, CheckCircle2, FileText, MessageCircle, Phone, RefreshCw, Search, XCircle } from 'lucide-react';
+import { AgreementViewer } from '@/components/staff/AgreementViewer';
 import { formatPLN, parseAmount } from '@/lib/currency';
 import { unitDeposit } from '@/lib/propertyTypes';
 
@@ -12,7 +13,7 @@ type Booking = {
   id: string; ref: string; type: 'bed_hold' | 'call_request'; status: string; source?: string;
   name?: string; whatsapp?: string; phone?: string; email?: string; gender?: string;
   arrivalDate?: string; minStayAgreed?: boolean; hostel?: string; room?: string; floor?: string; bed?: string; overrideKey?: string;
-  price?: number; deposit?: number; notes?: string; createdAt: string;
+  price?: number; deposit?: number; notes?: string; createdAt: string; agreementGeneratedAt?: string;
 };
 
 /** The student behind a booking, for the passport check (v1-students). */
@@ -71,6 +72,9 @@ export default function AdminBookings() {
   const [saving, setSaving] = useState('');
   const [notice, setNotice] = useState<{ ok: boolean; message: string } | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  // Booking whose agreement is open in the viewer, and the one asking "generate now?"
+  const [viewing, setViewing] = useState<Booking | null>(null);
+  const [generating, setGenerating] = useState('');
   // Units' current rent and deposit, for bookings made before the unit had a rent
   const [units, setUnits] = useState<Record<string, { roomPrice?: string; deposit?: string }>>({});
   // Passport being rejected (booking id) and the reason typed for the student
@@ -134,6 +138,24 @@ export default function AdminBookings() {
       await load();
     } catch {
       setNotice({ ok: false, message: `Couldn't update ${b.ref}. Please try again.` });
+    } finally {
+      setSaving('');
+    }
+  };
+
+  // Generate the lease agreement once; afterwards only the saved copy is shown
+  const generateAgreement = async (b: Booking) => {
+    setSaving(b.id);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/staff/bookings/${b.id}/agreement`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok && data.reason !== 'exists') throw new Error(data.error || String(res.status));
+      setGenerating('');
+      await load();
+      setViewing({ ...b, agreementGeneratedAt: data.generatedAt || b.agreementGeneratedAt || new Date().toISOString() });
+    } catch (e: any) {
+      setNotice({ ok: false, message: e?.message && !/^\d+$/.test(e.message) ? e.message : `Couldn't generate the agreement for ${b.ref}. Please try again.` });
     } finally {
       setSaving('');
     }
@@ -340,7 +362,7 @@ export default function AdminBookings() {
 
                   {b.notes && <p className="text-xs text-gray-500 whitespace-pre-line">{b.notes}</p>}
 
-                  {ACTIONS[b.status] && (
+                  {(ACTIONS[b.status] || b.agreementGeneratedAt) && (
                     confirming ? (
                       <div className="flex flex-wrap items-center gap-2 text-sm">
                         <span>{confirming.confirm}</span>
@@ -352,12 +374,34 @@ export default function AdminBookings() {
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        {b.type === 'bed_hold' && b.status === 'paid' && studentFor(b)?.passportStatus === 'verified' && (
-                          // Lease agreement filled in from this booking and the verified passport, as an editable Word file
-                          <a href={`/api/staff/bookings/${b.id}/agreement`} download
-                            className="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 inline-flex items-center gap-1.5">
-                            <FileText className="h-4 w-4" /> Generate agreement
-                          </a>
+                        {b.type === 'bed_hold' && b.agreementGeneratedAt ? (
+                          // Generated once; staff view, print and download that copy
+                          <>
+                            <button onClick={() => setViewing(b)}
+                              className="px-3 py-1.5 rounded-md text-sm font-medium border border-green-300 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/40 inline-flex items-center gap-1.5">
+                              <FileText className="h-4 w-4" /> View agreement
+                            </button>
+                            <a href={`/api/staff/bookings/${b.id}/agreement?download=1`} download
+                              className="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 inline-flex items-center gap-1.5">
+                              Download .docx
+                            </a>
+                            <span className="self-center text-xs text-gray-500">Generated {date(b.agreementGeneratedAt)}</span>
+                          </>
+                        ) : b.type === 'bed_hold' && b.status === 'paid' && studentFor(b)?.passportStatus === 'verified' && (
+                          generating === b.id ? (
+                            <span className="inline-flex flex-wrap items-center gap-2 text-sm">
+                              Generate the agreement now? It is generated once and can&apos;t be changed afterwards.
+                              <button onClick={() => generateAgreement(b)} disabled={saving === b.id} className="px-3 py-1.5 rounded-md font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50">
+                                {saving === b.id ? 'Generating…' : 'Yes, generate'}
+                              </button>
+                              <button onClick={() => setGenerating('')} className="px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700">No</button>
+                            </span>
+                          ) : (
+                            <button onClick={() => { setGenerating(b.id); setNotice(null); }}
+                              className="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 inline-flex items-center gap-1.5">
+                              <FileText className="h-4 w-4" /> Generate agreement
+                            </button>
+                          )
                         )}
                         {(ACTIONS[b.status] || []).map((a) => (
                           <button key={a.status} onClick={() => { setPending({ id: b.id, status: a.status }); setNotice(null); }}
@@ -374,6 +418,10 @@ export default function AdminBookings() {
           </ul>
         )}
       </div>
+
+      {viewing && (
+        <AgreementViewer bookingId={viewing.id} title={`Agreement ${viewing.ref}${viewing.name ? ` – ${viewing.name}` : ''}`} onClose={() => setViewing(null)} />
+      )}
     </div>
   );
 }

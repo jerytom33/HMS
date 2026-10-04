@@ -8,6 +8,7 @@ import { formatPLN, normalizeAmount } from '@/lib/currency';
 import { AmenityIcon } from '@/components/ui/AmenityIcon';
 import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
 import { cloudinaryUpload } from '@/lib/cloudinaryUpload';
+import { occupancy, occupancyPercent } from '@/lib/occupancy';
 
 const INITIAL_PROPERTIES: any[] = [];
 
@@ -200,6 +201,15 @@ export default function AdminProperties() {
     loadProperties();
     loadBotHolds();
   }, [loadProperties, loadBotHolds]);
+
+  // Live bed occupancy per property (taken = assigned by staff or held/paid through a booking)
+  const occupancyByProperty = useMemo(() => {
+    const overridesList = Object.entries(roomOverrides).map(([overrideKey, o]) => ({ ...o, overrideKey })) as any[];
+    const held = Object.entries(botHolds)
+      .filter(([, b]) => b.status === 'held')
+      .map(([key]) => ({ overrideKey: key.slice(0, key.lastIndexOf(':')), bedIndex: Number(key.slice(key.lastIndexOf(':') + 1)) }));
+    return new Map(occupancy(properties as any[], overridesList, held).properties.map((p) => [p.id, p]));
+  }, [properties, roomOverrides, botHolds]);
 
   const filteredProperties = useMemo(() => {
     return properties.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.location.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -958,7 +968,15 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                           </div>
                           <div className="flex flex-col">
                             <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mb-1 uppercase tracking-wider">Occupied</span>
-                            <span className="font-semibold text-blue-600 text-lg">{prop.occupancy}</span>
+                            {(() => {
+                              const occ = occupancyByProperty.get(String(prop.id));
+                              return occ ? (
+                                <>
+                                  <span className="font-semibold text-blue-600 text-lg">{occ.takenBeds} / {occ.totalBeds} beds</span>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">{occupancyPercent(occ)}%{occ.heldBeds ? ` · ${occ.heldBeds} on hold` : ''}</span>
+                                </>
+                              ) : <span className="font-semibold text-blue-600 text-lg">–</span>;
+                            })()}
                           </div>
                           <div className="flex flex-col">
                             <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-medium mb-1 uppercase tracking-wider">Status</span>

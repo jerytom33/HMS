@@ -83,7 +83,7 @@ export default function StaffLoginPage() {
       <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
         <div className="flex items-center gap-2 mb-6">
           <Lock className="h-5 w-5 text-blue-600" />
-          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">HMS Staff Sign In</h1>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Polska Veed Staff Sign In</h1>
         </div>
         <Suspense>
           <LoginForm />

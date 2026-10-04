@@ -3,132 +3,75 @@
 import { Users, Building2, Bed, CreditCard, ArrowUpRight, ArrowDownRight, MoreHorizontal, Wrench, Calendar, FileText, AlertCircle, Mail, DollarSign, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
+import { bookingPayments } from '@/lib/bookingPayments';
 import { formatPLN } from '@/lib/currency';
+import { occupancy, occupancyPercent } from '@/lib/occupancy';
 
 export default function AdminDashboard() {
   const [properties, setProperties] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [payments, setPayments] = useState<any[]>([]);
-  const [roomOverrides, setRoomOverrides] = useState<Record<string, any>>({});
+  const [overrides, setOverrides] = useState<any[]>([]);
+  // Bed holds and calls from the bot and the portal (v1-bot-bookings)
+  const [bookings, setBookings] = useState<any[]>([]);
+  // Payments typed in on the Payments page (kept in this browser)
+  const [manualPayments, setManualPayments] = useState<any[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('all');
 
   useEffect(() => {
-    const savedProperties = localStorage.getItem('hms_properties');
-    if (savedProperties) {
-      try { setProperties(JSON.parse(savedProperties)); } catch(e) {}
-    }
-
-    const savedStudents = localStorage.getItem('hms_students');
-    if (savedStudents) {
-      try { setStudents(JSON.parse(savedStudents)); } catch(e) {}
-    }
-
-    const savedOverrides = localStorage.getItem('hms_room_overrides');
-    if (savedOverrides) {
-      try { setRoomOverrides(JSON.parse(savedOverrides)); } catch(e) {}
-    }
-
-    const savedPayments = localStorage.getItem('hms_payments');
-    if (savedPayments) {
-      try { setPayments(JSON.parse(savedPayments)); } catch(e) {}
-    }
+    const json = (url: string) => fetch(url).then((res) => (res.ok ? res.json() : null)).catch(() => null);
+    json('/api/v1-properties?limit=1000&depth=0').then((d) => d?.docs && setProperties(d.docs));
+    json('/api/v1-room-overrides?limit=2000&depth=0').then((d) => d?.docs && setOverrides(d.docs));
+    json('/api/v1-bot-bookings?limit=2000&depth=0&sort=-createdAt').then((d) => d?.docs && setBookings(d.docs));
+    try {
+      const saved = localStorage.getItem('hms_payments');
+      if (saved) setManualPayments(JSON.parse(saved));
+    } catch {}
   }, []);
 
-  const { totalBeds, filledBeds, occupancySnapshot, floorStats } = useMemo(() => {
-    let tBeds = 0;
-    let fBeds = 0;
-    const snapshot: { name: string, percent: number }[] = [];
-    const floors: { floor: number, totalBeds: number, filledBeds: number }[] = [];
+  // Live bed occupancy from the database, for all properties or the chosen one
+  const occ = useMemo(
+    () => occupancy(properties, overrides, bookings.filter((b) => b.type === 'bed_hold' && b.status === 'held')),
+    [properties, overrides, bookings],
+  );
+  const selectedOcc = selectedPropertyId === 'all' ? null : occ.properties.find((p) => p.id === selectedPropertyId) || null;
+  const shown = selectedOcc || occ.total;
+  const totalBeds = shown.totalBeds;
+  const filledBeds = shown.takenBeds;
+  const occupancySnapshot = occ.properties.map((p) => ({ name: p.name, percent: occupancyPercent(p), takenBeds: p.takenBeds, totalBeds: p.totalBeds, heldBeds: p.heldBeds }));
+  const floorStats = selectedOcc?.floors || [];
+  const occupancyPercentValue = occupancyPercent(shown);
 
-    const propsToProcess = selectedPropertyId === 'all' 
-      ? properties 
-      : properties.filter(p => p.id.toString() === selectedPropertyId);
-
-    propsToProcess.forEach(p => {
-      let pTotal = 0;
-      let pFilled = 0;
-      const floorsCount = p.floors || 1;
-      
-      for (let f = 1; f <= floorsCount; f++) {
-        let roomsOnFloor = 0;
-        if (p.roomsPerFloor && p.roomsPerFloor.length >= f) {
-          roomsOnFloor = p.roomsPerFloor[f-1];
-        } else {
-          const baseRooms = Math.floor((p.rooms || 0) / floorsCount);
-          const extra = (p.rooms || 0) % floorsCount;
-          roomsOnFloor = f <= extra ? baseRooms + 1 : baseRooms;
-        }
-        
-        const defaultBeds = (p.isCustomBedsPerFloor && p.bedsPerFloor?.length >= f) ? (p.bedsPerFloor[f-1] || 2) : (p.beds || 2);
-        
-        let fTotal = 0;
-        let fFilled = 0;
-
-        for(let i=0; i<roomsOnFloor; i++) {
-          const roomNum = (f * 100) + i + 1;
-          const overrideKey = `${p.id}-${roomNum}`;
-          const override = roomOverrides[overrideKey];
-          
-          const rBeds = override?.beds !== undefined ? override.beds : defaultBeds;
-          const rFilled = override?.filledBeds !== undefined ? override.filledBeds : (override?.status === 'occupied' ? rBeds : 0);
-          
-          fTotal += rBeds;
-          fFilled += rFilled;
-        }
-        
-        pTotal += fTotal;
-        pFilled += fFilled;
-        
-        if (selectedPropertyId !== 'all') {
-          floors.push({ floor: f, totalBeds: fTotal, filledBeds: fFilled });
-        }
-      }
-      
-      tBeds += pTotal;
-      fBeds += pFilled;
-      snapshot.push({
-        name: p.name,
-        percent: pTotal > 0 ? Math.round((pFilled / pTotal) * 100) : 0
-      });
-    });
-
-    return { totalBeds: tBeds, filledBeds: fBeds, occupancySnapshot: snapshot, floorStats: floors };
-  }, [properties, roomOverrides, selectedPropertyId]);
-
-  const occupancyPercent = totalBeds > 0 ? Math.round((filledBeds / totalBeds) * 100) : 0;
-
-  const selectedPropertyName = selectedPropertyId === 'all' 
-    ? 'all' 
+  const selectedPropertyName = selectedPropertyId === 'all'
+    ? 'all'
     : properties.find(p => p.id.toString() === selectedPropertyId)?.name || 'all';
 
-  const filteredStudents = selectedPropertyName === 'all' 
-    ? students 
-    : students.filter(s => s.property === selectedPropertyName);
-
-  const studentNamesInProperty = new Set(filteredStudents.map(s => s.name));
+  const unitsByKey = useMemo(() => Object.fromEntries(overrides.map((o) => [o.overrideKey, o])), [overrides]);
+  const payments = [...bookingPayments(bookings, unitsByKey), ...manualPayments];
   const filteredPayments = selectedPropertyName === 'all'
     ? payments
-    : payments.filter(p => studentNamesInProperty.has(p.student));
-  
+    : payments.filter(p => p.property === selectedPropertyName);
+
   const totalRentRevenue = filteredPayments
     .filter(p => p.status === 'Completed' && p.type === 'Rent')
     .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
   const stats = [
-    { name: 'Total Occupancy', value: `${occupancyPercent}%`, change: '', trend: 'up' },
-    { name: 'Active Bookings', value: filledBeds.toString(), change: '', trend: 'up' },
-    { name: 'Vacant Beds', value: (totalBeds - filledBeds).toString(), change: '', trend: 'up' },
-    { name: 'Total Rent Revenue', value: formatPLN(totalRentRevenue, { decimals: true }), change: '', trend: 'up' },
+    { name: 'Occupied Beds', value: `${filledBeds} / ${totalBeds}`, note: shown.heldBeds ? `${shown.heldBeds} on hold, awaiting payment` : '', change: '', trend: 'up' },
+    { name: 'Total Occupancy', value: `${occupancyPercentValue}%`, note: '', change: '', trend: 'up' },
+    { name: 'Vacant Beds', value: (totalBeds - filledBeds).toString(), note: '', change: '', trend: 'up' },
+    { name: 'Total Rent Revenue', value: formatPLN(totalRentRevenue, { decimals: true }), note: '', change: '', trend: 'up' },
   ];
 
-  const recentBookings = filteredStudents.slice(-4).reverse().map((s) => ({
-    id: `BKG-${s.id ? s.id.toString().slice(-6) : Math.floor(100000 + Math.random() * 900000)}`,
-    student: s.name,
-    property: s.property || 'Unassigned',
-    room: s.room || 'Unassigned',
-    status: s.status === 'Active' ? 'Checked In' : 'Pending',
-    date: new Date().toLocaleDateString()
-  }));
+  const BOOKING_STATUS: Record<string, string> = { held: 'On hold', paid: 'Paid', cancelled: 'Cancelled' };
+  const recentBookings = bookings
+    .filter((b) => b.type === 'bed_hold' && (selectedPropertyId === 'all' || String(b.propertyId) === selectedPropertyId))
+    .slice(0, 4)
+    .map((b) => ({
+      id: b.ref,
+      student: b.name || `+${b.whatsapp}`,
+      property: b.hostel || '–',
+      room: [b.room, b.bed].filter(Boolean).join(', ') || '–',
+      status: BOOKING_STATUS[b.status] || b.status,
+    }));
 
   const totalAmount = filteredPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const collectedAmount = filteredPayments.filter(p => p.status === 'Completed').reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
@@ -203,6 +146,7 @@ export default function AdminDashboard() {
                       </span>
                     )}
                   </div>
+                  {stat.note && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{stat.note}</p>}
                 </div>
               </div>
             </div>
@@ -239,12 +183,12 @@ export default function AdminDashboard() {
                       <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900 dark:text-gray-100">{b.student}</td>
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="text-gray-900 dark:text-gray-100">{b.property}</div>
-                        <div className="text-gray-500 dark:text-gray-400 text-xs">{b.room !== 'Unassigned' && !b.room.startsWith('Room') ? `Room ${b.room}` : b.room}</div>
+                        <div className="text-gray-500 dark:text-gray-400 text-xs">{b.room}</div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
                         <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                          b.status === 'Checked In' ? 'bg-green-50 text-green-700 ring-green-600/20' :
-                          b.status === 'Pending Review' ? 'bg-yellow-50 text-yellow-800 ring-yellow-600/20' :
+                          b.status === 'Paid' ? 'bg-green-50 text-green-700 ring-green-600/20' :
+                          b.status === 'On hold' ? 'bg-yellow-50 text-yellow-800 ring-yellow-600/20' :
                           'bg-blue-50 text-blue-700 ring-blue-700/10'
                         }`}>
                           {b.status}
@@ -283,7 +227,7 @@ export default function AdminDashboard() {
                     <div key={snap.name}>
                       <div className="flex justify-between text-sm font-medium mb-1">
                         <span className="text-gray-700 dark:text-gray-300">{snap.name}</span>
-                        <span className="text-gray-900 dark:text-gray-100">{snap.percent}%</span>
+                        <span className="text-gray-900 dark:text-gray-100">{snap.takenBeds} / {snap.totalBeds} beds ({snap.percent}%)</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${snap.percent}%` }}></div>
@@ -299,12 +243,12 @@ export default function AdminDashboard() {
             ) : (
               <div className="space-y-4">
                 {floorStats.map(fs => {
-                  const percent = fs.totalBeds > 0 ? Math.round((fs.filledBeds / fs.totalBeds) * 100) : 0;
+                  const percent = occupancyPercent(fs);
                   return (
-                    <div key={fs.floor}>
+                    <div key={fs.name}>
                       <div className="flex justify-between text-sm font-medium mb-1">
-                        <span className="text-gray-700 dark:text-gray-300">Floor {fs.floor}</span>
-                        <span className="text-gray-900 dark:text-gray-100">{fs.filledBeds} / {fs.totalBeds} Beds ({percent}%)</span>
+                        <span className="text-gray-700 dark:text-gray-300">{fs.name}</span>
+                        <span className="text-gray-900 dark:text-gray-100">{fs.takenBeds} / {fs.totalBeds} Beds ({percent}%)</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${percent}%` }}></div>

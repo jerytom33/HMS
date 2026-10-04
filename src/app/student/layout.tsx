@@ -41,7 +41,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <div className="flex h-16 items-center justify-between px-6 border-b border-border">
           <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
             <span className="grid h-8 w-8 place-items-center rounded-full border border-gold">
-              <span className="font-display text-lg leading-none text-gold">H</span>
+              <span className="font-display text-lg leading-none text-gold">PV</span>
             </span>
             <span className="font-display text-xl tracking-wide">Student</span>
           </Link>
@@ -90,7 +90,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:hidden z-10">
           <Link href="/" className="flex items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-full border border-gold">
-              <span className="font-display text-lg leading-none text-gold">H</span>
+              <span className="font-display text-lg leading-none text-gold">PV</span>
             </span>
             <span className="font-display text-xl tracking-wide">Student</span>
           </Link>

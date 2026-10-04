@@ -93,6 +93,9 @@ export default function StudentRoomPage() {
             <div><dt className="text-xs text-muted-foreground mb-1">Rent</dt><dd className="font-medium">{room.booking.rent !== null ? `${formatPLN(room.booking.rent)}/month` : 'On request'}</dd></div>
             <div><dt className="text-xs text-muted-foreground mb-1">Deposit</dt><dd className="font-medium">{room.booking.deposit !== null ? formatPLN(room.booking.deposit) : 'On request'}</dd></div>
           </dl>
+          <p className="flex items-start gap-2 rounded-lg bg-secondary/10 p-3 text-sm">
+            <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" /> Your agreement is valid for 1 semester.
+          </p>
           {passport && (
             <div className="border-t border-border pt-4 text-sm space-y-1">
               <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Next steps</h3>

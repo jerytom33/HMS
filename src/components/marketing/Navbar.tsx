@@ -37,10 +37,10 @@ export function Navbar() {
           <Link className="mr-4 active" href="/">
             <span className="inline-flex items-center gap-2">
               <span className="grid h-8 w-8 place-items-center rounded-full border" style={{ borderColor: 'var(--color-gold)' }}>
-                <span className="font-display text-lg leading-none" style={{ color: 'var(--color-gold)' }}>H</span>
+                <span className="font-display text-lg leading-none" style={{ color: 'var(--color-gold)' }}>PV</span>
               </span>
               <span className="flex flex-col leading-none">
-                <span className="font-display text-2xl tracking-wide">HMS</span>
+                <span className="font-display text-2xl tracking-wide whitespace-nowrap">Polska Veed</span>
                 <span className="text-[9px] uppercase tracking-[0.28em] opacity-70">Premium Living</span>
               </span>
             </span>
@@ -73,10 +73,10 @@ export function Navbar() {
                 <Link className="mr-4 active" href="/" onClick={() => setIsMobileMenuOpen(false)}>
                   <span className="inline-flex items-center gap-2">
                     <span className="grid h-8 w-8 place-items-center rounded-full border" style={{ borderColor: 'var(--color-gold)' }}>
-                      <span className="font-display text-lg leading-none" style={{ color: 'var(--color-gold)' }}>H</span>
+                      <span className="font-display text-lg leading-none" style={{ color: 'var(--color-gold)' }}>PV</span>
                     </span>
                     <span className="flex flex-col leading-none">
-                      <span className="font-display text-2xl tracking-wide">HMS</span>
+                      <span className="font-display text-2xl tracking-wide whitespace-nowrap">Polska Veed</span>
                     </span>
                   </span>
                 </Link>

@@ -21,7 +21,7 @@ export const StudentLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className={styles.layout}>
       <aside className={styles.sidebar}>
-        <div className={styles.logo}>HMS Portal</div>
+        <div className={styles.logo}>Polska Veed Portal</div>
         <nav className={styles.nav}>
           {NAV_ITEMS.map((item) => (
             <Link

@@ -67,7 +67,7 @@ export default function StudentLoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-sm">
-        <Link href="/" className="mb-8 block text-center font-display text-2xl font-bold">HMS</Link>
+        <Link href="/" className="mb-8 block text-center font-display text-2xl font-bold">Polska Veed</Link>
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
           <div className="mb-5 flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" />

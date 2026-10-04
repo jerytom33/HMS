@@ -13,7 +13,7 @@ export default function AboutPage() {
              <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=2070&auto=format&fit=crop" className="w-full h-full object-cover opacity-10" alt="University Campus" />
           </div>
           <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <span className="text-[var(--color-gold)] font-bold tracking-widest uppercase text-sm mb-4 block">About HMS</span>
+            <span className="text-[var(--color-gold)] font-bold tracking-widest uppercase text-sm mb-4 block">About Polska Veed</span>
             <h1 className="font-display text-5xl md:text-7xl mb-6">Redefining Student Living.</h1>
             <p className="text-xl text-muted-foreground leading-relaxed">
               We believe that your university years should be spent in an environment that inspires, supports, and elevates you. Welcome to the future of student accommodation.

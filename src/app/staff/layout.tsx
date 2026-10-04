@@ -321,7 +321,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="bg-blue-600 text-white p-1.5 rounded-md">
               <Building2 className="w-5 h-5" />
             </div>
-            HMS Admin
+            Polska Veed Admin
           </Link>
           <button 
             className="lg:hidden text-gray-500 hover:text-gray-900"

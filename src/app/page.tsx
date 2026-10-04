@@ -126,7 +126,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Why Choose HMS / Categories */}
+        {/* Why Choose Polska Veed / Categories */}
         <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>

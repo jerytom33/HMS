@@ -47,10 +47,10 @@ export default function AvailabilityPage() {
           <Link className="active" href="/">
             <span className="inline-flex items-center gap-2">
               <span className="grid h-8 w-8 place-items-center rounded-full border" style={{ borderColor: 'var(--color-gold)' }}>
-                <span className="font-display text-lg leading-none" style={{ color: 'var(--color-gold)' }}>H</span>
+                <span className="font-display text-lg leading-none" style={{ color: 'var(--color-gold)' }}>PV</span>
               </span>
               <span className="hidden sm:flex flex-col leading-none">
-                <span className="font-display text-xl tracking-wide">HMS</span>
+                <span className="font-display text-xl tracking-wide whitespace-nowrap">Polska Veed</span>
               </span>
             </span>
           </Link>

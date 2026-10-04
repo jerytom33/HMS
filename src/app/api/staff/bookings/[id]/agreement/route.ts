@@ -3,6 +3,7 @@ import path from 'path'
 import { NextResponse } from 'next/server'
 
 import { isStaffUser } from '@/access'
+import { getAgreement, saveAgreement } from '@/lib/agreementStore'
 import { botPayload } from '@/lib/botServer'
 import { agreementFileName, agreementValues, fillAgreement } from '@/lib/leaseAgreement'
 import { passportStatus } from '@/lib/passport'
@@ -10,25 +11,54 @@ import { findStudentByWhatsapp } from '@/lib/studentAuth'
 
 export const dynamic = 'force-dynamic'
 
-/**
- * GET /api/staff/bookings/:id/agreement (staff login required)
- * The lease agreement for a bed hold, filled in from the booking, its property and the
- * student's record, as an editable Word file to print. Only for paid bookings whose
- * student's passport staff have verified.
- */
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
+async function staffAndBooking(request: Request, params: Promise<{ id: string }>) {
   const payload = await botPayload()
   const { user } = await payload.auth({ headers: request.headers })
-  if (!isStaffUser(user)) return NextResponse.json({ ok: false, error: 'Staff login required' }, { status: 401 })
-
+  if (!isStaffUser(user)) return { error: NextResponse.json({ ok: false, error: 'Staff login required' }, { status: 401 }) }
   const { id } = await params
-  let booking: any
-  try {
-    booking = await payload.findByID({ collection: 'v1-bot-bookings', id, overrideAccess: true, depth: 0 })
-  } catch {
-    booking = null
+  const booking: any = await payload.findByID({ collection: 'v1-bot-bookings', id, overrideAccess: true, depth: 0 }).catch(() => null)
+  if (!booking || booking.type !== 'bed_hold') return { error: NextResponse.json({ ok: false, error: 'Booking not found' }, { status: 404 }) }
+  return { payload, user: user as any, booking }
+}
+
+/**
+ * GET /api/staff/bookings/:id/agreement (staff login required)
+ * The booking's agreement as it was generated, as a Word file (`?download=1` to save it).
+ */
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const found = await staffAndBooking(request, params)
+  if ('error' in found) return found.error
+  const stored = await getAgreement(found.payload, String(found.booking.id))
+  if (!stored) return NextResponse.json({ ok: false, error: 'No agreement has been generated for this booking yet.' }, { status: 404 })
+  const download = new URL(request.url).searchParams.get('download') === '1'
+  return new Response(Buffer.from(stored.data), {
+    headers: {
+      'Content-Type': DOCX,
+      'Content-Disposition': `${download ? 'attachment' : 'inline'}; filename="${agreementFileName(found.booking)}"`,
+      'Cache-Control': 'private, no-store',
+    },
+  })
+}
+
+/**
+ * POST /api/staff/bookings/:id/agreement (staff login required)
+ * Generates the lease agreement once: fills the template from the booking, its property, the
+ * unit and the student's verified passport, and keeps that file. Only for paid bookings with a
+ * verified passport; a booking that already has an agreement is refused (409, `exists`).
+ */
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const found = await staffAndBooking(request, params)
+  if ('error' in found) return found.error
+  const { payload, user, booking } = found
+
+  if (await getAgreement(payload, String(booking.id))) {
+    return NextResponse.json({ ok: false, reason: 'exists', error: 'The agreement for this booking has already been generated.' }, { status: 409 })
   }
-  if (!booking || booking.type !== 'bed_hold') return NextResponse.json({ ok: false, error: 'Booking not found' }, { status: 404 })
+  if (booking.status !== 'paid') {
+    return NextResponse.json({ ok: false, error: 'The agreement is generated once the booking is paid.' }, { status: 409 })
+  }
 
   const [property, student, unit] = await Promise.all([
     booking.propertyId
@@ -42,21 +72,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           .then((r) => (r.docs[0] as any) || null)
       : null,
   ])
-
-  if (booking.status !== 'paid') {
-    return NextResponse.json({ ok: false, error: 'The agreement is generated once the booking is paid.' }, { status: 409 })
-  }
   if (passportStatus(student) !== 'verified') {
     return NextResponse.json({ ok: false, error: "The student's passport must be verified first." }, { status: 409 })
   }
 
   const template = await readFile(path.join(process.cwd(), 'src/templates/lease-agreement.docx'))
   const file = fillAgreement(new Uint8Array(template), agreementValues(booking, property, student, unit))
-  return new Response(Buffer.from(file), {
-    headers: {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Disposition': `attachment; filename="${agreementFileName(booking)}"`,
-      'Cache-Control': 'no-store',
-    },
+  const by = String(user?.username || user?.email || 'staff')
+  if (!(await saveAgreement(payload, booking, file, by))) {
+    return NextResponse.json({ ok: false, reason: 'exists', error: 'The agreement for this booking has already been generated.' }, { status: 409 })
+  }
+  const generatedAt = new Date().toISOString()
+  await payload.update({
+    collection: 'v1-bot-bookings',
+    id: booking.id,
+    overrideAccess: true,
+    data: {
+      agreementGeneratedAt: generatedAt,
+      notes: [booking.notes, `Agreement generated by ${by} ${generatedAt}.`].filter(Boolean).join('\n'),
+    } as any,
   })
+  return NextResponse.json({ ok: true, generatedAt, generatedBy: by })
 }

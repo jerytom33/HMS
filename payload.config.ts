@@ -49,6 +49,9 @@ const dirname = path.dirname(filename)
 export default buildConfig({
   admin: {
     user: 'users',
+    meta: {
+      titleSuffix: ' - Polska Veed',
+    },
   },
   collections: [
     Users,
