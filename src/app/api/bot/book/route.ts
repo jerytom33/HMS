@@ -4,7 +4,7 @@ import type { Payload } from 'payload'
 
 import { formatPLN } from '@/lib/currency'
 import { OVERRIDES, syncCounts, unitBedTotal } from '@/lib/botHolds'
-import { bookedBedLabel, fitBedStatuses, GENDER_LABELS, parseContactPhone, parseGender, SHARING_LABELS, splitOverrideKey, type BotOverride, type BotUnit } from '@/lib/botRooms'
+import { bookedBedLabel, depositText, fitBedStatuses, GENDER_LABELS, parseContactPhone, parseGender, SHARING_LABELS, splitOverrideKey, type BotOverride, type BotUnit } from '@/lib/botRooms'
 import { botPayload, checkBotKey, clean, loadInventory, normalizePhone } from '@/lib/botServer'
 import { defaultAmenities } from '@/lib/propertyTypes'
 
@@ -164,6 +164,7 @@ export async function POST(request: Request) {
             bedIndex: claimed.bedIndex,
             bed,
             price: unit.price ?? undefined,
+            deposit: unit.deposit ?? undefined,
           } as any,
         })
       } catch (error) {
@@ -189,6 +190,7 @@ export async function POST(request: Request) {
 
 function confirmation(b: any, duplicate: boolean) {
   const price = typeof b.price === 'number' ? `${formatPLN(b.price)}/month` : 'Price on request'
+  const deposit = depositText(b.deposit)
   const sharing = SHARING_LABELS[b.sharing] || `${b.sharing} share`
   return {
     ok: true,
@@ -202,6 +204,7 @@ function confirmation(b: any, duplicate: boolean) {
     floor: b.floor,
     bed: b.bed,
     price,
+    deposit,
     arrivalDate: b.arrivalDate,
     message:
       `✅ Your bed is on hold!\n\n` +
@@ -210,7 +213,7 @@ function confirmation(b: any, duplicate: boolean) {
       `📍 ${b.floor}\n` +
       `🛏 ${b.bed}\n` +
       (b.arrivalDate ? `📅 Arrival: ${b.arrivalDate}\n` : '') +
-      `💰 ${price}\n` +
+      `💰 ${price} · 🔒 ${deposit}\n` +
       `👤 ${b.name || '-'} · 📞 +${b.phone || b.whatsapp}\n\n` +
       `We'll keep this bed for you until payment. Our team will contact you with the payment details soon.`,
     adminMessage:
@@ -225,7 +228,8 @@ function confirmation(b: any, duplicate: boolean) {
       `Bed: ${b.bed}\n` +
       `Sharing: ${sharing}\n` +
       `Arrival: ${b.arrivalDate || '-'}\n` +
-      `Price: ${price}\n\n` +
+      `Price: ${price}\n` +
+      `${deposit}\n\n` +
       `Bed is marked taken until payment.`,
   }
 }

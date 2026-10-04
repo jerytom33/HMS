@@ -2,6 +2,8 @@
 //   npx jest src/tests/botRooms.spec.ts --config '{"preset":"ts-jest","testEnvironment":"node"}'
 import { describe, expect, it } from '@jest/globals'
 
+import { formatPLN } from '../lib/currency'
+
 import { listUnits, parseContactPhone, parseGender, parseSharing, parseUnitId, searchRooms, unitDetails, whatsappImageUrl, type BotOverride, type BotProperty } from '../lib/botRooms'
 
 // Shapes taken from production documents on 2026-10-03
@@ -97,7 +99,7 @@ describe('bot room availability', () => {
   it('describes one room for the booking summary', () => {
     const room = details(units, `${B}-202`)
     expect(room.available).toBe(true)
-    expect(room.summary).toBe('Room 202 — Bukowiecka 11, 1st Floor · 870 PLN/month')
+    expect(room.summary).toBe('Room 202 — Bukowiecka 11, 1st Floor\n💰 870 PLN/month · 🔒 Deposit on request')
     const full = units.map((u) => (u.unit === `${B}-202` ? { ...u, freeBeds: 0, freeBedIndices: [] } : u))
     expect(details(full, `${B}-202`).available).toBe(false)
     expect(details(units, 'nope').available).toBe(false)
@@ -112,7 +114,7 @@ describe('bot room availability', () => {
     expect(room.bedsText).toBe('3 of 4 beds free')
     const bedC = details(u, `${B}-202`, '2')
     expect(bedC.available).toBe(true)
-    expect(bedC.summary).toBe('Room 202, Bed C — Bukowiecka 11, 1st Floor · 870 PLN/month')
+    expect(bedC.summary).toBe('Room 202, Bed C — Bukowiecka 11, 1st Floor\n💰 870 PLN/month · 🔒 Deposit on request')
     const bedA = details(u, `${B}-202`, 0)
     expect(bedA.available).toBe(false)
     expect(bedA.reason).toBe('bed_taken')
@@ -124,9 +126,25 @@ describe('bot room availability', () => {
     )
     const room = details(listUnits(properties, typed), `${B}-202`)
     expect(room.beds.map((b: { bedType: string }) => b.bedType)).toEqual(['Bunk Bed · Lower', 'Bunk Bed · Upper', 'Independent Bed', 'Independent Bed'])
-    expect(room.beds[1].description.startsWith('Bunk Bed · Upper · Room 202')).toBe(true)
+    expect(room.beds[1].description).toBe('Bunk Bed · Upper · 870 PLN/month · Deposit on request')
     expect(room.beds.every((b: { description: string }) => b.description.length <= 72)).toBe(true)
     expect(details(listUnits(properties, typed), `${B}-202`, '1').bedType).toBe('Bunk Bed · Upper')
+  })
+
+  it('shows the deposit and the free beds\' photos', () => {
+    const photo = 'https://res.cloudinary.com/dqojq3cle/image/upload/f_auto,q_auto/v1/hms/bed-c.jpg'
+    const edited = overrides.map((o) =>
+      o.overrideKey === `${B}-202` ? { ...o, deposit: '1000', bedStatuses: [false, true, false, false], bedImages: [[], [], [photo], []] } : o,
+    )
+    const room = details(listUnits(properties, edited), `${B}-202`)
+    const dep = `Deposit ${formatPLN(1000)}`
+    expect(room.deposit).toBe(dep)
+    expect(room.beds[0].description).toBe(`Independent Bed · 870 PLN/month · ${dep}`)
+    expect(room.hasBedPhotos).toBe(true)
+    expect(room.bedGallery).toEqual([
+      { image: 'https://res.cloudinary.com/dqojq3cle/image/upload/f_jpg,q_auto,w_1280,c_limit/v1/hms/bed-c.jpg', caption: `🛏 Bed C (Independent Bed) — Room 202, Bukowiecka 11\n💰 870 PLN/month · 🔒 ${dep}` },
+    ])
+    expect(details(units, `${B}-202`).hasBedPhotos).toBe(false)
   })
 
   it('labels apartment beds within their bedroom', () => {

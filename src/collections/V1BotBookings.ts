@@ -97,6 +97,8 @@ export const V1BotBookings: CollectionConfig = {
     { name: 'bedIndex', type: 'number' },
     { name: 'bed', type: 'text' },
     { name: 'price', type: 'number' },
+    // Deposit in PLN at the time of booking, when staff have set one for the room
+    { name: 'deposit', type: 'number' },
     { name: 'notes', type: 'textarea' },
   ],
 }

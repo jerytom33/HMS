@@ -234,6 +234,12 @@ const clip = (text: string, max: number) => (text.length <= max ? text : `${text
 
 const priceText = (u: BotUnit) => (u.price !== null ? `${formatPLN(u.price)}/month` : 'Price on request')
 
+export const depositText = (deposit: number | null | undefined) =>
+  typeof deposit === 'number' ? `Deposit ${formatPLN(deposit)}` : 'Deposit on request'
+
+/** "💰 870 PLN/month · 🔒 Deposit 1000 PLN" */
+const moneyLine = (u: BotUnit) => `💰 ${priceText(u)} · 🔒 ${depositText(u.deposit)}`
+
 const sortUnits = (a: BotUnit, b: BotUnit) =>
   a.hostel.localeCompare(b.hostel) ||
   (a.floor ?? 999) - (b.floor ?? 999) ||
@@ -247,7 +253,7 @@ export function unitCaption(u: BotUnit): string {
     `🏠 ${u.label} — ${u.hostel}`,
     `📍 ${[u.location, u.floorName].filter(Boolean).join(' · ')}`,
     `🛏 ${kind}, ${u.sharing} ${u.sharing === 1 ? 'bed' : 'beds'} · ${u.freeBeds} free`,
-    `💰 ${priceText(u)}`,
+    moneyLine(u),
   ]
   if (u.amenities.length) lines.push(`✅ ${u.amenities.join(', ')}`)
   return lines.join('\n')
@@ -312,7 +318,7 @@ export function searchRooms(units: BotUnit[], sharing: number, hostelId?: string
     rooms: shown.map((u) => ({
       value: u.unit,
       title: clip(u.label, 24),
-      description: clip(`${u.hostel} · ${u.floorName} · ${u.freeBeds} free · ${priceText(u)}`, 72),
+      description: clip(`${u.hostel} · ${u.floorName} · ${u.freeBeds} free · ${priceText(u)} · ${depositText(u.deposit)}`, 72),
       hostel: u.hostel,
       floor: u.floorName,
       unitType: u.unitType,
@@ -349,7 +355,7 @@ export function unitDetails(units: BotUnit[], unitId: string, bed?: string | num
   const beds = u.freeBedList.map((b) => ({
     value: String(b.index),
     title: clip(b.label, 24),
-    description: clip(`${b.type} · ${u.label} — ${u.hostel} · ${priceText(u)}`, 72),
+    description: clip(`${b.type} · ${priceText(u)} · ${depositText(u.deposit)}`, 72),
     bedType: b.type,
   }))
   const base = {
@@ -362,14 +368,21 @@ export function unitDetails(units: BotUnit[], unitId: string, bed?: string | num
     freeBeds: u.freeBeds,
     bedCount: u.sharing,
     price: priceText(u),
+    deposit: depositText(u.deposit),
     image: u.images[0] || null,
     caption: unitCaption(u),
     /** Rows for a dynamic WhatsApp list of the free beds: title / description / value. */
     beds,
     bedsText: `${u.freeBeds} of ${u.sharing} ${u.sharing === 1 ? 'bed' : 'beds'} free`,
+    /** Photos of the free beds that have one, for a Multiple Image block before the bed list. */
+    bedGallery: u.freeBedList.filter((b) => b.image).map((b) => ({
+      image: b.image as string,
+      caption: `🛏 ${b.label} (${b.type}) — ${u.label}, ${u.hostel}\n${moneyLine(u)}`,
+    })),
+    hasBedPhotos: u.freeBedList.some((b) => b.image),
   }
   if (wantedBed === null) {
-    return { ...base, available: true, summary: `${u.label} — ${u.hostel}, ${u.floorName} · ${priceText(u)}` }
+    return { ...base, available: true, summary: `${u.label} — ${u.hostel}, ${u.floorName}\n${moneyLine(u)}` }
   }
   const chosen = u.freeBedList.find((b) => b.index === wantedBed)
   if (!chosen) {
@@ -389,7 +402,7 @@ export function unitDetails(units: BotUnit[], unitId: string, bed?: string | num
     bedType: chosen.type,
     bedImage: chosen.image,
     /** "Room 202, Bed B — Bukowiecka 11, 1st Floor · 870 PLN/month" */
-    summary: `${u.label}, ${chosen.label} — ${u.hostel}, ${u.floorName} · ${priceText(u)}`,
+    summary: `${u.label}, ${chosen.label} — ${u.hostel}, ${u.floorName}\n${moneyLine(u)}`,
   }
 }
 
