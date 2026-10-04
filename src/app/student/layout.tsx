@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, Home, User, Bed, Calendar, FileText, CreditCard, Wrench, Bell, MessageCircle, Menu, LogOut, X } from 'lucide-react';
+import { Search, Home, User, Bed, Calendar, MessageCircle, Menu, LogOut, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -17,11 +17,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     { name: 'My Profile', href: '/student/profile', icon: User },
     { name: 'My Room', href: '/student/room', icon: Bed },
     { name: 'Bookings', href: '/student/bookings', icon: Calendar },
-    { name: 'Contracts', href: '/student/contracts', icon: FileText },
-    { name: 'Payments', href: '/student/payments', icon: CreditCard },
-    { name: 'Documents', href: '/student/documents', icon: FileText },
-    { name: 'Maintenance', href: '/student/maintenance', icon: Wrench },
-    { name: 'Notifications', href: '/student/notifications', icon: Bell },
   ];
 
   return (
