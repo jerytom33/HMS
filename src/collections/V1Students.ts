@@ -24,6 +24,8 @@ export const V1Students: CollectionConfig = {
     { name: 'status', type: 'text' },
     { name: 'dateOfBirth', type: 'text' },
     { name: 'gender', type: 'text' },
+    // Planned arrival as DD/MM/YYYY, from the WhatsApp bot (checked: future, within 6 months)
+    { name: 'arrivalDate', type: 'text' },
     { name: 'address', type: 'text' },
     { name: 'course', type: 'text' },
     { name: 'yearOfStudy', type: 'text' },

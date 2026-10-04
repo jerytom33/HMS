@@ -13,7 +13,7 @@ type Booking = { ref: string; status: string; hostel: string; room: string; floo
 const STATUS: Record<string, string> = { held: 'On hold — awaiting payment', paid: 'Paid', cancelled: 'Cancelled' };
 
 export default function FindRoomPage() {
-  const [me, setMe] = useState<{ name: string; whatsapp: string; gender: string } | null>(null);
+  const [me, setMe] = useState<{ name: string; whatsapp: string; gender: string; arrivalDate: string; arrivalRange: { min: string; max: string } } | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [sharingOptions, setSharingOptions] = useState<{ value: number; label: string }[]>([]);
   const [genderKnown, setGenderKnown] = useState(true);
@@ -44,6 +44,8 @@ export default function FindRoomPage() {
         get('/api/student/bookings'),
       ]);
       setMe(m);
+      // Pre-fill the arrival date the student gave on WhatsApp
+      setArrivalDate((current) => current || m.arrivalDate || '');
       setRooms(r.rooms);
       setSharingOptions(r.sharingOptions);
       setGenderKnown(r.genderKnown);
@@ -69,7 +71,7 @@ export default function FindRoomPage() {
       });
       const data = await res.json().catch(() => ({}));
       setResult({ ok: Boolean(data.ok), message: data.message || 'Something went wrong. Please try again.' });
-      if (data.ok) { setPicked(null); setAgreed(false); setArrivalDate(''); }
+      if (data.ok) { setPicked(null); setAgreed(false); }
       load();
     } finally {
       setBooking(false);
@@ -152,7 +154,7 @@ export default function FindRoomPage() {
                   <div className="space-y-3 rounded-lg bg-secondary/10 p-3">
                     <label className="block space-y-1 text-sm">
                       <span className="font-medium">Arrival date</span>
-                      <input type="date" value={arrivalDate} onChange={(e) => setArrivalDate(e.target.value)}
+                      <input type="date" value={arrivalDate} min={me?.arrivalRange.min} max={me?.arrivalRange.max} onChange={(e) => setArrivalDate(e.target.value)}
                         className="w-full rounded-lg border border-border bg-background px-3 py-1.5" />
                     </label>
                     <label className="flex items-start gap-2 text-sm">

@@ -79,13 +79,14 @@ export async function findStudentByWhatsapp(payload: Payload, whatsapp: string) 
  */
 export async function saveStudentFromBot(
   payload: Payload,
-  data: { whatsapp: string; name?: string; gender?: StudentGender | null; email?: string | null },
+  data: { whatsapp: string; name?: string; gender?: StudentGender | null; email?: string | null; arrivalDate?: string | null },
 ) {
   const existing = await findStudentByWhatsapp(payload, data.whatsapp)
   const changes: Record<string, string> = { whatsapp: data.whatsapp }
   if (data.name) changes.name = data.name
   if (data.gender) changes.gender = GENDER_LABELS[data.gender]
   if (data.email) changes.email = data.email
+  if (data.arrivalDate) changes.arrivalDate = data.arrivalDate
   if (existing) {
     return payload.update({ collection: STUDENTS, id: existing.id, overrideAccess: true, data: changes }) as Promise<any>
   }
@@ -148,3 +149,65 @@ export const sessionCookie = (token: string) => ({
   path: '/',
   maxAge: SESSION_DAYS * 86400,
 })
+
+/** Calendar date in Poland (Europe/Warsaw) as [year, month, day]. */
+function warsawToday(now: Date): [number, number, number] {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now)
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value)
+  return [get('year'), get('month'), get('day')]
+}
+
+const pad = (n: number) => String(n).padStart(2, '0')
+const formatDMY = (d: Date) => `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`
+
+/** Months after which an arrival date is too far ahead. */
+export const ARRIVAL_MAX_MONTHS = 6
+
+/**
+ * An arrival date the student typed ("15/02/2027", also 15-2-2027 or 15.02.2027).
+ * It must be a real date after today (Poland time) and at most ARRIVAL_MAX_MONTHS ahead.
+ */
+export function parseArrivalDate(input: unknown, now: Date = new Date()): { ok: true; date: string } | { ok: false; message: string } {
+  const [ty, tm, td] = warsawToday(now)
+  const today = new Date(Date.UTC(ty, tm - 1, td))
+  const first = new Date(Date.UTC(ty, tm - 1, td + 1))
+  // Same day number six months on, or the month's last day when it has fewer days
+  const lastDayOfTarget = new Date(Date.UTC(ty, tm - 1 + ARRIVAL_MAX_MONTHS + 1, 0)).getUTCDate()
+  const last = new Date(Date.UTC(ty, tm - 1 + ARRIVAL_MAX_MONTHS, Math.min(td, lastDayOfTarget)))
+  const range = `between ${formatDMY(first)} and ${formatDMY(last)}`
+
+  const m = String(input ?? '').trim().match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/)
+  if (!m) return { ok: false, message: `Please send the date as DD/MM/YYYY, ${range} 📅` }
+  const [day, month, year] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const date = new Date(Date.UTC(year, month - 1, day))
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return { ok: false, message: `That date doesn't exist. Please send a date ${range} 📅` }
+  }
+  if (date <= today) return { ok: false, message: `The arrival date must be in the future. Please send a date ${range} 📅` }
+  if (date > last) return { ok: false, message: `We take bookings up to ${ARRIVAL_MAX_MONTHS} months ahead. Please send a date ${range} 📅` }
+  return { ok: true, date: formatDMY(date) }
+}
+
+const iso = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
+
+/** First and last allowed arrival dates as YYYY-MM-DD, for a date picker's min/max. */
+export function arrivalRange(now: Date = new Date()): { min: string; max: string } {
+  const [ty, tm, td] = warsawToday(now)
+  const lastDayOfTarget = new Date(Date.UTC(ty, tm - 1 + ARRIVAL_MAX_MONTHS + 1, 0)).getUTCDate()
+  return {
+    min: iso(new Date(Date.UTC(ty, tm - 1, td + 1))),
+    max: iso(new Date(Date.UTC(ty, tm - 1 + ARRIVAL_MAX_MONTHS, Math.min(td, lastDayOfTarget)))),
+  }
+}
+
+/** The portal's date picker sends YYYY-MM-DD; check it with the same rule as parseArrivalDate. */
+export function parsePortalArrivalDate(input: unknown, now: Date = new Date()) {
+  const m = String(input ?? '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  return parseArrivalDate(m ? `${m[3]}/${m[2]}/${m[1]}` : input, now)
+}
+
+/** "15/02/2027" -> "2027-02-15" (for pre-filling a date picker); '' when not a DD/MM/YYYY date. */
+export function dmyToIso(dmy: unknown): string {
+  const m = String(dmy ?? '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : ''
+}

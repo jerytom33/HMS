@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { holdBed, holdConfirmation } from '@/lib/bedHold'
 import { allowedForGender, findUnit, genderNotAllowedMessage, parseAgreement } from '@/lib/botRooms'
 import { botPayload, clean, loadInventory } from '@/lib/botServer'
-import { studentFromRequest, studentGender } from '@/lib/studentAuth'
+import { parsePortalArrivalDate, studentFromRequest, studentGender } from '@/lib/studentAuth'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +24,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'JSON body required' }, { status: 400 })
   }
   const unitId = clean(body.unit)
+  // Same arrival rule as the bot: after today (Poland time), at most 6 months ahead; stored as DD/MM/YYYY
+  const arrival = parsePortalArrivalDate(body.arrivalDate)
+  if (!arrival.ok) return NextResponse.json({ ok: false, reason: 'invalid_arrival_date', message: arrival.message }, { status: 400 })
   const bedText = clean(body.bed, 10)
   if (!unitId || !/^\d+$/.test(bedText)) {
     return NextResponse.json({ ok: false, reason: 'bad_request', message: 'Choose a room and a bed.' }, { status: 400 })
@@ -52,7 +55,7 @@ export async function POST(request: Request) {
       email: student.email || null,
       gender,
       minStayAgreed: parseAgreement(body.minStayAgreed),
-      arrivalDate: clean(body.arrivalDate, 40),
+      arrivalDate: arrival.date,
       source: 'portal',
     })
     if (!result.ok) return NextResponse.json(result)

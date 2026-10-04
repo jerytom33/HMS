@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { holdBed, holdConfirmation } from '@/lib/bedHold'
 import { allowedForGender, AMBIGUOUS_ROOM_MESSAGE, findUnit, genderNotAllowedMessage, parseAgreement, parseContactPhone, parseEmail, parseGender, parseSharing, resolveBed } from '@/lib/botRooms'
 import { botPayload, checkBotKey, clean, loadInventory, normalizePhone } from '@/lib/botServer'
-import { saveStudentFromBot } from '@/lib/studentAuth'
+import { parseArrivalDate, saveStudentFromBot } from '@/lib/studentAuth'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +15,8 @@ export const dynamic = 'force-dynamic'
  * ("Room 402"; `sharing` and `hostel` tell rooms with the same name apart). `bed` is a bed
  * `value` or title from /api/bot/unit ("Bed B"); without it the first free bed is held. `phone` is the number to call; defaults to the WhatsApp number.
  * With `gender`, a male-only or female-only room is refused for the other gender (reason 'gender_not_allowed').
+ * `arrivalDate` (DD/MM/YYYY), when given, must be after today (Poland time) and within 6 months,
+ * else reason 'invalid_arrival_date' with a message naming the dates that work.
  *
  * Holds one free bed in the unit until payment (see holdBed) and saves the name, gender and
  * email to the student's record. Always answers 200 with `ok` for the bot to branch on.
@@ -32,7 +34,9 @@ export async function POST(request: Request) {
   const unitId = clean(body.unit)
   const whatsapp = normalizePhone(body.whatsapp)
   const name = clean(body.name, 120)
-  const arrivalDate = clean(body.arrivalDate, 40)
+  const arrivalText = clean(body.arrivalDate, 40)
+  const arrival = arrivalText ? parseArrivalDate(arrivalText) : null
+  const arrivalDate = arrival?.ok ? arrival.date : ''
   const phone = parseContactPhone(body.phone) || whatsapp
   const email = parseEmail(body.email)
   const gender = parseGender(body.gender)
@@ -40,6 +44,10 @@ export async function POST(request: Request) {
   const bedText = clean(body.bed, 40)
   if (!unitId || !whatsapp) {
     return NextResponse.json({ ok: false, reason: 'bad_request', error: 'unit and whatsapp are required' }, { status: 400 })
+  }
+
+  if (arrival && !arrival.ok) {
+    return NextResponse.json({ ok: false, reason: 'invalid_arrival_date', message: arrival.message })
   }
 
   try {
@@ -59,7 +67,7 @@ export async function POST(request: Request) {
     }
 
     // Keep the student record up to date with what the bot collected (gender drives the portal's room list)
-    await saveStudentFromBot(payload, { whatsapp, name, gender, email }).catch((e) => console.error('Could not save student from bot booking:', e))
+    await saveStudentFromBot(payload, { whatsapp, name, gender, email, arrivalDate: arrivalDate || null }).catch((e) => console.error('Could not save student from bot booking:', e))
 
     const result = await holdBed(payload, {
       unit,
