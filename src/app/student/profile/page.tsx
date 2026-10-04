@@ -4,10 +4,33 @@ import { useEffect, useState } from 'react';
 import { BadgeCheck, Clock, FileText, Lock, User } from 'lucide-react';
 import { studentGet, type PassportInfo, type StudentProfile } from '@/lib/studentClient';
 
+/**
+ * Photos are shrunk in the browser (longest side 2000 px, JPEG) to keep uploads small;
+ * PDFs and photos the browser can't read (e.g. HEIC outside Safari) are sent as they are.
+ */
+async function prepareCopy(file: File): Promise<Blob> {
+  if (!file.type.startsWith('image/')) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+    return blob && blob.size < file.size ? blob : file;
+  } catch {
+    return file;
+  }
+}
+
+const MAX_COPY_MB = 4;
+
 // Passport for the lease agreement: asked for once the booking is paid, then verified by staff
 function PassportCard({ passport, onSaved }: { passport: PassportInfo; onSaved: () => void }) {
   const [number, setNumber] = useState(passport.number);
   const [validUntil, setValidUntil] = useState(passport.validUntilIso);
+  const [copy, setCopy] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const editable = passport.allowed && passport.status !== 'verified';
@@ -17,11 +40,18 @@ function PassportCard({ passport, onSaved }: { passport: PassportInfo; onSaved: 
     setSaving(true);
     setResult(null);
     try {
-      const res = await fetch('/api/student/passport', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passportNumber: number, passportValidUntil: validUntil }),
-      });
+      const form = new FormData();
+      form.set('passportNumber', number);
+      form.set('passportValidUntil', validUntil);
+      if (copy) {
+        const blob = await prepareCopy(copy);
+        if (blob.size > MAX_COPY_MB * 1024 * 1024) {
+          setResult({ ok: false, message: `The file is too large. Please upload a photo or PDF under ${MAX_COPY_MB} MB.` });
+          return;
+        }
+        form.set('copy', blob, blob === copy ? copy.name : 'passport.jpg');
+      }
+      const res = await fetch('/api/student/passport', { method: 'POST', body: form });
       const data = await res.json().catch(() => ({}));
       setResult({ ok: Boolean(data.ok), message: data.message || "Couldn't save. Please try again." });
       if (data.ok) onSaved();
@@ -68,8 +98,18 @@ function PassportCard({ passport, onSaved }: { passport: PassportInfo; onSaved: 
               <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Valid until</span>
               <input type="date" className={inputClass} value={validUntil} required onChange={(e) => setValidUntil(e.target.value)} />
             </label>
+            <label className="space-y-1 md:col-span-2">
+              <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Passport copy</span>
+              <input type="file" accept="image/*,application/pdf" onChange={(e) => setCopy(e.target.files?.[0] || null)}
+                className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-secondary/10 file:px-3 file:py-2 file:text-sm file:font-medium" />
+              <span className="block text-xs text-muted-foreground">
+                {passport.copyUploadedAt
+                  ? `Copy uploaded ${new Date(passport.copyUploadedAt).toLocaleDateString('en-GB')}. Choose a file only to replace it.`
+                  : 'A clear photo or scan of the page with your photo (JPG, PNG, HEIC or PDF).'}
+              </span>
+            </label>
             <div className="md:col-span-2 flex flex-wrap items-center gap-4">
-              <button type="submit" disabled={saving || !number || !validUntil}
+              <button type="submit" disabled={saving || !number || !validUntil || (!copy && !passport.copyUploadedAt)}
                 className="rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium disabled:opacity-50">
                 {saving ? 'Sending…' : passport.status === 'none' ? 'Send for checking' : 'Send again'}
               </button>

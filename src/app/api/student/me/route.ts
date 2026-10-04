@@ -30,6 +30,7 @@ const profile = async (payload: any, student: any) => {
       validUntil: student.passportValidUntil || '',
       validUntilIso: dmyToIso(student.passportValidUntil),
       rejectReason: student.passportRejectReason || '',
+      copyUploadedAt: student.passportCopyUploadedAt || '',
     },
   }
 }

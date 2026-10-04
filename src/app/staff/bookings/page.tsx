@@ -18,6 +18,7 @@ type Booking = {
 type Student = {
   id: string; whatsapp?: string; phone?: string;
   passportNumber?: string; passportValidUntil?: string; passportStatus?: string; passportRejectReason?: string;
+  passportCopyUploadedAt?: string;
 };
 
 const digits = (v?: string) => String(v || '').replace(/\D/g, '');
@@ -286,6 +287,11 @@ export default function AdminBookings() {
                           {ps !== 'none' && <span className="text-gray-500">valid until {st?.passportValidUntil || '–'}</span>}
                           {ps === 'submitted' && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">To verify</span>}
                           {ps === 'verified' && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"><BadgeCheck className="h-3.5 w-3.5" /> Verified</span>}
+                          {st?.passportCopyUploadedAt ? (
+                            <a href={`/api/staff/students/${st.id}/passport-copy`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-400 hover:underline">
+                              <FileText className="h-3.5 w-3.5" /> View passport copy
+                            </a>
+                          ) : ps !== 'none' && <span className="text-gray-500">No copy uploaded</span>}
                           {ps === 'rejected' && <span className="text-red-600">Sent back{st?.passportRejectReason ? `: ${st.passportRejectReason}` : ''}. Waiting for the student.</span>}
                         </div>
                         {st && (ps === 'submitted' || ps === 'verified') && (
@@ -300,7 +306,8 @@ export default function AdminBookings() {
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               {ps === 'submitted' && (
-                                <button onClick={() => setPassport(b, st, 'verified')} disabled={saving === b.id} className="px-3 py-1.5 rounded-md text-sm font-medium border border-green-300 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/40 disabled:opacity-50">
+                                // A passport is verified against its copy
+                                <button onClick={() => setPassport(b, st, 'verified')} disabled={saving === b.id || !st.passportCopyUploadedAt} title={st.passportCopyUploadedAt ? undefined : 'Waiting for the passport copy'} className="px-3 py-1.5 rounded-md text-sm font-medium border border-green-300 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/40 disabled:opacity-50">
                                   Verify passport
                                 </button>
                               )}

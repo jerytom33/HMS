@@ -6,6 +6,7 @@ import * as migration_20261003_164146_bot_bookings_indexes from './20261003_1641
 import * as migration_20261004_072345_student_whatsapp_index from './20261004_072345_student_whatsapp_index';
 import * as migration_20261004_150000_drop_student_password from './20261004_150000_drop_student_password';
 import * as migration_20261004_170000_student_passwords from './20261004_170000_student_passwords';
+import * as migration_20261004_190000_passport_copies from './20261004_190000_passport_copies';
 
 export const migrations = [
   {
@@ -47,5 +48,10 @@ export const migrations = [
     up: migration_20261004_170000_student_passwords.up,
     down: migration_20261004_170000_student_passwords.down,
     name: '20261004_170000_student_passwords',
+  },
+  {
+    up: migration_20261004_190000_passport_copies.up,
+    down: migration_20261004_190000_passport_copies.down,
+    name: '20261004_190000_passport_copies',
   },
 ];

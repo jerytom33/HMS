@@ -1,10 +1,15 @@
 import type { CollectionConfig } from 'payload'
 import { isStaff } from '../access'
+import { deletePassportCopy } from '../lib/passportCopy'
 
 export const V1Students: CollectionConfig = {
   slug: 'v1-students',
   admin: {
     useAsTitle: 'name',
+  },
+  hooks: {
+    // The passport copy lives outside the record; remove it with the student
+    afterDelete: [({ doc, req }) => deletePassportCopy(req.payload, String(doc.id)).catch((e) => req.payload.logger.error(`Could not delete passport copy of ${doc.id}: ${e}`))],
   },
   access: {
     // Personal data: staff login required to read or change
@@ -52,6 +57,8 @@ export const V1Students: CollectionConfig = {
     // Shown to the student so they can correct the details
     { name: 'passportRejectReason', type: 'text' },
     { name: 'passportVerifiedAt', type: 'date', admin: { readOnly: true } },
+    // When the student last uploaded a passport copy (the file itself: passport-copies, staff route only)
+    { name: 'passportCopyUploadedAt', type: 'date', admin: { readOnly: true } },
     // Hash of the portal password the student set from their personal link; never readable through any API
     { name: 'passwordHash', type: 'text', access: { read: () => false, create: () => false, update: () => false }, admin: { hidden: true } },
     // Goes up with every new password; ends older personal links and sessions

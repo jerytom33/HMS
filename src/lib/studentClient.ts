@@ -2,7 +2,7 @@
 
 export type PassportInfo = {
   allowed: boolean; status: 'none' | 'submitted' | 'verified' | 'rejected';
-  number: string; validUntil: string; validUntilIso: string; rejectReason: string;
+  number: string; validUntil: string; validUntilIso: string; rejectReason: string; copyUploadedAt: string;
 };
 
 export type StudentProfile = {
