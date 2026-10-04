@@ -262,13 +262,78 @@ export function unitCaption(u: BotUnit): string {
 /** WhatsApp list limits: 10 rows, 24-char titles, 72-char descriptions. */
 export const LIST_LIMIT = 10
 
+// The bot platform saves a list answer as the row's title, not its value, so every
+// list title must lead back to one hostel, room or bed (see resolveUnit / resolveBed).
+const norm = (text: unknown) => String(text ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
+
+/** List title for a room; names the hostel too when another room of the same sharing has the same name. */
+export function roomTitle(u: BotUnit, units: BotUnit[]): string {
+  const title = clip(u.label, 24)
+  const clash = units.some((x) => x !== u && x.sharing === u.sharing && clip(x.label, 24) === title)
+  return clash ? clip(`${u.label} · ${u.hostel}`, 24) : title
+}
+
+/** A hostel's id from its id or its name (as the hostel list saves it). */
+export function resolveHostelId(units: BotUnit[], input: unknown): string | null {
+  const wanted = norm(input)
+  if (!wanted) return null
+  const byId = units.find((u) => u.propertyId === String(input).trim())
+  if (byId) return byId.propertyId
+  const byName = units.find((u) => norm(u.hostel) === wanted || norm(clip(u.hostel, 24)) === wanted)
+  return byName ? byName.propertyId : null
+}
+
+export const AMBIGUOUS_ROOM_MESSAGE = "Sorry, I couldn't tell which room you meant 🙏 Please choose the room again."
+
+/**
+ * The unit a student picked, from its id or from the room list title ("Room 402",
+ * "Room 101 · Bernerowo"). `sharing` and `hostel` narrow the search to the list they saw.
+ * When a title still matches more than one unit, `ambiguous` is true and no unit is
+ * returned: guessing could book a room in the wrong hostel.
+ */
+export function findUnit(
+  units: BotUnit[],
+  input: unknown,
+  opts: { sharing?: number | null; hostel?: unknown } = {},
+): { unit?: BotUnit; ambiguous: boolean } {
+  const raw = String(input ?? '').trim()
+  if (!raw) return { ambiguous: false }
+  const byId = units.find((u) => u.unit === raw)
+  if (byId) return { unit: byId, ambiguous: false }
+  const hostelId = resolveHostelId(units, opts.hostel)
+  const wanted = norm(raw)
+  const matches = units.filter(
+    (u) =>
+      (!opts.sharing || u.sharing === opts.sharing) &&
+      (!hostelId || u.propertyId === hostelId) &&
+      (norm(roomTitle(u, units)) === wanted || norm(u.label) === wanted),
+  )
+  if (matches.length > 1) return { ambiguous: true }
+  return { unit: matches[0], ambiguous: false }
+}
+
+/** The unit a student picked (see findUnit); undefined when not found or ambiguous. */
+export function resolveUnit(units: BotUnit[], input: unknown, opts: { sharing?: number | null; hostel?: unknown } = {}): BotUnit | undefined {
+  return findUnit(units, input, opts).unit
+}
+
+/** A bed's flat index from its index or its list title ("Bed B"); null when it is not one of the free beds. */
+export function resolveBed(u: BotUnit, input: unknown): number | null {
+  const raw = String(input ?? '').trim()
+  if (/^\d+$/.test(raw)) return Number(raw)
+  const wanted = norm(raw)
+  const bed = u.freeBedList.find((b) => norm(b.label) === wanted || norm(clip(b.label, 24)) === wanted)
+  return bed ? bed.index : null
+}
+
 export type RoomSearch = ReturnType<typeof searchRooms>
 
 /**
  * Units with a free bed for a sharing type. With more than 10 matches and no hostel
  * chosen, returns the hostels to pick from instead of rooms (needsHostel).
  */
-export function searchRooms(units: BotUnit[], sharing: number, hostelId?: string | null) {
+export function searchRooms(units: BotUnit[], sharing: number, hostel?: string | null) {
+  const hostelId = resolveHostelId(units, hostel)
   const matching = units.filter((u) => u.sharing === sharing && u.freeBeds > 0).sort(sortUnits)
   const inHostel = hostelId ? matching.filter((u) => u.propertyId === hostelId) : matching
 
@@ -317,7 +382,7 @@ export function searchRooms(units: BotUnit[], sharing: number, hostelId?: string
     /** Rows for a dynamic WhatsApp list: title / description / value. */
     rooms: shown.map((u) => ({
       value: u.unit,
-      title: clip(u.label, 24),
+      title: roomTitle(u, units),
       description: clip(`${u.hostel} · ${u.floorName} · ${u.freeBeds} free · ${priceText(u)} · ${depositText(u.deposit)}`, 72),
       hostel: u.hostel,
       floor: u.floorName,
@@ -337,16 +402,32 @@ export function searchRooms(units: BotUnit[], sharing: number, hostelId?: string
 
 /**
  * One unit's details and its free beds, for the bed choice and the booking summary.
- * With `bed` (a flat bed index), `available` says whether that bed is still free and the
- * summary names it; without, whether the unit has any free bed.
+ * `unitInput` is the unit id or the room list title (with `context` = the list's sharing
+ * and hostel). With `bed` (a bed index or the bed list title), `available` says whether
+ * that bed is still free and the summary names it; without, whether the unit has any free bed.
  */
-export function unitDetails(units: BotUnit[], unitId: string, bed?: string | number | null) {
-  const u = units.find((x) => x.unit === unitId)
-  const wantedBed = bed === undefined || bed === null || String(bed).trim() === '' ? null : Number(bed)
+export function unitDetails(
+  units: BotUnit[],
+  unitInput: string,
+  bed?: string | number | null,
+  context: { sharing?: number | null; hostel?: unknown } = {},
+) {
+  const found = findUnit(units, unitInput, context)
+  if (found.ambiguous) {
+    return {
+      available: false,
+      unit: unitInput,
+      reason: 'ambiguous_room',
+      message: AMBIGUOUS_ROOM_MESSAGE,
+      beds: [] as { value: string; title: string; description: string; bedType: string }[],
+    }
+  }
+  const u = found.unit
+  const bedGiven = !(bed === undefined || bed === null || String(bed).trim() === '')
   if (!u || u.freeBeds === 0) {
     return {
       available: false,
-      unit: unitId,
+      unit: u?.unit || unitInput,
       reason: 'room_full',
       message: 'Sorry, all beds in that room were just booked 😔 Let me show you the rooms that are still free.',
       beds: [] as { value: string; title: string; description: string; bedType: string }[],
@@ -381,9 +462,10 @@ export function unitDetails(units: BotUnit[], unitId: string, bed?: string | num
     })),
     hasBedPhotos: u.freeBedList.some((b) => b.image),
   }
-  if (wantedBed === null) {
+  if (!bedGiven) {
     return { ...base, available: true, summary: `${u.label} — ${u.hostel}, ${u.floorName}\n${moneyLine(u)}` }
   }
+  const wantedBed = resolveBed(u, bed)
   const chosen = u.freeBedList.find((b) => b.index === wantedBed)
   if (!chosen) {
     return {

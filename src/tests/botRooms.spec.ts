@@ -4,7 +4,7 @@ import { describe, expect, it } from '@jest/globals'
 
 import { formatPLN } from '../lib/currency'
 
-import { listUnits, parseContactPhone, parseGender, parseSharing, parseUnitId, searchRooms, unitDetails, whatsappImageUrl, type BotOverride, type BotProperty } from '../lib/botRooms'
+import { AMBIGUOUS_ROOM_MESSAGE, findUnit, listUnits, resolveBed, resolveHostelId, resolveUnit, roomTitle, parseContactPhone, parseGender, parseSharing, parseUnitId, searchRooms, unitDetails, whatsappImageUrl, type BotOverride, type BotProperty } from '../lib/botRooms'
 
 // Shapes taken from production documents on 2026-10-03
 const B = '6ac0d4a2a2ce1743975c0c64' // Bukowiecka 11
@@ -150,6 +150,43 @@ describe('bot room availability', () => {
   it('labels apartment beds within their bedroom', () => {
     const second = details(units, `${B}-101~1`)
     expect(second.beds.map((b: { value: string; title: string }) => [b.value, b.title])).toEqual([['2', 'Bed A'], ['3', 'Bed B']])
+  })
+
+  it('finds the hostel, room and bed from the list titles the bot saves', () => {
+    expect(resolveHostelId(units, 'Bukowiecka 11')).toBe(B)
+    expect(resolveHostelId(units, B)).toBe(B)
+    expect(resolveHostelId(units, ' ')).toBeNull()
+    // "Room 402" exists once among four-share rooms
+    expect(resolveUnit(units, 'Room 402', { sharing: 4, hostel: ' ' })?.unit).toBe(`${B}-402`)
+    expect(resolveUnit(units, `${B}-402`)?.unit).toBe(`${B}-402`)
+    // "Room 101" is single in Bernerowo and two-share in Rajmunda: sharing tells them apart
+    expect(resolveUnit(units, 'Room 101', { sharing: 1 })?.propertyId).toBe(W)
+    expect(resolveUnit(units, 'Room 101', { sharing: 2 })?.propertyId).toBe(R)
+    expect(resolveUnit(units, 'Room 999', { sharing: 4 })).toBeUndefined()
+    // Same sharing, same name in two hostels: titles name the hostel
+    const two = units.filter((u) => u.sharing === 2 && u.label === 'Room 201')
+    expect(two.map((u) => roomTitle(u, units)).sort()).toEqual(['Room 201 · Bukowiecka 11', 'Room 201 · Rajmunda 3'])
+    expect(resolveUnit(units, 'Room 201 · Rajmunda 3', { sharing: 2 })?.propertyId).toBe(R)
+    const room = resolveUnit(units, 'Room 402', { sharing: 4 })!
+    expect(resolveBed(room, 'Bed C')).toBe(2)
+    expect(resolveBed(room, '3')).toBe(3)
+    expect(resolveBed(room, 'Bed Z')).toBeNull()
+    expect(details(units, 'Room 402', 'Bed B', { sharing: 4 }).summary).toMatch(/^Room 402, Bed B — Bukowiecka 11/)
+  })
+
+  it('refuses to guess when a room title matches more than one room', () => {
+    // "Room 101": single share in Bernerowo, two share in Rajmunda; without sharing it is ambiguous
+    expect(findUnit(units, 'Room 101')).toEqual({ ambiguous: true })
+    expect(resolveUnit(units, 'Room 101')).toBeUndefined()
+    const amb = details(units, 'Room 101')
+    expect(amb).toMatchObject({ available: false, reason: 'ambiguous_room', message: AMBIGUOUS_ROOM_MESSAGE, beds: [] })
+    // "Room 201": two share in both Bukowiecka 11 and Rajmunda 3; the hostel (by name or id) settles it
+    expect(findUnit(units, 'Room 201', { sharing: 2 }).ambiguous).toBe(true)
+    expect(findUnit(units, 'Room 201', { sharing: 2, hostel: 'Rajmunda 3' }).unit?.propertyId).toBe(R)
+    expect(findUnit(units, 'Room 201', { sharing: 2, hostel: B }).unit?.propertyId).toBe(B)
+    expect(details(units, 'Room 201', null, { sharing: 2, hostel: 'Bukowiecka 11' }).summary).toMatch(/^Room 201 — Bukowiecka 11/)
+    // An exact id is never ambiguous
+    expect(findUnit(units, `${R}-201`)).toMatchObject({ ambiguous: false, unit: { propertyId: R } })
   })
 
   it('reads a typed phone number', () => {

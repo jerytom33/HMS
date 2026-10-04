@@ -4,7 +4,7 @@ import type { Payload } from 'payload'
 
 import { formatPLN } from '@/lib/currency'
 import { OVERRIDES, syncCounts, unitBedTotal } from '@/lib/botHolds'
-import { bookedBedLabel, depositText, fitBedStatuses, GENDER_LABELS, parseContactPhone, parseGender, SHARING_LABELS, splitOverrideKey, type BotOverride, type BotUnit } from '@/lib/botRooms'
+import { AMBIGUOUS_ROOM_MESSAGE, bookedBedLabel, depositText, findUnit, fitBedStatuses, GENDER_LABELS, parseContactPhone, parseGender, parseSharing, resolveBed, SHARING_LABELS, splitOverrideKey, type BotOverride, type BotUnit } from '@/lib/botRooms'
 import { botPayload, checkBotKey, clean, loadInventory, normalizePhone } from '@/lib/botServer'
 import { defaultAmenities } from '@/lib/propertyTypes'
 
@@ -50,9 +50,10 @@ async function ensureOverride(payload: Payload, unit: BotUnit, existing: BotOver
 
 /**
  * POST /api/bot/book   Header: x-api-key: <BOT_API_KEY>
- * Body: { unit, bed?, name, whatsapp, arrivalDate, phone?, gender? }  (unit = a `value` from /api/bot/rooms)
- * `bed` is the flat bed index the student chose (a `value` from /api/bot/unit `beds`); without it
- * the first free bed is held. `phone` is the number to call; defaults to the WhatsApp number.
+ * Body: { unit, bed?, sharing?, hostel?, name, whatsapp, arrivalDate, phone?, gender? }
+ * `unit` is a room `value` from /api/bot/rooms or the room list title the student tapped
+ * ("Room 402"; `sharing` and `hostel` tell rooms with the same name apart). `bed` is a bed
+ * `value` or title from /api/bot/unit ("Bed B"); without it the first free bed is held. `phone` is the number to call; defaults to the WhatsApp number.
  *
  * Holds one free bed in the unit until payment: the bed is marked taken in
  * v1-room-overrides (atomically, so two students can't get the same bed) and a
@@ -74,14 +75,24 @@ export async function POST(request: Request) {
   const arrivalDate = clean(body.arrivalDate, 40)
   const phone = parseContactPhone(body.phone) || whatsapp
   const gender = parseGender(body.gender)
-  const bedText = clean(body.bed, 10)
-  const wantedBed = /^\d+$/.test(bedText) ? Number(bedText) : null
+  const bedText = clean(body.bed, 40)
   if (!unitId || !whatsapp) {
     return NextResponse.json({ ok: false, reason: 'bad_request', error: 'unit and whatsapp are required' }, { status: 400 })
   }
 
   try {
     const payload = await botPayload()
+    const { overrides, units } = await loadInventory(payload)
+    // `unit` and `bed` may be ids or the list titles the student tapped
+    const found = findUnit(units, unitId, { sharing: parseSharing(body.sharing), hostel: body.hostel })
+    if (found.ambiguous) {
+      return NextResponse.json({ ok: false, reason: 'ambiguous_room', message: AMBIGUOUS_ROOM_MESSAGE })
+    }
+    const unit = found.unit
+    if (!unit) {
+      return NextResponse.json({ ok: false, reason: 'unit_not_found', message: 'Sorry, that room is no longer available. Please choose another one.' })
+    }
+    const wantedBed = bedText ? resolveBed(unit, bedText) : null
 
     // A double tap or retry within 30 minutes returns the same hold (for the same bed, when one was chosen)
     const recent = await payload.find({
@@ -90,7 +101,7 @@ export async function POST(request: Request) {
       limit: 1,
       where: {
         whatsapp: { equals: whatsapp },
-        unit: { equals: unitId },
+        unit: { equals: unit.unit },
         ...(wantedBed !== null ? { bedIndex: { equals: wantedBed } } : {}),
         status: { equals: 'held' },
         createdAt: { greater_than: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
@@ -98,11 +109,6 @@ export async function POST(request: Request) {
     })
     if (recent.docs[0]) return NextResponse.json(confirmation(recent.docs[0] as any, true))
 
-    const { overrides, units } = await loadInventory(payload)
-    const unit = units.find((u) => u.unit === unitId)
-    if (!unit) {
-      return NextResponse.json({ ok: false, reason: 'unit_not_found', message: 'Sorry, that room is no longer available. Please choose another one.' })
-    }
     const noBeds = {
       ok: false,
       reason: 'no_free_beds',
@@ -114,7 +120,8 @@ export async function POST(request: Request) {
       reason: 'bed_taken',
       message: 'Sorry, that bed was just booked by someone else 😔 Please choose another bed.',
     }
-    if (wantedBed !== null && !unit.freeBedIndices.includes(wantedBed)) return NextResponse.json(bedTaken)
+    // A bed title that is not among the free beds means it was taken meanwhile
+    if (bedText && (wantedBed === null || !unit.freeBedIndices.includes(wantedBed))) return NextResponse.json(bedTaken)
 
     const existing = overrides.find((o) => o.overrideKey === unit.overrideKey)
     const total = existing && unit.unitType === 'apartment' ? unitBedTotal(existing) : existing ? Number(existing.beds) || unit.sharing : unit.sharing
