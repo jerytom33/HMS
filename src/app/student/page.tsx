@@ -57,6 +57,7 @@ export default function StudentDashboard() {
               <span className="text-xs uppercase tracking-wider font-semibold text-primary bg-primary/10 px-2 py-1 rounded">{room.booking ? 'Your Room · Paid' : 'Your Room'}</span>
               <h2 className="font-display text-2xl mt-3">{room.hostel}</h2>
               <p className="text-sm text-muted-foreground mt-1">{[room.location, room.floorName].filter(Boolean).join(' · ')}</p>
+              {room.booking && <p className="text-sm mt-2">Minimum stay: 1 semester (6 months).</p>}
             </div>
             <div className="text-right">
               <div className="text-sm text-muted-foreground mb-1">{room.unitType} / Bed</div>

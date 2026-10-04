@@ -54,11 +54,17 @@ export default function AdminDashboard() {
     .filter(p => p.status === 'Completed' && p.type === 'Rent')
     .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
+  // Deposits are refundable, so they are shown apart from rent revenue
+  const totalDeposits = filteredPayments
+    .filter(p => p.status === 'Completed' && p.type === 'Deposit')
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
   const stats = [
     { name: 'Occupied Beds', value: `${filledBeds} / ${totalBeds}`, note: shown.heldBeds ? `${shown.heldBeds} on hold, awaiting payment` : '', change: '', trend: 'up' },
     { name: 'Total Occupancy', value: `${occupancyPercentValue}%`, note: '', change: '', trend: 'up' },
     { name: 'Vacant Beds', value: (totalBeds - filledBeds).toString(), note: '', change: '', trend: 'up' },
     { name: 'Total Rent Revenue', value: formatPLN(totalRentRevenue, { decimals: true }), note: '', change: '', trend: 'up' },
+    { name: 'Total Deposits', value: formatPLN(totalDeposits, { decimals: true }), note: 'Received, refundable', change: '', trend: 'up' },
   ];
 
   const BOOKING_STATUS: Record<string, string> = { held: 'On hold', paid: 'Paid', cancelled: 'Cancelled' };
@@ -130,7 +136,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {stats.map((stat) => (
           <div key={stat.name} className="bg-white dark:bg-gray-900 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-800">
             <div className="p-5">

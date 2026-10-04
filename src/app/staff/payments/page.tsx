@@ -133,7 +133,10 @@ export default function AdminPayments() {
   });
 
   // Calculate KPIs based on filtered data (or total data if preferred, but filtered makes sense)
-  const totalRevenue = filteredPayments.filter(p => p.status === 'Completed').reduce((sum, p) => sum + p.amount, 0);
+  // Deposits are refundable, so they are totalled apart from revenue
+  const totalRevenue = filteredPayments.filter(p => p.status === 'Completed' && p.type !== 'Deposit').reduce((sum, p) => sum + p.amount, 0);
+  const totalDeposits = filteredPayments.filter(p => p.status === 'Completed' && p.type === 'Deposit').reduce((sum, p) => sum + p.amount, 0);
+  const depositCount = filteredPayments.filter(p => p.status === 'Completed' && p.type === 'Deposit').length;
   const pendingAmount = filteredPayments.filter(p => p.status === 'Pending').reduce((sum, p) => sum + p.amount, 0);
   const pendingCount = filteredPayments.filter(p => p.status === 'Pending').length;
   const failedAmount = filteredPayments.filter(p => p.status === 'Failed').reduce((sum, p) => sum + p.amount, 0);
@@ -159,11 +162,16 @@ export default function AdminPayments() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Revenue {monthFilter ? `(${monthFilter})` : '(All Time)'}</p>
           <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatPLN(totalRevenue, { decimals: true })}</p>
-          <span className="text-xs font-medium text-green-600 mt-2 block">Completed Payments</span>
+          <span className="text-xs font-medium text-green-600 mt-2 block">Completed payments, deposits not included</span>
+        </div>
+        <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Deposits {monthFilter ? `(${monthFilter})` : '(All Time)'}</p>
+          <p className="text-3xl font-bold text-blue-600">{formatPLN(totalDeposits, { decimals: true })}</p>
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-2 block">{depositCount} {depositCount === 1 ? 'deposit' : 'deposits'} received (refundable)</span>
         </div>
         <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Pending Payments</p>
