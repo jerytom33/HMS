@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BadgeCheck, BedSingle, CheckCircle2, Clock, FileText, Info, MapPin, Search } from 'lucide-react';
 import { formatPLN } from '@/lib/currency';
+import { AgreementViewer } from '@/components/AgreementViewer';
 import { studentGet, type PassportInfo, type PendingBooking, type StudentProfile, type StudentRoom } from '@/lib/studentClient';
 
 export default function StudentRoomPage() {
   const [room, setRoom] = useState<StudentRoom | null>(null);
   const [pending, setPending] = useState<PendingBooking | null>(null);
   const [passport, setPassport] = useState<PassportInfo | null>(null);
+  const [viewingAgreement, setViewingAgreement] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -96,7 +98,15 @@ export default function StudentRoomPage() {
           <p className="flex items-start gap-2 rounded-lg bg-secondary/10 p-3 text-sm">
             <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" /> Minimum stay: 1 semester (6 months).
           </p>
-          {passport && (
+          {room.booking.agreementGeneratedAt && (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3 text-sm">
+              <FileText className="h-4 w-4 text-primary" />
+              <span className="font-medium">Your lease agreement is ready.</span>
+              <button onClick={() => setViewingAgreement(true)} className="rounded-lg bg-primary px-3 py-1.5 font-medium text-primary-foreground">View agreement</button>
+              <a href="/api/student/agreement?download=1" download className="rounded-lg border border-border px-3 py-1.5 font-medium">Download .docx</a>
+            </div>
+          )}
+          {passport && !room.booking.agreementGeneratedAt && (
             <div className="border-t border-border pt-4 text-sm space-y-1">
               <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Next steps</h3>
               {passport.status === 'verified' ? (
@@ -169,6 +179,9 @@ export default function StudentRoomPage() {
           )}
         </div>
       </div>
+      {viewingAgreement && room.booking && (
+        <AgreementViewer url="/api/student/agreement" title={`Lease agreement ${room.booking.ref}`} onClose={() => setViewingAgreement(false)} />
+      )}
     </div>
   );
 }

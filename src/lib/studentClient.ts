@@ -20,7 +20,7 @@ export type StudentRoom = {
   floorName: string; bed: string; bedType: string; sharing: number; rent: number | null; deposit: number | null;
   rentIncludes: string; amenities: string[]; genderPolicy: string; bedImage: string | null; images: string[];
   /** The paid booking this room comes from (null for a bed staff assigned by hand). */
-  booking: { ref: string; status: string; arrivalDate: string; rent: number | null; deposit: number | null; minStayAgreed: boolean } | null;
+  booking: { ref: string; status: string; arrivalDate: string; rent: number | null; deposit: number | null; minStayAgreed: boolean; agreementGeneratedAt: string } | null;
 };
 
 /** A booking still on hold, waiting for payment confirmation. */

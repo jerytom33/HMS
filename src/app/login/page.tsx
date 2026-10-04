@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock } from 'lucide-react';
+import { AutoTranslate, LanguageToggle } from '@/components/i18n/Language';
 
 function LoginForm() {
   const router = useRouter();
@@ -80,6 +81,8 @@ function LoginForm() {
 export default function StaffLoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
+      <AutoTranslate />
+      <div className="fixed right-4 top-4"><LanguageToggle className="bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300" /></div>
       <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
         <div className="flex items-center gap-2 mb-6">
           <Lock className="h-5 w-5 text-blue-600" />

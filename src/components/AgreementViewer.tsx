@@ -4,13 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Download, Printer, X } from 'lucide-react';
 
 /**
- * Shows a booking's saved lease agreement (Word file) on the page, rendered with docx-preview
+ * Shows a saved lease agreement (Word file at `url`, for staff or the student) on the page, rendered with docx-preview
  * inside an iframe so it can be printed on its own. Download gives the original .docx.
  */
-export function AgreementViewer({ bookingId, title, onClose }: { bookingId: string; title: string; onClose: () => void }) {
+export function AgreementViewer({ url, title, onClose }: { url: string; title: string; onClose: () => void }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const url = `/api/staff/bookings/${bookingId}/agreement`;
 
   useEffect(() => {
     let cancelled = false;

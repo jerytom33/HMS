@@ -4,12 +4,21 @@ import { Search, Home, User, Bed, Calendar, MessageCircle, Menu, LogOut, X } fro
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { AutoTranslate, LanguageToggle } from '@/components/i18n/Language';
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  if (pathname === '/student/login' || pathname === '/student/start') return <>{children}</>;
+  if (pathname === '/student/login' || pathname === '/student/start') {
+    return (
+      <>
+        <AutoTranslate />
+        <div className="fixed right-4 top-4 z-50"><LanguageToggle className="bg-card text-muted-foreground" /></div>
+        {children}
+      </>
+    );
+  }
 
   const navItems = [
     { name: 'Find a Room', href: '/student/rooms', icon: Search },
@@ -21,6 +30,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      <AutoTranslate />
       {/* Sidebar - Mobile & Desktop */}
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
@@ -45,6 +55,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             </span>
             <span className="font-display text-xl tracking-wide">Student</span>
           </Link>
+          <LanguageToggle className="hidden lg:inline-flex text-muted-foreground" />
           <button 
             className="lg:hidden text-muted-foreground hover:text-primary"
             onClick={() => setIsMobileMenuOpen(false)}
@@ -94,6 +105,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             </span>
             <span className="font-display text-xl tracking-wide">Student</span>
           </Link>
+          <LanguageToggle className="ml-auto mr-2 text-muted-foreground" />
           <button 
             className="p-2 -mr-2"
             onClick={() => setIsMobileMenuOpen(true)}

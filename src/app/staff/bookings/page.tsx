@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BadgeCheck, CalendarCheck, CheckCircle2, FileText, MessageCircle, Phone, RefreshCw, Search, XCircle } from 'lucide-react';
-import { AgreementViewer } from '@/components/staff/AgreementViewer';
+import { AgreementViewer } from '@/components/AgreementViewer';
 import { formatPLN, parseAmount } from '@/lib/currency';
 import { unitDeposit } from '@/lib/propertyTypes';
 
@@ -420,7 +420,7 @@ export default function AdminBookings() {
       </div>
 
       {viewing && (
-        <AgreementViewer bookingId={viewing.id} title={`Agreement ${viewing.ref}${viewing.name ? ` – ${viewing.name}` : ''}`} onClose={() => setViewing(null)} />
+        <AgreementViewer url={`/api/staff/bookings/${viewing.id}/agreement`} title={`Agreement ${viewing.ref}${viewing.name ? ` – ${viewing.name}` : ''}`} onClose={() => setViewing(null)} />
       )}
     </div>
   );

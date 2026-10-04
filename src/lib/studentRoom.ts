@@ -56,6 +56,8 @@ const bookingSummary = (b: any, unit?: BotOverride) => ({
   rent: typeof b.price === 'number' ? (b.price as number) : parseAmount(unit?.roomPrice),
   deposit: typeof b.deposit === 'number' ? (b.deposit as number) : typeof b.price === 'number' ? (b.price as number) : unitDeposit(unit),
   minStayAgreed: Boolean(b.minStayAgreed),
+  // Set once staff generate the lease agreement; the student can then view and download it
+  agreementGeneratedAt: (b.agreementGeneratedAt as string) || '',
 })
 
 /**

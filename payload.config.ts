@@ -1,6 +1,8 @@
 import { buildConfig } from 'payload'
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { en } from '@payloadcms/translations/languages/en'
+import { pl } from '@payloadcms/translations/languages/pl'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -93,6 +95,11 @@ export default buildConfig({
     V1RoomOverrides,
     V1BotBookings,
   ],
+  // The /admin panel in English or Polish (each user picks it on their account page)
+  i18n: {
+    supportedLanguages: { en, pl },
+    fallbackLanguage: 'en',
+  },
   editor: lexicalEditor({}),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

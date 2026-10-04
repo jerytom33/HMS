@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
+import { AutoTranslate, LanguageToggle } from '@/components/i18n/Language';
 
 function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
@@ -299,6 +300,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 font-sans text-gray-900 dark:text-gray-100 overflow-hidden">
+      <AutoTranslate />
       {/* Sidebar - Mobile & Desktop */}
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
@@ -377,6 +379,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           
           <div className="flex items-center gap-4">
+            <LanguageToggle className="text-gray-600 dark:text-gray-300" />
             <ThemeToggle />
             <button className="relative p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 rounded-full transition-colors">
               <Bell className="h-5 w-5" />
