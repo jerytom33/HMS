@@ -1,21 +1,32 @@
 import { NextResponse } from 'next/server'
 
 import { holdBed, holdConfirmation } from '@/lib/bedHold'
-import { allowedForGender, findUnit, genderNotAllowedMessage, parseAgreement } from '@/lib/botRooms'
-import { botPayload, clean, loadInventory } from '@/lib/botServer'
-import { parsePortalArrivalDate, studentFromRequest, studentGender } from '@/lib/studentAuth'
+import { botPayload } from '@/lib/botServer'
+import { checkPortalBooking } from '@/lib/portalBooking'
+import { BROWSE_COOKIE, browsingStudent, checkLoginCode, sessionCookie, signSession, studentGender } from '@/lib/studentAuth'
 
 export const dynamic = 'force-dynamic'
 
+const CODE_MESSAGES = {
+  invalid_code: 'That code is not right. Check the latest code we sent you on WhatsApp.',
+  expired_code: 'That code has expired or was already used. Tap "Send code" for a new one.',
+  too_many_attempts: 'Too many wrong tries. Tap "Send code" for a new one.',
+} as const
+
 /**
- * POST /api/student/book   Body: { unit, bed, arrivalDate, minStayAgreed }
- * Holds the chosen bed for the signed-in student until payment, like the WhatsApp bot.
- * The room's gender setting is checked again here, so the rule can't be bypassed.
+ * POST /api/student/book   Body: { unit, bed, arrivalDate, minStayAgreed, code? }
+ * Holds the chosen bed until payment, like the WhatsApp bot.
+ *
+ * From a browse session (the bot's personal link) `code` is required: the one-time code from
+ * /api/student/book/request-code. A correct code marks the number verified and starts the full
+ * portal session, even when the bed was taken in the meantime. A signed-in student (who already
+ * verified the number at login) needs no code.
  */
 export async function POST(request: Request) {
   const payload = await botPayload()
-  const student = await studentFromRequest(payload, request)
-  if (!student) return NextResponse.json({ ok: false, error: 'Not signed in' }, { status: 401 })
+  const who = await browsingStudent(payload, request)
+  if (!who) return NextResponse.json({ ok: false, error: 'Not signed in' }, { status: 401 })
+  const { student } = who
 
   let body: any
   try {
@@ -23,44 +34,49 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ ok: false, error: 'JSON body required' }, { status: 400 })
   }
-  const unitId = clean(body.unit)
-  // Same arrival rule as the bot: after today (Poland time), at most 6 months ahead; stored as DD/MM/YYYY
-  const arrival = parsePortalArrivalDate(body.arrivalDate)
-  if (!arrival.ok) return NextResponse.json({ ok: false, reason: 'invalid_arrival_date', message: arrival.message }, { status: 400 })
-  const bedText = clean(body.bed, 10)
-  if (!unitId || !/^\d+$/.test(bedText)) {
-    return NextResponse.json({ ok: false, reason: 'bad_request', message: 'Choose a room and a bed.' }, { status: 400 })
-  }
 
   try {
-    const { overrides, units } = await loadInventory(payload)
-    // The portal sends unit ids, never titles
-    const unit = findUnit(units, unitId).unit
-    if (!unit || unit.unit !== unitId) {
-      return NextResponse.json({ ok: false, reason: 'unit_not_found', message: 'Sorry, that room is no longer available. Please choose another one.' })
+    // The code is checked first, so a correct code signs the student in even if the bed is gone
+    let startSession = false
+    if (!who.verified) {
+      const code = String(body.code ?? '').replace(/\D/g, '')
+      if (code.length !== 6) {
+        return NextResponse.json({ ok: false, reason: 'code_required', message: 'Enter the 6-digit code we sent to your WhatsApp.' }, { status: 401 })
+      }
+      const verified = await checkLoginCode(payload, student.whatsapp, code)
+      if (!verified.ok) return NextResponse.json({ ok: false, reason: verified.reason, message: CODE_MESSAGES[verified.reason] }, { status: 401 })
+      startSession = true
     }
-    const gender = studentGender(student)
-    if (!allowedForGender(unit.genderPolicy, gender)) {
-      return NextResponse.json({ ok: false, reason: 'gender_not_allowed', message: genderNotAllowedMessage(unit.genderPolicy) }, { status: 403 })
+    const withSession = (response: NextResponse) => {
+      if (startSession) {
+        response.cookies.set(sessionCookie(signSession(String(student.id), student.whatsapp)))
+        response.cookies.delete(BROWSE_COOKIE)
+      }
+      return response
+    }
+
+    const check = await checkPortalBooking(payload, student, body)
+    if (!check.ok) {
+      return withSession(NextResponse.json({ ok: false, reason: check.reason, message: check.message, signedIn: startSession }, { status: check.status }))
     }
 
     const result = await holdBed(payload, {
-      unit,
-      overrides,
-      bedText,
-      wantedBed: Number(bedText),
+      unit: check.unit,
+      overrides: check.overrides,
+      bedText: String(check.bed),
+      wantedBed: check.bed,
       name: student.name || '',
       whatsapp: student.whatsapp,
       phone: String(student.phone || '').replace(/\D/g, '') || student.whatsapp,
       email: student.email || null,
-      gender,
-      minStayAgreed: parseAgreement(body.minStayAgreed),
-      arrivalDate: arrival.date,
+      gender: studentGender(student),
+      minStayAgreed: check.minStayAgreed,
+      arrivalDate: check.arrivalDate,
       source: 'portal',
     })
-    if (!result.ok) return NextResponse.json(result)
+    if (!result.ok) return withSession(NextResponse.json({ ...result, signedIn: startSession }))
     const { adminMessage, ...forStudent } = holdConfirmation(result.booking, result.duplicate)
-    return NextResponse.json(forStudent)
+    return withSession(NextResponse.json({ ...forStudent, signedIn: startSession }))
   } catch (error) {
     console.error('Student booking API error:', error)
     return NextResponse.json({ ok: false, reason: 'error', message: 'Sorry, something went wrong. Please try again.' }, { status: 500 })

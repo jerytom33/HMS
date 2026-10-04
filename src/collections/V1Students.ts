@@ -32,7 +32,8 @@ export const V1Students: CollectionConfig = {
     { name: 'emergencyName', type: 'text' },
     { name: 'emergencyPhone', type: 'text' },
     { name: 'emergencyRelation', type: 'text' },
-    { name: 'password', type: 'text' },
+    // Set when the student proves they own the WhatsApp number with a one-time code
+    { name: 'phoneVerifiedAt', type: 'date', admin: { readOnly: true } },
     // One-time portal login code (hashed) from /api/bot/login-code; never readable through any API
     { name: 'loginCodeHash', type: 'text', access: { read: () => false, create: () => false, update: () => false }, admin: { hidden: true } },
     { name: 'loginCodeExpires', type: 'date', access: { read: () => false, create: () => false, update: () => false }, admin: { hidden: true } },

@@ -13,7 +13,9 @@ type Booking = { ref: string; status: string; hostel: string; room: string; floo
 const STATUS: Record<string, string> = { held: 'On hold — awaiting payment', paid: 'Paid', cancelled: 'Cancelled' };
 
 export default function FindRoomPage() {
-  const [me, setMe] = useState<{ name: string; whatsapp: string; gender: string; arrivalDate: string; arrivalRange: { min: string; max: string } } | null>(null);
+  const [me, setMe] = useState<{ name: string; whatsapp: string; gender: string; arrivalRange: { min: string; max: string } } | null>(null);
+  // false for a browse session from the WhatsApp link: holding a bed then needs a WhatsApp code
+  const [verified, setVerified] = useState(true);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [sharingOptions, setSharingOptions] = useState<{ value: number; label: string }[]>([]);
   const [genderKnown, setGenderKnown] = useState(true);
@@ -27,6 +29,9 @@ export default function FindRoomPage() {
   const [agreed, setAgreed] = useState(false);
   const [booking, setBooking] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  // Code step of a booking from a browse session
+  const [codeSent, setCodeSent] = useState('');
+  const [code, setCode] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,18 +43,16 @@ export default function FindRoomPage() {
         if (!res.ok) throw new Error(`Failed to load ${url}`);
         return res.json();
       };
-      const [m, r, b] = await Promise.all([
-        get('/api/student/me'),
-        get(`/api/student/rooms${sharing ? `?sharing=${sharing}` : ''}`),
-        get('/api/student/bookings'),
-      ]);
-      setMe(m);
+      const r = await get(`/api/student/rooms${sharing ? `?sharing=${sharing}` : ''}`);
+      setMe(r);
+      setVerified(r.verified);
       // Pre-fill the arrival date the student gave on WhatsApp
-      setArrivalDate((current) => current || m.arrivalDate || '');
+      setArrivalDate((current) => current || r.arrivalDate || '');
       setRooms(r.rooms);
       setSharingOptions(r.sharingOptions);
       setGenderKnown(r.genderKnown);
-      setBookings(b.bookings);
+      // Bookings are shown only after the number is verified
+      setBookings(r.verified ? (await get('/api/student/bookings')).bookings : []);
     } catch (e: any) {
       if (e?.message !== 'signed out') setError("Couldn't load rooms. Please try again.");
     } finally {
@@ -59,19 +62,49 @@ export default function FindRoomPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const book = async () => {
+  const pick = (unit: string, bed: number) => {
+    setPicked({ unit, bed });
+    setResult(null);
+    setCodeSent('');
+    setCode('');
+  };
+
+  const post = async (url: string, body: object) => {
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    return res.json().catch(() => ({}));
+  };
+
+  // Signed-in students hold straight away; from a browse session a code goes to WhatsApp first
+  const holdOrSendCode = async () => {
+    if (!picked) return;
+    if (verified) return confirm();
+    setBooking(true);
+    setResult(null);
+    try {
+      const data = await post('/api/student/book/request-code', { unit: picked.unit, bed: String(picked.bed), arrivalDate, minStayAgreed: agreed });
+      if (data.ok && data.codeRequired === false) { setVerified(true); return confirm(); }
+      if (!data.ok) {
+        setResult({ ok: false, message: data.message || 'Something went wrong. Please try again.' });
+        if (data.reason === 'bed_taken' || data.reason === 'unit_not_found') { setPicked(null); load(); }
+        return;
+      }
+      setCodeSent(data.message);
+    } finally {
+      setBooking(false);
+    }
+  };
+
+  const confirm = async () => {
     if (!picked) return;
     setBooking(true);
     setResult(null);
     try {
-      const res = await fetch('/api/student/book', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ unit: picked.unit, bed: String(picked.bed), arrivalDate, minStayAgreed: agreed }),
-      });
-      const data = await res.json().catch(() => ({}));
+      const data = await post('/api/student/book', { unit: picked.unit, bed: String(picked.bed), arrivalDate, minStayAgreed: agreed, ...(verified ? {} : { code }) });
+      if (data.signedIn) setVerified(true);
       setResult({ ok: Boolean(data.ok), message: data.message || 'Something went wrong. Please try again.' });
-      if (data.ok) { setPicked(null); setAgreed(false); }
+      // A wrong or expired code keeps the code step open; anything else ends this booking attempt
+      if (['invalid_code', 'expired_code', 'too_many_attempts', 'code_required'].includes(data.reason)) return;
+      setPicked(null); setAgreed(false); setCodeSent(''); setCode('');
       load();
     } finally {
       setBooking(false);
@@ -82,8 +115,15 @@ export default function FindRoomPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold">Find a room</h1>
-        {me && <p className="text-sm text-muted-foreground">Signed in as {me.name || 'student'} · +{me.whatsapp}{me.gender ? ` · ${me.gender}` : ''}</p>}
+        {me && <p className="text-sm text-muted-foreground">{verified ? 'Signed in as' : 'Rooms for'} {me.name || 'student'} · +{me.whatsapp}{me.gender ? ` · ${me.gender}` : ''}</p>}
       </div>
+
+      {!verified && (
+        <div className="flex gap-2 rounded-lg border border-border bg-secondary/10 p-3 text-sm">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>Choose a bed and tap <strong>Hold this bed</strong>. We&apos;ll send a code to your WhatsApp to confirm it&apos;s you.</span>
+        </div>
+      )}
 
       {!genderKnown && (
         <div className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
@@ -141,7 +181,7 @@ export default function FindRoomPage() {
                   {r.beds.map((b) => (
                     <label key={b.index} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary/10">
                       <input type="radio" name={`bed-${r.unit}`} checked={picked?.unit === r.unit && picked.bed === b.index}
-                        onChange={() => { setPicked({ unit: r.unit, bed: b.index }); setResult(null); }} />
+                        onChange={() => pick(r.unit, b.index)} />
                       <BedSingle className="h-4 w-4" />
                       <span className="font-medium">{b.label}</span>
                       <span className="text-muted-foreground">{b.type}</span>
@@ -161,10 +201,24 @@ export default function FindRoomPage() {
                       <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1" />
                       <span>I agree to the minimum stay of <strong>6 months (1 semester)</strong>.</span>
                     </label>
-                    <button onClick={book} disabled={booking || !agreed || !arrivalDate}
-                      className="w-full rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50">
-                      {booking ? 'Holding your bed…' : 'Hold this bed'}
-                    </button>
+                    {codeSent ? (
+                      <div className="space-y-2">
+                        <p role="status" className="text-sm">{codeSent}</p>
+                        <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={7} placeholder="6-digit code" value={code} aria-label="Code from WhatsApp"
+                          onChange={(e) => setCode(e.target.value.replace(/[^\d ]/g, ''))}
+                          className="w-full rounded-lg border border-border bg-background px-3 py-1.5 tracking-widest" />
+                        <button onClick={confirm} disabled={booking || code.replace(/\D/g, '').length !== 6}
+                          className="w-full rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50">
+                          {booking ? 'Holding your bed…' : 'Confirm booking'}
+                        </button>
+                        <button onClick={holdOrSendCode} disabled={booking} className="text-xs text-primary hover:underline disabled:opacity-50">Send a new code</button>
+                      </div>
+                    ) : (
+                      <button onClick={holdOrSendCode} disabled={booking || !agreed || !arrivalDate}
+                        className="w-full rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground disabled:opacity-50">
+                        {booking ? (verified ? 'Holding your bed…' : 'Sending code…') : 'Hold this bed'}
+                      </button>
+                    )}
                     <p className="text-xs text-muted-foreground">We keep the bed for you until payment; our team will contact you with the payment details.</p>
                   </div>
                 )}

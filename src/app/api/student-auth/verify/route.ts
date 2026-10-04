@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server'
 
 import { botPayload } from '@/lib/botServer'
-import { checkLoginCode, normalizeWhatsapp, sessionCookie, signSession } from '@/lib/studentAuth'
+import { BROWSE_COOKIE, checkLoginCode, normalizeWhatsapp, sessionCookie, signSession } from '@/lib/studentAuth'
 
 export const dynamic = 'force-dynamic'
 
 const MESSAGES = {
   invalid_code: 'That code is not right. Check the latest code we sent you on WhatsApp.',
-  expired_code: 'That code has expired or was already used. Ask our WhatsApp assistant for a new one.',
-  too_many_attempts: 'Too many wrong tries. Ask our WhatsApp assistant for a new code.',
+  expired_code: 'That code has expired or was already used. Tap "Send code" for a new one.',
+  too_many_attempts: 'Too many wrong tries. Tap "Send code" for a new one.',
 } as const
 
 /**
  * POST /api/student-auth/verify   Body: { whatsapp, code }
- * Signs the student in with the one-time code from WhatsApp (see /api/bot/login-code).
+ * Signs the student in with the one-time code sent to their WhatsApp (see /api/student-auth/request-code).
  */
 export async function POST(request: Request) {
   let body: any
@@ -34,5 +34,6 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({ ok: true, name: result.student.name || '' })
   response.cookies.set(sessionCookie(signSession(String(result.student.id), whatsapp)))
+  response.cookies.delete(BROWSE_COOKIE)
   return response
 }

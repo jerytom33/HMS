@@ -9,9 +9,10 @@ export const dynamic = 'force-dynamic'
  * POST /api/bot/login-code   Header: x-api-key: <BOT_API_KEY>
  * Body: { whatsapp, name? }
  *
- * A one-time code for the student portal login (/student/login). The bot sends `message`
- * to the student on WhatsApp; the code works once, for 10 minutes. Creates the student
- * record if this WhatsApp number has none yet.
+ * A one-time code for the student portal login (/student/login), returned in the response.
+ * The WhatsApp bot no longer uses this (the portal sends codes itself through the OTP
+ * workflow); it stays behind the bot key so staff can hand a student a code by hand.
+ * The code works once, for 10 minutes. Creates the student record if the number has none yet.
  */
 export async function POST(request: Request) {
   const denied = checkBotKey(request)

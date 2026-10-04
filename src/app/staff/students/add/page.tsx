@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Camera, ArrowLeft, User, Phone, MapPin, GraduationCap, HeartPulse, Save, Home, Lock } from 'lucide-react';
+import { Camera, ArrowLeft, User, Phone, MapPin, GraduationCap, HeartPulse, Save, Home } from 'lucide-react';
 import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString, bedTypeDisplay } from '@/lib/propertyTypes';
 
 export default function AddStudentPage() {
@@ -25,7 +25,6 @@ export default function AddStudentPage() {
     emergencyName: '',
     emergencyPhone: '',
     emergencyRelation: '',
-    password: ''
   });
 
   const [properties, setProperties] = useState<any[]>([]);
@@ -70,7 +69,6 @@ export default function AddStudentPage() {
             emergencyName: student.emergencyName || '',
             emergencyPhone: student.emergencyPhone || '',
             emergencyRelation: student.emergencyRelation || '',
-            password: student.password || ''
           });
 
           if (student.property && student.room && student.room !== 'Unassigned') {
@@ -146,7 +144,6 @@ export default function AddStudentPage() {
         emergencyName: formData.emergencyName,
         emergencyPhone: formData.emergencyPhone,
         emergencyRelation: formData.emergencyRelation,
-        password: formData.password,
         room: roomStr || 'Unassigned',
         property: propName || '',
         status: roomStr ? 'Active' : 'Active'
@@ -167,8 +164,7 @@ export default function AddStudentPage() {
         yearOfStudy: formData.yearOfStudy,
         emergencyName: formData.emergencyName,
         emergencyPhone: formData.emergencyPhone,
-        emergencyRelation: formData.emergencyRelation,
-        password: formData.password
+        emergencyRelation: formData.emergencyRelation
       };
       
       const res = await fetch('/api/v1-students', { method: 'POST', headers: { 'Content-Type': 'application/json'}, body: JSON.stringify(newStudent) });
@@ -351,15 +347,6 @@ export default function AddStudentPage() {
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
                   </select>
-                </div>
-                <div className="space-y-1 sm:col-span-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password <span className="text-gray-400 font-normal">(for student portal)</span></label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="w-4 h-4 text-gray-400" />
-                    </div>
-                    <input name="password" value={formData.password} onChange={handleChange} type="password" placeholder="Enter password" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg pl-10 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
-                  </div>
                 </div>
               </div>
             </div>

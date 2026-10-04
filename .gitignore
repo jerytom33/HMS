@@ -48,3 +48,5 @@ payload-types.ts
 
 # WhatsApp bot / cron secrets (also set in Vercel)
 bot-credentials.env
+
+hms-otp-webhook.env
