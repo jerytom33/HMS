@@ -9,7 +9,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  if (pathname === '/student/login') return <>{children}</>;
+  if (pathname === '/student/login' || pathname === '/student/start') return <>{children}</>;
 
   const navItems = [
     { name: 'Find a Room', href: '/student/rooms', icon: Search },

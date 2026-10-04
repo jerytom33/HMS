@@ -1,19 +1,19 @@
 // Student portal accounts and sessions. Students are v1-students records found by their
-// WhatsApp number. The WhatsApp bot registers them and sends a personal link (linkToken)
-// that opens a browse-only session: rooms for their gender, no bookings or profile. A full
-// portal session needs a one-time code sent to their WhatsApp (see otp.ts): at login, or
-// when they hold a bed from a browse session. Sessions are signed, httpOnly cookies.
-import { createHash, createHmac, randomInt, timingSafeEqual } from 'crypto'
+// WhatsApp number. The WhatsApp bot registers them and sends a personal link (linkToken);
+// on it they set a password, which signs them in. Later they log in with their number and
+// password. Forgot it? The bot sends a new link. Setting a password bumps passwordVersion,
+// which ends every older link and session. Sessions are signed, httpOnly cookies.
+import { createHmac, randomBytes, scrypt, timingSafeEqual } from 'crypto'
 import type { Payload } from 'payload'
+import { promisify } from 'util'
 
 import { GENDER_LABELS, parseGender, type StudentGender } from './botRooms'
 
 export const STUDENT_COOKIE = 'hms-student-session'
-export const BROWSE_COOKIE = 'hms-student-browse'
 export const SESSION_DAYS = 7
 export const LINK_DAYS = 7
-export const CODE_MINUTES = 10
-const MAX_CODE_ATTEMPTS = 5
+export const PASSWORD_MIN = 8
+export const PASSWORD_MAX = 128
 const STUDENTS = 'v1-students'
 
 const secret = () => {
@@ -28,19 +28,20 @@ export const normalizeWhatsapp = (value: unknown) => String(value ?? '').trim().
 const sign = (data: string) => createHmac('sha256', secret()).update(data).digest('base64url')
 
 /**
- * What a signed token is for: 's' full portal session, 'b' browse-only session,
- * 'l' personal link from the bot. Tokens of one kind never work as another
- * (session tokens from before kinds existed have none and count as 's').
+ * What a signed token is for: 's' portal session, 'l' personal link from the bot. A token of
+ * one kind never works as the other (session tokens from before kinds existed count as 's').
+ * `pv` is the student's passwordVersion when the token was made (missing = 0).
  */
-export type TokenKind = 's' | 'b' | 'l'
+export type TokenKind = 's' | 'l'
+export type TokenData = { sid: string; wa: string; pv: number; exp: number }
 
-/** Signed token: base64url(JSON {k, sid, wa, exp}) + "." + HMAC. */
-export function signToken(kind: TokenKind, studentId: string, whatsapp: string, expiresAt: number): string {
-  const body = Buffer.from(JSON.stringify({ k: kind, sid: studentId, wa: whatsapp, exp: expiresAt })).toString('base64url')
+/** Signed token: base64url(JSON {k, sid, wa, pv, exp}) + "." + HMAC. */
+export function signToken(kind: TokenKind, studentId: string, whatsapp: string, pv: number, expiresAt: number): string {
+  const body = Buffer.from(JSON.stringify({ k: kind, sid: studentId, wa: whatsapp, pv, exp: expiresAt })).toString('base64url')
   return `${body}.${sign(body)}`
 }
 
-export function verifyToken(token: string | undefined | null, kind: TokenKind, now = Date.now()): { sid: string; wa: string; exp: number } | null {
+export function verifyToken(token: string | undefined | null, kind: TokenKind, now = Date.now()): TokenData | null {
   if (!token || !token.includes('.')) return null
   const [body, mac] = token.split('.')
   const expected = Buffer.from(sign(body))
@@ -50,21 +51,23 @@ export function verifyToken(token: string | undefined | null, kind: TokenKind, n
     const data = JSON.parse(Buffer.from(body, 'base64url').toString())
     if ((data.k ?? 's') !== kind) return null
     if (typeof data.sid !== 'string' || typeof data.wa !== 'string' || !(data.exp > now)) return null
-    return { sid: data.sid, wa: data.wa, exp: data.exp }
+    return { sid: data.sid, wa: data.wa, pv: Number(data.pv) || 0, exp: data.exp }
   } catch {
     return null
   }
 }
 
-/** Full portal session token, valid SESSION_DAYS. */
-export const signSession = (studentId: string, whatsapp: string) =>
-  signToken('s', studentId, whatsapp, Date.now() + SESSION_DAYS * 86400_000)
+/** Portal session token, valid SESSION_DAYS. */
+export const signSession = (studentId: string, whatsapp: string, pv: number) =>
+  signToken('s', studentId, whatsapp, pv, Date.now() + SESSION_DAYS * 86400_000)
 
 export const verifySession = (token: string | undefined | null) => verifyToken(token, 's')
 
-/** Personal link token the bot sends after registration, valid LINK_DAYS. */
-export const linkToken = (studentId: string, whatsapp: string, now = Date.now()) =>
-  signToken('l', studentId, whatsapp, now + LINK_DAYS * 86400_000)
+/** Personal link token the bot sends, valid LINK_DAYS or until the next password is set. */
+export const linkToken = (studentId: string, whatsapp: string, pv: number, now = Date.now()) =>
+  signToken('l', studentId, whatsapp, pv, now + LINK_DAYS * 86400_000)
+
+export const passwordVersion = (student: any) => Number(student?.passwordVersion) || 0
 
 const cookieValue = (request: Request, name: string) =>
   (request.headers.get('cookie') || '')
@@ -73,34 +76,24 @@ const cookieValue = (request: Request, name: string) =>
     .find((c) => c.startsWith(`${name}=`))
     ?.slice(name.length + 1)
 
-/** Student a verified token points at, while its WhatsApp number still matches. */
-async function studentForToken(payload: Payload, session: { sid: string; wa: string } | null) {
-  if (!session) return null
+/** Student a verified token points at, while its WhatsApp number and password version still match. */
+async function studentForToken(payload: Payload, token: TokenData | null) {
+  if (!token) return null
   try {
-    const student: any = await payload.findByID({ collection: STUDENTS, id: session.sid, overrideAccess: true, depth: 0 })
-    // A changed WhatsApp number ends old sessions
-    return student && normalizeWhatsapp(student.whatsapp) === session.wa ? student : null
+    const student: any = await payload.findByID({ collection: STUDENTS, id: token.sid, overrideAccess: true, depth: 0 })
+    // A changed WhatsApp number or a new password ends old sessions and links
+    if (!student || normalizeWhatsapp(student.whatsapp) !== token.wa || passwordVersion(student) !== token.pv) return null
+    return student
   } catch {
     return null
   }
 }
 
-/** The signed-in student (full portal session) for a request, or null. */
+/** The signed-in student for a request, or null. */
 export const studentFromRequest = (payload: Payload, request: Request) =>
   studentForToken(payload, verifySession(cookieValue(request, STUDENT_COOKIE)))
 
-/**
- * The student for a request with a full session or a browse session from their personal link.
- * `verified` is true only for a full session. Use only for room listing and starting a booking.
- */
-export async function browsingStudent(payload: Payload, request: Request) {
-  const full = await studentFromRequest(payload, request)
-  if (full) return { student: full, verified: true as const }
-  const student = await studentForToken(payload, verifyToken(cookieValue(request, BROWSE_COOKIE), 'b'))
-  return student ? { student, verified: false as const } : null
-}
-
-/** Student behind a personal link token, or null when it is forged, expired or outdated. */
+/** Student behind a personal link, or null when it is forged, expired or already used to set a password. */
 export const studentFromLink = (payload: Payload, token: string | null | undefined) =>
   studentForToken(payload, verifyToken(token, 'l'))
 
@@ -137,45 +130,60 @@ export async function saveStudentFromBot(
   }) as Promise<any>
 }
 
-const hashCode = (whatsapp: string, code: string) => createHash('sha256').update(`${secret()}:${whatsapp}:${code}`).digest('hex')
+const scryptAsync = promisify(scrypt) as (password: string, salt: Buffer, keylen: number) => Promise<Buffer>
 
-/**
- * New one-time login code for a student; replaces any earlier one. Stored hashed with an
- * expiry and an attempt counter (on fields hidden from every API, staff included).
- */
-export async function issueLoginCode(payload: Payload, student: any, whatsappUsed?: string): Promise<string> {
-  const code = String(randomInt(0, 1_000_000)).padStart(6, '0')
-  // Staff-created students may have the number only as phone; checkLoginCode hashes the same way
-  const whatsapp = normalizeWhatsapp(student.whatsapp || whatsappUsed)
-  await (payload.db as any).collections[STUDENTS].collection.updateOne(
-    { _id: (payload.db as any).collections[STUDENTS].base.Types.ObjectId.createFromHexString(String(student.id)) },
-    { $set: { loginCodeHash: hashCode(whatsapp, code), loginCodeExpires: new Date(Date.now() + CODE_MINUTES * 60_000), loginCodeAttempts: 0 } },
-  )
-  return code
+/** "scrypt$<salt>$<hash>" (base64url), for storing. */
+export async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16)
+  const hash = await scryptAsync(password, salt, 64)
+  return `scrypt$${salt.toString('base64url')}$${hash.toString('base64url')}`
 }
 
-/**
- * Check a login code. A code works once, for CODE_MINUTES, and stops working after
- * MAX_CODE_ATTEMPTS wrong tries.
- */
-export async function checkLoginCode(payload: Payload, whatsapp: string, code: string) {
-  const student = await findStudentByWhatsapp(payload, whatsapp)
-  if (!student) return { ok: false as const, reason: 'invalid_code' as const }
-  const Model = (payload.db as any).collections[STUDENTS]
-  const _id = Model.base.Types.ObjectId.createFromHexString(String(student.id))
-  const raw = await Model.collection.findOne({ _id }, { projection: { loginCodeHash: 1, loginCodeExpires: 1, loginCodeAttempts: 1 } })
-  if (!raw?.loginCodeHash || !(raw.loginCodeExpires > new Date())) return { ok: false as const, reason: 'expired_code' as const }
-  if ((raw.loginCodeAttempts || 0) >= MAX_CODE_ATTEMPTS) return { ok: false as const, reason: 'too_many_attempts' as const }
-
-  const expected = Buffer.from(raw.loginCodeHash)
-  const given = Buffer.from(hashCode(normalizeWhatsapp(student.whatsapp || whatsapp), String(code).replace(/\D/g, '')))
-  if (expected.length !== given.length || !timingSafeEqual(expected, given)) {
-    await Model.collection.updateOne({ _id }, { $inc: { loginCodeAttempts: 1 } })
-    return { ok: false as const, reason: 'invalid_code' as const }
+export async function passwordMatches(password: string, stored: string | null | undefined): Promise<boolean> {
+  const [scheme, salt, hash] = String(stored || '').split('$')
+  if (scheme !== 'scrypt' || !salt || !hash) {
+    // Same work as a real check, so timing doesn't tell which numbers have a password
+    await scryptAsync(password, Buffer.alloc(16), 64)
+    return false
   }
-  // Single use; the code proves the student owns the number, so record that and keep whatsapp set
-  await Model.collection.updateOne({ _id }, { $unset: { loginCodeHash: '', loginCodeExpires: '', loginCodeAttempts: '' }, $set: { whatsapp, phoneVerifiedAt: new Date() } })
-  return { ok: true as const, student: { ...student, whatsapp } }
+  const expected = Buffer.from(hash, 'base64url')
+  const given = await scryptAsync(password, Buffer.from(salt, 'base64url'), expected.length)
+  return expected.length === given.length && timingSafeEqual(expected, given)
+}
+
+/** Why a new password can't be used, or null when it is fine. */
+export function passwordProblem(password: unknown): string | null {
+  const text = typeof password === 'string' ? password : ''
+  if (text.length < PASSWORD_MIN) return `Use at least ${PASSWORD_MIN} characters.`
+  if (text.length > PASSWORD_MAX) return `Use at most ${PASSWORD_MAX} characters.`
+  if (!text.trim()) return 'The password cannot be only spaces.'
+  return null
+}
+
+// passwordHash is hidden from every API (staff included), so it is read and written directly
+const studentsModel = (payload: Payload) => (payload.db as any).collections[STUDENTS]
+const objectId = (payload: Payload, id: string) => studentsModel(payload).base.Types.ObjectId.createFromHexString(String(id))
+
+/**
+ * Save a new password. The link proves the student holds the WhatsApp number, so it is marked
+ * verified. passwordVersion goes up, ending older links and sessions. Returns the new version.
+ */
+export async function setStudentPassword(payload: Payload, student: any, password: string): Promise<number> {
+  const pv = passwordVersion(student) + 1
+  await studentsModel(payload).collection.updateOne(
+    { _id: objectId(payload, student.id) },
+    { $set: { passwordHash: await hashPassword(password), passwordVersion: pv, phoneVerifiedAt: new Date() } },
+  )
+  return pv
+}
+
+/** The student with this number and password, or null (unknown number, no password yet or wrong password). */
+export async function checkStudentPassword(payload: Payload, whatsapp: string, password: string) {
+  const student = await findStudentByWhatsapp(payload, whatsapp)
+  const raw = student
+    ? await studentsModel(payload).collection.findOne({ _id: objectId(payload, student.id) }, { projection: { passwordHash: 1 } })
+    : null
+  return (await passwordMatches(password, raw?.passwordHash)) && student ? student : null
 }
 
 /** The student's gender from their record ("Male", "female", ...), or null when unknown. */
@@ -189,17 +197,6 @@ export const sessionCookie = (token: string) => ({
   sameSite: 'lax' as const,
   path: '/',
   maxAge: SESSION_DAYS * 86400,
-})
-
-/** Browse-only session cookie from a personal link; it lasts as long as the link would have. */
-export const browseCookie = (studentId: string, whatsapp: string, expiresAt: number) => ({
-  name: BROWSE_COOKIE,
-  value: signToken('b', studentId, whatsapp, expiresAt),
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
-  path: '/',
-  maxAge: Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)),
 })
 
 /** Calendar date in Poland (Europe/Warsaw) as [year, month, day]. */

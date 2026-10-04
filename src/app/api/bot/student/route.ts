@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { GENDER_LABELS, parseGender } from '@/lib/botRooms'
 import { botPayload, checkBotKey, clean } from '@/lib/botServer'
-import { linkToken, normalizeWhatsapp, parseArrivalDate, saveStudentFromBot } from '@/lib/studentAuth'
+import { linkToken, normalizeWhatsapp, parseArrivalDate, passwordVersion, saveStudentFromBot } from '@/lib/studentAuth'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +15,9 @@ export const dynamic = 'force-dynamic'
  * `arrivalDate` (DD/MM/YYYY) is saved only when it is after today and within 6 months;
  * otherwise `arrivalOk` is false and `arrivalMessage` tells the student which dates work.
  * Once name, gender and a valid arrival date are saved, `portalLink` is the student's personal
- * link (valid 7 days) to see their rooms and book; until then it is ''.
+ * link, where they set a password and then see their rooms and book; until then it is ''.
+ * It works for 7 days and for one password; call again for a new link (forgotten password).
+ * `hasPassword` tells the bot whether the student set one already.
  */
 export async function POST(request: Request) {
   const denied = checkBotKey(request)
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
     const saved = parseGender(student.gender)
     const registered = Boolean(student.name && saved && parseArrivalDate(student.arrivalDate).ok)
     const portalLink = registered
-      ? `${new URL(request.url).origin}/student/start?t=${linkToken(String(student.id), normalizeWhatsapp(student.whatsapp) || whatsapp)}`
+      ? `${new URL(request.url).origin}/student/start?t=${linkToken(String(student.id), normalizeWhatsapp(student.whatsapp) || whatsapp, passwordVersion(student))}`
       : ''
     return NextResponse.json({
       ok: true,
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
       arrivalOk: !arrival || arrival.ok,
       arrivalMessage: arrival && !arrival.ok ? arrival.message : '',
       portalLink,
+      hasPassword: passwordVersion(student) > 0,
     })
   } catch (error) {
     console.error('Bot student API error:', error)

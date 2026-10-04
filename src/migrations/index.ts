@@ -5,6 +5,7 @@ import * as migration_20261003_132908_amounts_in_pln from './20261003_132908_amo
 import * as migration_20261003_164146_bot_bookings_indexes from './20261003_164146_bot_bookings_indexes';
 import * as migration_20261004_072345_student_whatsapp_index from './20261004_072345_student_whatsapp_index';
 import * as migration_20261004_150000_drop_student_password from './20261004_150000_drop_student_password';
+import * as migration_20261004_170000_student_passwords from './20261004_170000_student_passwords';
 
 export const migrations = [
   {
@@ -41,5 +42,10 @@ export const migrations = [
     up: migration_20261004_150000_drop_student_password.up,
     down: migration_20261004_150000_drop_student_password.down,
     name: '20261004_150000_drop_student_password',
+  },
+  {
+    up: migration_20261004_170000_student_passwords.up,
+    down: migration_20261004_170000_student_passwords.down,
+    name: '20261004_170000_student_passwords',
   },
 ];

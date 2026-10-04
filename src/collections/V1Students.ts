@@ -32,11 +32,11 @@ export const V1Students: CollectionConfig = {
     { name: 'emergencyName', type: 'text' },
     { name: 'emergencyPhone', type: 'text' },
     { name: 'emergencyRelation', type: 'text' },
-    // Set when the student proves they own the WhatsApp number with a one-time code
+    // Set when the student sets a password from the personal link the bot sent to their WhatsApp
     { name: 'phoneVerifiedAt', type: 'date', admin: { readOnly: true } },
-    // One-time portal login code (hashed) from /api/bot/login-code; never readable through any API
-    { name: 'loginCodeHash', type: 'text', access: { read: () => false, create: () => false, update: () => false }, admin: { hidden: true } },
-    { name: 'loginCodeExpires', type: 'date', access: { read: () => false, create: () => false, update: () => false }, admin: { hidden: true } },
-    { name: 'loginCodeAttempts', type: 'number', access: { read: () => false, create: () => false, update: () => false }, admin: { hidden: true } },
+    // Hash of the portal password the student set from their personal link; never readable through any API
+    { name: 'passwordHash', type: 'text', access: { read: () => false, create: () => false, update: () => false }, admin: { hidden: true } },
+    // Goes up with every new password; ends older personal links and sessions
+    { name: 'passwordVersion', type: 'number', defaultValue: 0, admin: { readOnly: true } },
   ],
 }

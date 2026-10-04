@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { allowedForGender, depositText, GENDER_LABELS, GENDER_POLICY_LABELS, parseSharing, SHARING_LABELS } from '@/lib/botRooms'
 import { formatPLN } from '@/lib/currency'
 import { botPayload, loadInventory } from '@/lib/botServer'
-import { arrivalRange, browsingStudent, dmyToIso, parseArrivalDate, studentGender } from '@/lib/studentAuth'
+import { arrivalRange, dmyToIso, parseArrivalDate, studentFromRequest, studentGender } from '@/lib/studentAuth'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,14 +11,12 @@ export const dynamic = 'force-dynamic'
  * GET /api/student/rooms[?sharing=2]
  * Free rooms, studios and apartment bedrooms the signed-in student may book: mixed units,
  * plus male-only / female-only units matching the gender on their record.
- * Works with a browse session from the bot's personal link too (`verified` false: holding a
- * bed then needs a WhatsApp code). Returns only what the booking form needs about the student.
+ * Also returns what the booking form needs about the student.
  */
 export async function GET(request: Request) {
   const payload = await botPayload()
-  const who = await browsingStudent(payload, request)
-  if (!who) return NextResponse.json({ ok: false, error: 'Not signed in' }, { status: 401 })
-  const { student } = who
+  const student = await studentFromRequest(payload, request)
+  if (!student) return NextResponse.json({ ok: false, error: 'Not signed in' }, { status: 401 })
 
   const gender = studentGender(student)
   const sharing = parseSharing(new URL(request.url).searchParams.get('sharing'))
@@ -28,7 +26,6 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    verified: who.verified,
     name: student.name || '',
     whatsapp: student.whatsapp,
     gender: gender ? GENDER_LABELS[gender] : '',
