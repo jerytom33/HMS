@@ -16,6 +16,17 @@ export const V1Properties: CollectionConfig = {
   fields: [
     { name: 'name', type: 'text', required: true },
     { name: 'location', type: 'text' },
+    // Who may stay; the student portal shows students only units their gender is allowed in
+    {
+      name: 'genderPolicy',
+      type: 'select',
+      defaultValue: 'mixed',
+      options: [
+        { label: 'Mixed', value: 'mixed' },
+        { label: 'Male only', value: 'male' },
+        { label: 'Female only', value: 'female' },
+      ],
+    },
     { name: 'rooms', type: 'number' },
     { name: 'floors', type: 'number' },
     { name: 'roomsPerFloor', type: 'json' },

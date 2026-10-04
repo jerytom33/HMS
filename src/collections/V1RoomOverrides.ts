@@ -28,6 +28,18 @@ export const V1RoomOverrides: CollectionConfig = {
         { label: 'Apartment', value: 'apartment' },
       ],
     },
+    // Who may stay in this unit; 'inherit' uses the property's setting
+    {
+      name: 'genderPolicy',
+      type: 'select',
+      defaultValue: 'inherit',
+      options: [
+        { label: 'Same as property', value: 'inherit' },
+        { label: 'Mixed', value: 'mixed' },
+        { label: 'Male only', value: 'male' },
+        { label: 'Female only', value: 'female' },
+      ],
+    },
     // Apartments only: rooms inside the apartment, [{ name, beds }]
     { name: 'subRooms', type: 'json' },
     // [{ name, included, shared? }], e.g. Kitchen / Washroom / Washing Machine / WiFi

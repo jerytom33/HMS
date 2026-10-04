@@ -3,6 +3,7 @@ import * as migration_20261003_094457_unit_types from './20261003_094457_unit_ty
 import * as migration_20261003_105154_browser_image_urls from './20261003_105154_browser_image_urls';
 import * as migration_20261003_132908_amounts_in_pln from './20261003_132908_amounts_in_pln';
 import * as migration_20261003_164146_bot_bookings_indexes from './20261003_164146_bot_bookings_indexes';
+import * as migration_20261004_072345_student_whatsapp_index from './20261004_072345_student_whatsapp_index';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20261003_164146_bot_bookings_indexes.up,
     down: migration_20261003_164146_bot_bookings_indexes.down,
-    name: '20261003_164146_bot_bookings_indexes'
+    name: '20261003_164146_bot_bookings_indexes',
+  },
+  {
+    up: migration_20261004_072345_student_whatsapp_index.up,
+    down: migration_20261004_072345_student_whatsapp_index.down,
+    name: '20261004_072345_student_whatsapp_index'
   },
 ];

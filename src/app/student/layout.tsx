@@ -1,12 +1,18 @@
 'use client';
 
-import { Home, User, Bed, Calendar, FileText, CreditCard, Wrench, Bell, MessageCircle, Menu, LogOut, X } from 'lucide-react';
+import { Search, Home, User, Bed, Calendar, FileText, CreditCard, Wrench, Bell, MessageCircle, Menu, LogOut, X } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  if (pathname === '/student/login') return <>{children}</>;
+
   const navItems = [
+    { name: 'Find a Room', href: '/student/rooms', icon: Search },
     { name: 'Dashboard', href: '/student', icon: Home },
     { name: 'My Profile', href: '/student/profile', icon: User },
     { name: 'My Room', href: '/student/room', icon: Bed },
@@ -70,7 +76,14 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           </nav>
         </div>
         <div className="p-4 border-t border-border">
-          <button className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors">
+          <button
+            onClick={async () => {
+              await fetch('/api/student-auth/logout', { method: 'POST' }).catch(() => {});
+              router.replace('/student/login');
+              router.refresh();
+            }}
+            className="flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+          >
             <LogOut className="h-4 w-4" />
             Sign Out
           </button>

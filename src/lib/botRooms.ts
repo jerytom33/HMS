@@ -22,6 +22,8 @@ export type BotProperty = {
   beds?: number
   floorNames?: string[]
   images?: string[]
+  /** 'mixed' | 'male' | 'female' (missing = mixed) */
+  genderPolicy?: string
 }
 
 export type BotOverride = {
@@ -45,6 +47,8 @@ export type BotOverride = {
   roomFacilitiesList?: { images?: string[]; description?: string }[]
   roomPrice?: string
   deposit?: string
+  /** 'inherit' | 'mixed' | 'male' | 'female' (missing = inherit from the property) */
+  genderPolicy?: string
 }
 
 /** One bookable choice: a room or studio, or one bedroom of an apartment. */
@@ -77,6 +81,8 @@ export type BotUnit = {
   /** Unit photos, else the hostel's photos; JPEG delivery URLs WhatsApp can show. */
   images: string[]
   hasOwnImages: boolean
+  /** Who may stay: the unit's own setting, else the property's */
+  genderPolicy: GenderPolicy
 }
 
 export const SHARING_LABELS: Record<number, string> = { 1: 'Single share', 2: 'Two share', 3: 'Three share', 4: 'Four share' }
@@ -196,6 +202,7 @@ export function listUnits(properties: BotProperty[], overrides: BotOverride[]): 
         amenities: (o?.amenities || []).filter((a) => a?.included).map((a) => (a.shared ? `${a.name} (shared)` : a.name)),
         images: ownImages.length ? [...new Set(ownImages)] : hostelImages,
         hasOwnImages: ownImages.length > 0,
+        genderPolicy: effectiveGenderPolicy(property.genderPolicy, o?.genderPolicy),
       }
 
       if (unitType === 'apartment' && subRooms.length) {
@@ -332,7 +339,9 @@ export type RoomSearch = ReturnType<typeof searchRooms>
  * Units with a free bed for a sharing type. With more than 10 matches and no hostel
  * chosen, returns the hostels to pick from instead of rooms (needsHostel).
  */
-export function searchRooms(units: BotUnit[], sharing: number, hostel?: string | null) {
+export function searchRooms(units: BotUnit[], sharing: number, hostel?: string | null, gender?: StudentGender | null) {
+  // With a gender, only units that gender may stay in (see allowedForGender)
+  if (gender !== undefined) units = units.filter((u) => allowedForGender(u.genderPolicy, gender))
   const hostelId = resolveHostelId(units, hostel)
   const matching = units.filter((u) => u.sharing === sharing && u.freeBeds > 0).sort(sortUnits)
   const inHostel = hostelId ? matching.filter((u) => u.propertyId === hostelId) : matching
@@ -522,6 +531,31 @@ export function parseGender(input: unknown): 'male' | 'female' | 'other' | null 
 }
 
 export const GENDER_LABELS = { male: 'Male', female: 'Female', other: 'Other' } as const
+
+export type StudentGender = 'male' | 'female' | 'other'
+export type GenderPolicy = 'mixed' | 'male' | 'female'
+
+export const GENDER_POLICY_LABELS: Record<GenderPolicy, string> = { mixed: 'Mixed', male: 'Male only', female: 'Female only' }
+
+const asPolicy = (value: unknown): GenderPolicy | null => (value === 'male' || value === 'female' || value === 'mixed' ? value : null)
+
+/** Who may stay in a unit: its own setting unless 'inherit'/missing, else the property's; mixed by default. */
+export function effectiveGenderPolicy(propertyPolicy: unknown, unitPolicy: unknown): GenderPolicy {
+  return asPolicy(unitPolicy) || asPolicy(propertyPolicy) || 'mixed'
+}
+
+/**
+ * Whether a student may stay in a unit. Mixed units are open to everyone; male-only and
+ * female-only units only to that gender, so a student whose gender is unknown or 'other'
+ * sees mixed units only.
+ */
+export function allowedForGender(policy: GenderPolicy, gender: StudentGender | null): boolean {
+  return policy === 'mixed' || policy === gender
+}
+
+export function genderNotAllowedMessage(policy: GenderPolicy): string {
+  return `Sorry, that room is for ${policy === 'female' ? 'female' : 'male'} students only. Please choose another room.`
+}
 
 /** "6ac0…-101~1" -> { overrideKey: "6ac0…-101", subRoomIndex: 1 }. */
 export function parseUnitId(unit: string): { overrideKey: string; subRoomIndex: number | null } {

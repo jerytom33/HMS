@@ -52,7 +52,7 @@ export default function AdminProperties() {
   const [properties, setProperties] = useState<any[]>(INITIAL_PROPERTIES);
   const [propertiesStatus, setPropertiesStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   // WhatsApp-bot bed holds (held or paid) keyed by `${overrideKey}:${bedIndex}`
-  const [botHolds, setBotHolds] = useState<Record<string, { ref: string, status: string, name?: string, whatsapp?: string, arrivalDate?: string }>>({});
+  const [botHolds, setBotHolds] = useState<Record<string, { ref: string, status: string, source?: string, name?: string, whatsapp?: string, arrivalDate?: string }>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [availableStudents, setAvailableStudents] = useState<any[]>(MOCK_STUDENTS);
 
@@ -122,25 +122,25 @@ export default function AdminProperties() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<any>(1);
   const [selectedFloor, setSelectedFloor] = useState(1);
   const [isAddPropertyModalOpen, setIsAddPropertyModalOpen] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<{ roomNum: number | string, roomName?: string, unitType?: string, subRooms?: SubRoom[], amenities?: Amenity[], standalone?: boolean, bedTypes?: string[], bunkPositions?: (string | null)[], status: string, beds: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, deposit?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] } | null>(null);  
+  const [selectedRoom, setSelectedRoom] = useState<{ roomNum: number | string, roomName?: string, unitType?: string, subRooms?: SubRoom[], amenities?: Amenity[], standalone?: boolean, bedTypes?: string[], bunkPositions?: (string | null)[], genderPolicy?: string, status: string, beds: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, deposit?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] } | null>(null);  
 
   const [editingPropertyId, setEditingPropertyId] = useState<any>(null);
 
   const [propertyToDelete, setPropertyToDelete] = useState<any>(null);
   const [roomFilters, setRoomFilters] = useState({ occupied: false, available: false, maintenance: false });
-  const [editPropertyForm, setEditPropertyForm] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[], facilities: [] as string[] });
+  const [editPropertyForm, setEditPropertyForm] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[], facilities: [] as string[], genderPolicy: 'mixed' });
   
   // Track specific room edits (status and bed counts)
-  const [roomOverrides, setRoomOverrides] = useState<Record<string, { id?: any, roomName?: string, unitType?: string, subRooms?: SubRoom[], amenities?: Amenity[], standalone?: boolean, propertyId?: string, bedTypes?: string[], bunkPositions?: (string | null)[], status?: string, beds?: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, deposit?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] }>>({});
+  const [roomOverrides, setRoomOverrides] = useState<Record<string, { id?: any, roomName?: string, unitType?: string, subRooms?: SubRoom[], amenities?: Amenity[], standalone?: boolean, propertyId?: string, bedTypes?: string[], bunkPositions?: (string | null)[], genderPolicy?: string, status?: string, beds?: number, freeBeds?: number, filledBeds?: number, bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[], roomPrice?: string, deposit?: string, roomFacilitiesList?: { images: string[], description: string }[], roomFacilitiesImages?: string[], roomFacilitiesDescription?: string, roomFacilitiesDescriptions?: string[] }>>({});
   const [isEditFloorModalOpen, setIsEditFloorModalOpen] = useState(false);
   const [editFloorData, setEditFloorData] = useState({ floor: 1, name: '', rooms: 0, beds: 0, image: '', floorFacilitiesList: [] as { description: string, images: string[] }[] });
   const [isEditingRoom, setIsEditingRoom] = useState(false);
-  const [editRoomData, setEditRoomData] = useState({ roomName: '', unitType: 'room', subRooms: [] as SubRoom[], amenities: [] as Amenity[], bedTypes: [] as string[], bunkPositions: [] as (string | null)[], status: '', beds: 0, freeBeds: 0, filledBeds: 0, bedStatuses: [] as boolean[], bedOccupants: [] as (string | null)[], bedImages: [] as string[][], bedDescriptions: [] as string[], roomPrice: '', deposit: '', roomFacilitiesList: [] as { images: string[], description: string }[], roomFacilitiesImages: [] as string[], roomFacilitiesDescription: '', roomFacilitiesDescriptions: [] as string[] });
+  const [editRoomData, setEditRoomData] = useState({ roomName: '', unitType: 'room', subRooms: [] as SubRoom[], amenities: [] as Amenity[], bedTypes: [] as string[], bunkPositions: [] as (string | null)[], genderPolicy: 'inherit', status: '', beds: 0, freeBeds: 0, filledBeds: 0, bedStatuses: [] as boolean[], bedOccupants: [] as (string | null)[], bedImages: [] as string[][], bedDescriptions: [] as string[], roomPrice: '', deposit: '', roomFacilitiesList: [] as { images: string[], description: string }[], roomFacilitiesImages: [] as string[], roomFacilitiesDescription: '', roomFacilitiesDescriptions: [] as string[] });
   const [activeSearchBed, setActiveSearchBed] = useState<number | null>(null);
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<{name: string, room: number, bed: string, phone: string, course: string} | null>(null);
 
-  const [newProperty, setNewProperty] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[], facilities: [] as string[] });
+  const [newProperty, setNewProperty] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[], facilities: [] as string[], genderPolicy: 'mixed' });
   const [successMessage, setSuccessMessage] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -246,6 +246,7 @@ export default function AdminProperties() {
         standalone: false,
         bedTypes: override?.bedTypes,
         bunkPositions: override?.bunkPositions,
+        genderPolicy: override?.genderPolicy,
         status: override?.status || defaultStatus,
         beds: override?.unitType === 'apartment' ? unitBedCount(override) : (override?.beds || defaultBeds),
         freeBeds: override?.freeBeds !== undefined ? override.freeBeds : (defaultStatus === 'occupied' ? 0 : defaultBeds),
@@ -280,6 +281,7 @@ export default function AdminProperties() {
           standalone: true,
           bedTypes: o.bedTypes,
           bunkPositions: o.bunkPositions,
+          genderPolicy: o.genderPolicy,
           status: o.status || 'available',
           beds,
           freeBeds: o.freeBeds ?? beds,
@@ -401,7 +403,8 @@ export default function AdminProperties() {
       occupancy: '0%',
       status: 'Operational',
       images: newProperty.images,
-      facilities: newProperty.facilities
+      facilities: newProperty.facilities,
+      genderPolicy: newProperty.genderPolicy
     };
     
     try {
@@ -415,7 +418,7 @@ export default function AdminProperties() {
       
       setProperties([...properties, data.doc]);
       setIsAddPropertyModalOpen(false);
-      setNewProperty({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [], facilities: [] });
+      setNewProperty({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [], facilities: [], genderPolicy: 'mixed' });
       
       setSuccessMessage(`Property "${data.doc.name}" added successfully!`);
       setSelectedPropertyId(data.doc.id);
@@ -458,7 +461,8 @@ export default function AdminProperties() {
       isCustomBedsPerFloor: prop.isCustomBedsPerFloor || false,
       bedsPerFloor: fallbackBedsPerFloor,
       images: prop.images || [],
-      facilities: prop.facilities || []
+      facilities: prop.facilities || [],
+      genderPolicy: prop.genderPolicy || 'mixed'
     });
     setEditingPropertyId(prop.id);
   };
@@ -522,7 +526,8 @@ export default function AdminProperties() {
       bedsPerFloor: editPropertyForm.bedsPerFloor.map(v => parseInt(v) || 2),
       beds: parseInt(editPropertyForm.beds) || 2,
       images: editPropertyForm.images,
-      facilities: editPropertyForm.facilities
+      facilities: editPropertyForm.facilities,
+      genderPolicy: editPropertyForm.genderPolicy
     };
     
     try {
@@ -556,6 +561,7 @@ export default function AdminProperties() {
       amenities: selectedRoom.amenities || defaultAmenities(selectedRoom.unitType),
       bedTypes: Array.from({ length: selectedRoom.beds }, (_, i) => bedTypeAt(selectedRoom.bedTypes, i)),
       bunkPositions: Array.from({ length: selectedRoom.beds }, (_, i) => bunkPositionAt(selectedRoom.bedTypes, selectedRoom.bunkPositions, i)),
+      genderPolicy: selectedRoom.genderPolicy || 'inherit',
       status: selectedRoom.status, 
       beds: selectedRoom.beds,
       freeBeds: selectedRoom.freeBeds !== undefined ? selectedRoom.freeBeds : selectedRoom.beds,
@@ -603,6 +609,7 @@ export default function AdminProperties() {
       bedStatuses: editRoomData.bedStatuses,
       bedTypes: editRoomData.bedTypes,
       bunkPositions: editRoomData.bunkPositions,
+      genderPolicy: editRoomData.genderPolicy,
       bedOccupants: editRoomData.bedOccupants,
       bedImages: editRoomData.bedImages,
       bedDescriptions: editRoomData.bedDescriptions,
@@ -926,6 +933,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         <h4 className="font-bold text-xl text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-1 group-hover:text-red-600 transition-colors">{prop.name}</h4>
                         <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 flex items-center gap-1.5 mb-6">
                           <MapPin className="h-4 w-4 text-gray-400" /> {prop.location}
+                          {prop.genderPolicy && prop.genderPolicy !== 'mixed' && <span className="ml-1 rounded-full bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">{prop.genderPolicy === 'male' ? 'Male only' : 'Female only'}</span>}
                         </p>
                         {prop.facilities?.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 -mt-4 mb-5">
@@ -1020,11 +1028,11 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
           </div>
           <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 flex-1 overflow-auto pb-24">
             <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 min-w-full">
-              {filteredRooms.map(({ roomNum, roomName, unitType, subRooms, amenities, standalone, bedTypes, bunkPositions, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, deposit, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions }) => (
+              {filteredRooms.map(({ roomNum, roomName, unitType, subRooms, amenities, standalone, bedTypes, bunkPositions, genderPolicy, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, deposit, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions }) => (
                 <div 
                   key={roomNum} 
                   onClick={() => {
-                    setSelectedRoom({ roomNum, roomName, unitType, subRooms, amenities, standalone, bedTypes, bunkPositions, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, deposit, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions });
+                    setSelectedRoom({ roomNum, roomName, unitType, subRooms, amenities, standalone, bedTypes, bunkPositions, genderPolicy, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, deposit, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions });
                     setIsEditingRoom(false);
                   }}
                   className="property-glass-card group cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-red-500/20 flex flex-col h-full"
@@ -1248,6 +1256,12 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Type</span>
                     <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{unitLabel(selectedRoom.unitType)}</span>
                   </div>
+                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Who can stay</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">
+                      {(() => { const p = selectedRoom.genderPolicy && selectedRoom.genderPolicy !== 'inherit' ? selectedRoom.genderPolicy : (selectedProperty?.genderPolicy || 'mixed'); return p === 'male' ? 'Male only' : p === 'female' ? 'Female only' : 'Mixed'; })()}
+                    </span>
+                  </div>
                   {selectedRoom.unitType === 'apartment' && (selectedRoom.subRooms?.length ?? 0) > 0 && (
                     <div className="py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
                       <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400 block mb-2">Rooms in this apartment</span>
@@ -1339,7 +1353,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         const botHold = isFilled && !selectedRoom.bedOccupants?.[idx]
                           ? botHolds[`${selectedPropertyId}-${selectedRoom.roomNum}:${idx}`]
                           : undefined;
-                        if (botHold) mockStudentName = `${botHold.status === 'paid' ? 'Paid' : 'On hold'} (bot) – ${botHold.ref}`;
+                        if (botHold) mockStudentName = `${botHold.status === 'paid' ? 'Paid' : 'On hold'} (${botHold.source === 'portal' ? 'portal' : 'bot'}) – ${botHold.ref}`;
                         let mockStudentId = 1;
                         if (mockStudentName && availableStudents.some(s => String(s.id) === String(mockStudentName))) {
                             const foundStudent = availableStudents.find(s => s.id.toString() === String(mockStudentName));
@@ -1485,6 +1499,20 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800">
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-400">Who can stay</span>
+                    <select
+                      value={editRoomData.genderPolicy}
+                      onChange={(e) => setEditRoomData({...editRoomData, genderPolicy: e.target.value})}
+                      className="border border-gray-300 dark:border-gray-700 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    >
+                      <option value="inherit">Same as property ({selectedProperty?.genderPolicy === 'male' ? 'Male only' : selectedProperty?.genderPolicy === 'female' ? 'Female only' : 'Mixed'})</option>
+                      <option value="mixed">Mixed (everyone)</option>
+                      <option value="male">Male only</option>
+                      <option value="female">Female only</option>
+                    </select>
                   </div>
 
                   {editRoomData.unitType === 'apartment' && (
@@ -2253,6 +2281,20 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                 </div>
               </div>
 
+              <div className="space-y-1 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Who can stay</label>
+                <select
+                  value={newProperty.genderPolicy}
+                  onChange={(e) => setNewProperty({...newProperty, genderPolicy: e.target.value})}
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="mixed">Mixed (everyone)</option>
+                  <option value="male">Male only</option>
+                  <option value="female">Female only</option>
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Students only see units their gender may stay in. Units can override this.</p>
+              </div>
+
               <div className="space-y-2 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Facilities &amp; Transport</label>
                 <div className="flex flex-wrap gap-2">
@@ -2504,6 +2546,20 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     placeholder="1" 
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Who can stay</label>
+                <select
+                  value={editPropertyForm.genderPolicy}
+                  onChange={(e) => setEditPropertyForm({...editPropertyForm, genderPolicy: e.target.value})}
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="mixed">Mixed (everyone)</option>
+                  <option value="male">Male only</option>
+                  <option value="female">Female only</option>
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Students only see units their gender may stay in. Units can override this.</p>
               </div>
 
               <div className="space-y-2 mt-4 border-t border-gray-100 dark:border-gray-800 dark:border-gray-800 pt-4">

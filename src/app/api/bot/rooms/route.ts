@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { parseSharing, searchRooms } from '@/lib/botRooms'
+import { parseGender, parseSharing, searchRooms } from '@/lib/botRooms'
 import { botPayload, checkBotKey, loadInventory } from '@/lib/botServer'
 
 export const dynamic = 'force-dynamic'
@@ -15,6 +15,7 @@ export const dynamic = 'force-dynamic'
  *   choose_hostel        -> more than 10 matches: show `hostels`, then call again with &hostel=<value>
  *   choose_other_sharing -> none free for this sharing: show `otherSharing`
  *   not_available        -> everything is full
+ * With `gender` ("Male" / "Female" / "Other"), only rooms that gender may stay in are listed.
  */
 export async function GET(request: Request) {
   const denied = checkBotKey(request)
@@ -30,7 +31,9 @@ export async function GET(request: Request) {
     const payload = await botPayload()
     const { units } = await loadInventory(payload)
     const hostel = params.get('hostel')?.trim() || null
-    return NextResponse.json({ ok: true, ...searchRooms(units, sharing, hostel) })
+    const genderParam = params.get('gender')
+    const gender = genderParam ? parseGender(genderParam) : undefined
+    return NextResponse.json({ ok: true, ...searchRooms(units, sharing, hostel, gender) })
   } catch (error) {
     console.error('Bot rooms API error:', error)
     return NextResponse.json({ ok: false, error: 'Could not load rooms' }, { status: 500 })

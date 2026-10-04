@@ -13,10 +13,8 @@ export default function proxy(request: NextRequest) {
 
   // Protect all /student routes EXCEPT /student/login
   if (pathname.startsWith('/student') && pathname !== '/student/login') {
-    const token = request.cookies.get('hms-student-token')?.value;
-
-    // In a real app, you would also verify the token signature/validity here or via a backend call.
-    // For now, checking existence is sufficient for route protection.
+    // Signed portal session from /api/student-auth/verify; every /api/student route checks the signature
+    const token = request.cookies.get('hms-student-session')?.value;
     if (!token) {
       const loginUrl = new URL('/student/login', request.url);
       loginUrl.searchParams.set('callbackUrl', encodeURI(pathname));

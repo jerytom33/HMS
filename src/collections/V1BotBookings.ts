@@ -72,6 +72,16 @@ export const V1BotBookings: CollectionConfig = {
         { label: 'Called', value: 'called' },
       ],
     },
+    // Where the hold was made: the WhatsApp bot or the student portal
+    {
+      name: 'source',
+      type: 'select',
+      defaultValue: 'bot',
+      options: [
+        { label: 'WhatsApp bot', value: 'bot' },
+        { label: 'Student portal', value: 'portal' },
+      ],
+    },
     { name: 'name', type: 'text' },
     { name: 'whatsapp', type: 'text', index: true },
     // Number to call; the WhatsApp number unless the student gave another one
