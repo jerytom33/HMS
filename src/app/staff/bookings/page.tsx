@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarCheck, CheckCircle2, MessageCircle, Phone, RefreshCw, Search, XCircle } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, FileText, MessageCircle, Phone, RefreshCw, Search, XCircle } from 'lucide-react';
 import { formatPLN } from '@/lib/currency';
 
 // Bed holds and call requests from the WhatsApp bot and the student portal (v1-bot-bookings).
@@ -228,7 +228,7 @@ export default function AdminBookings() {
 
                   {b.notes && <p className="text-xs text-gray-500 whitespace-pre-line">{b.notes}</p>}
 
-                  {ACTIONS[b.status] && (
+                  {(ACTIONS[b.status] || b.type === 'bed_hold') && (
                     confirming ? (
                       <div className="flex flex-wrap items-center gap-2 text-sm">
                         <span>{confirming.confirm}</span>
@@ -240,7 +240,14 @@ export default function AdminBookings() {
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        {ACTIONS[b.status].map((a) => (
+                        {b.type === 'bed_hold' && (b.status === 'held' || b.status === 'paid') && (
+                          // Lease agreement filled in from this booking, as an editable Word file
+                          <a href={`/api/staff/bookings/${b.id}/agreement`} download
+                            className="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 inline-flex items-center gap-1.5">
+                            <FileText className="h-4 w-4" /> Generate agreement
+                          </a>
+                        )}
+                        {(ACTIONS[b.status] || []).map((a) => (
                           <button key={a.status} onClick={() => { setPending({ id: b.id, status: a.status }); setNotice(null); }}
                             className={`px-3 py-1.5 rounded-md text-sm font-medium border ${a.danger ? 'border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40' : 'border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950/40'}`}>
                             {a.label}

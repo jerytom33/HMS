@@ -14,11 +14,13 @@ export const isAdminOrSelf: Access = ({ req: { user } }) => {
   }
 }
 
-export const isStaff: Access = ({ req: { user } }) => {
-  if (!user) return false
+/** Whether a signed-in user has a staff role (for route handlers outside Payload's access control). */
+export const isStaffUser = (user: any) => {
   const staffRoles = ['admin', 'manager', 'reception', 'maintenance', 'accountant', 'warden']
   return Boolean(user?.roles?.some((role: string) => staffRoles.includes(role)))
 }
+
+export const isStaff: Access = ({ req: { user } }) => isStaffUser(user)
 
 export const isStaffOfProperty: Access = ({ req: { user } }) => {
   if (!user) return false
