@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server'
 import { isStaffUser } from '@/access'
 import { botPayload } from '@/lib/botServer'
 import { agreementFileName, agreementValues, fillAgreement } from '@/lib/leaseAgreement'
+import { passportStatus } from '@/lib/passport'
 import { findStudentByWhatsapp } from '@/lib/studentAuth'
 
 export const dynamic = 'force-dynamic'
@@ -12,7 +13,8 @@ export const dynamic = 'force-dynamic'
 /**
  * GET /api/staff/bookings/:id/agreement (staff login required)
  * The lease agreement for a bed hold, filled in from the booking, its property and the
- * student's record, as an editable Word file to print.
+ * student's record, as an editable Word file to print. Only for paid bookings whose
+ * student's passport staff have verified.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const payload = await botPayload()
@@ -34,6 +36,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       : null,
     booking.whatsapp ? findStudentByWhatsapp(payload, booking.whatsapp) : null,
   ])
+
+  if (booking.status !== 'paid') {
+    return NextResponse.json({ ok: false, error: 'The agreement is generated once the booking is paid.' }, { status: 409 })
+  }
+  if (passportStatus(student) !== 'verified') {
+    return NextResponse.json({ ok: false, error: "The student's passport must be verified first." }, { status: 409 })
+  }
 
   const template = await readFile(path.join(process.cwd(), 'src/templates/lease-agreement.docx'))
   const file = fillAgreement(new Uint8Array(template), agreementValues(booking, property, student))

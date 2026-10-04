@@ -34,6 +34,24 @@ export const V1Students: CollectionConfig = {
     { name: 'emergencyRelation', type: 'text' },
     // Set when the student sets a password from the personal link the bot sent to their WhatsApp
     { name: 'phoneVerifiedAt', type: 'date', admin: { readOnly: true } },
+    // Passport for the lease agreement: entered by the student after payment, then verified by staff
+    { name: 'passportNumber', type: 'text' },
+    // DD/MM/YYYY
+    { name: 'passportValidUntil', type: 'text' },
+    {
+      name: 'passportStatus',
+      type: 'select',
+      defaultValue: 'none',
+      options: [
+        { label: 'Not entered', value: 'none' },
+        { label: 'Submitted (to verify)', value: 'submitted' },
+        { label: 'Verified', value: 'verified' },
+        { label: 'Rejected', value: 'rejected' },
+      ],
+    },
+    // Shown to the student so they can correct the details
+    { name: 'passportRejectReason', type: 'text' },
+    { name: 'passportVerifiedAt', type: 'date', admin: { readOnly: true } },
     // Hash of the portal password the student set from their personal link; never readable through any API
     { name: 'passwordHash', type: 'text', access: { read: () => false, create: () => false, update: () => false }, admin: { hidden: true } },
     // Goes up with every new password; ends older personal links and sessions

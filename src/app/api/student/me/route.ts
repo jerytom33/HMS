@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server'
 
 import { GENDER_LABELS, parseEmail } from '@/lib/botRooms'
 import { botPayload, clean } from '@/lib/botServer'
+import { passportAllowed, passportStatus } from '@/lib/passport'
 import { arrivalRange, dmyToIso, parseArrivalDate, studentFromRequest, studentGender } from '@/lib/studentAuth'
 
 export const dynamic = 'force-dynamic'
 
-const profile = (student: any) => {
+const profile = async (payload: any, student: any) => {
   const gender = studentGender(student)
   return {
     ok: true,
@@ -21,6 +22,15 @@ const profile = (student: any) => {
     // Saved arrival (DD/MM/YYYY) as YYYY-MM-DD for the date picker, only while it is still allowed
     arrivalDate: parseArrivalDate(student.arrivalDate).ok ? dmyToIso(student.arrivalDate) : '',
     arrivalRange: arrivalRange(),
+    // Passport for the lease agreement: asked for once the booking is paid, then checked by staff
+    passport: {
+      allowed: await passportAllowed(payload, student),
+      status: passportStatus(student),
+      number: student.passportNumber || '',
+      validUntil: student.passportValidUntil || '',
+      validUntilIso: dmyToIso(student.passportValidUntil),
+      rejectReason: student.passportRejectReason || '',
+    },
   }
 }
 
@@ -29,7 +39,7 @@ export async function GET(request: Request) {
   const payload = await botPayload()
   const student = await studentFromRequest(payload, request)
   if (!student) return NextResponse.json({ ok: false, error: 'Not signed in' }, { status: 401 })
-  return NextResponse.json(profile(student))
+  return NextResponse.json(await profile(payload, student))
 }
 
 /**
@@ -61,5 +71,5 @@ export async function PATCH(request: Request) {
   const updated = Object.keys(data).length
     ? await payload.update({ collection: 'v1-students', id: student.id, data, overrideAccess: true, depth: 0 })
     : student
-  return NextResponse.json(profile(updated))
+  return NextResponse.json(await profile(payload, updated))
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarCheck, CheckCircle2, FileText, MessageCircle, Phone, RefreshCw, Search, XCircle } from 'lucide-react';
+import { BadgeCheck, CalendarCheck, CheckCircle2, FileText, MessageCircle, Phone, RefreshCw, Search, XCircle } from 'lucide-react';
 import { formatPLN } from '@/lib/currency';
 
 // Bed holds and call requests from the WhatsApp bot and the student portal (v1-bot-bookings).
@@ -13,6 +13,14 @@ type Booking = {
   arrivalDate?: string; minStayAgreed?: boolean; hostel?: string; room?: string; floor?: string; bed?: string;
   price?: number; deposit?: number; notes?: string; createdAt: string;
 };
+
+/** The student behind a booking, for the passport check (v1-students). */
+type Student = {
+  id: string; whatsapp?: string; phone?: string;
+  passportNumber?: string; passportValidUntil?: string; passportStatus?: string; passportRejectReason?: string;
+};
+
+const digits = (v?: string) => String(v || '').replace(/\D/g, '');
 
 /** Unpaid holds are cancelled this long after booking (HOLD_EXPIRY_HOURS on the cron, default 72). */
 const HOLD_HOURS = 72;
@@ -30,9 +38,10 @@ const TABS = [
   { value: 'held', label: 'On hold', match: (b: Booking) => b.status === 'held' },
   { value: 'paid', label: 'Paid', match: (b: Booking) => b.status === 'paid' },
   { value: 'calls', label: 'Calls to make', match: (b: Booking) => b.status === 'call_requested' },
+  { value: 'passports', label: 'Passports to verify', match: (b: Booking, s?: Student) => b.status === 'paid' && s?.passportStatus === 'submitted' },
   { value: 'cancelled', label: 'Cancelled', match: (b: Booking) => b.status === 'cancelled' },
   { value: 'all', label: 'All', match: () => true },
-];
+] as { value: string; label: string; match: (b: Booking, s?: Student) => boolean }[];
 
 // What staff can do with a booking in each status
 const ACTIONS: Record<string, { status: string; label: string; confirm: string; note: string; danger?: boolean }[]> = {
@@ -59,6 +68,10 @@ export default function AdminBookings() {
   const [pending, setPending] = useState<{ id: string; status: string } | null>(null);
   const [saving, setSaving] = useState('');
   const [notice, setNotice] = useState<{ ok: boolean; message: string } | null>(null);
+  const [students, setStudents] = useState<Student[]>([]);
+  // Passport being rejected (booking id) and the reason typed for the student
+  const [rejecting, setRejecting] = useState('');
+  const [reason, setReason] = useState('');
 
   const load = useCallback(async () => {
     setError('');
@@ -66,6 +79,8 @@ export default function AdminBookings() {
       const res = await fetch('/api/v1-bot-bookings?limit=1000&sort=-createdAt&depth=0');
       if (!res.ok) throw new Error(String(res.status));
       setBookings((await res.json()).docs || []);
+      const st = await fetch('/api/v1-students?limit=2000&depth=0');
+      if (st.ok) setStudents((await st.json()).docs || []);
     } catch {
       setError("Couldn't load bookings. Check that you are signed in and try again.");
     } finally {
@@ -75,11 +90,18 @@ export default function AdminBookings() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Students by WhatsApp number (also staff-created students who only have it as phone)
+  const studentFor = useMemo(() => {
+    const map = new Map<string, Student>();
+    for (const s of students) for (const n of [digits(s.whatsapp), digits(s.phone)]) if (n && !map.has(n)) map.set(n, s);
+    return (b: Booking) => map.get(digits(b.whatsapp));
+  }, [students]);
+
   const hostels = useMemo(() => [...new Set(bookings.map((b) => b.hostel).filter(Boolean))].sort() as string[], [bookings]);
-  const counts = useMemo(() => Object.fromEntries(TABS.map((t) => [t.value, bookings.filter(t.match).length])), [bookings]);
+  const counts = useMemo(() => Object.fromEntries(TABS.map((t) => [t.value, bookings.filter((b) => t.match(b, studentFor(b))).length])), [bookings, studentFor]);
 
   const shown = bookings.filter((b) => {
-    if (!TABS.find((t) => t.value === tab)!.match(b)) return false;
+    if (!TABS.find((t) => t.value === tab)!.match(b, studentFor(b))) return false;
     if (hostel !== 'all' && b.hostel !== hostel) return false;
     if (source !== 'all' && (b.source || 'bot') !== source) return false;
     const q = query.trim().toLowerCase();
@@ -107,6 +129,32 @@ export default function AdminBookings() {
       await load();
     } catch {
       setNotice({ ok: false, message: `Couldn't update ${b.ref}. Please try again.` });
+    } finally {
+      setSaving('');
+    }
+  };
+
+  // Verify or reject the passport the student entered on the portal
+  const setPassport = async (b: Booking, student: Student, status: 'verified' | 'rejected') => {
+    setSaving(b.id);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/v1-students/${student.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          status === 'verified'
+            ? { passportStatus: 'verified', passportRejectReason: '', passportVerifiedAt: new Date().toISOString() }
+            : { passportStatus: 'rejected', passportRejectReason: reason.trim(), passportVerifiedAt: null },
+        ),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      setNotice({ ok: true, message: status === 'verified' ? `Passport verified for ${b.name || b.ref}. You can generate the agreement.` : `Passport sent back to ${b.name || b.ref} to correct.` });
+      setRejecting('');
+      setReason('');
+      await load();
+    } catch {
+      setNotice({ ok: false, message: "Couldn't update the passport. Please try again." });
     } finally {
       setSaving('');
     }
@@ -226,9 +274,49 @@ export default function AdminBookings() {
                     </dl>
                   )}
 
+                  {b.type === 'bed_hold' && b.status === 'paid' && (() => {
+                    const st = studentFor(b);
+                    const ps = st?.passportStatus || 'none';
+                    return (
+                      <div className="rounded-md border border-gray-200 dark:border-gray-800 p-3 text-sm space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">Passport:</span>
+                          {ps === 'none' && <span className="text-gray-500">not entered yet. The student adds it on the portal&apos;s My Profile page.</span>}
+                          {ps !== 'none' && <span className="font-mono">{st?.passportNumber || '–'}</span>}
+                          {ps !== 'none' && <span className="text-gray-500">valid until {st?.passportValidUntil || '–'}</span>}
+                          {ps === 'submitted' && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">To verify</span>}
+                          {ps === 'verified' && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"><BadgeCheck className="h-3.5 w-3.5" /> Verified</span>}
+                          {ps === 'rejected' && <span className="text-red-600">Sent back{st?.passportRejectReason ? `: ${st.passportRejectReason}` : ''}. Waiting for the student.</span>}
+                        </div>
+                        {st && (ps === 'submitted' || ps === 'verified') && (
+                          rejecting === b.id ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} placeholder="What should the student fix? (shown to them)" className={`${input} flex-1 min-w-[16rem]`} />
+                              <button onClick={() => setPassport(b, st, 'rejected')} disabled={saving === b.id || !reason.trim()} className="px-3 py-1.5 rounded-md font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50">
+                                {saving === b.id ? 'Saving…' : 'Send back'}
+                              </button>
+                              <button onClick={() => { setRejecting(''); setReason(''); }} className="px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700">Cancel</button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              {ps === 'submitted' && (
+                                <button onClick={() => setPassport(b, st, 'verified')} disabled={saving === b.id} className="px-3 py-1.5 rounded-md text-sm font-medium border border-green-300 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/40 disabled:opacity-50">
+                                  Verify passport
+                                </button>
+                              )}
+                              <button onClick={() => { setRejecting(b.id); setReason(''); setNotice(null); }} className="px-3 py-1.5 rounded-md text-sm font-medium border border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40">
+                                {ps === 'verified' ? 'Send back to correct' : 'Reject'}
+                              </button>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {b.notes && <p className="text-xs text-gray-500 whitespace-pre-line">{b.notes}</p>}
 
-                  {(ACTIONS[b.status] || b.type === 'bed_hold') && (
+                  {ACTIONS[b.status] && (
                     confirming ? (
                       <div className="flex flex-wrap items-center gap-2 text-sm">
                         <span>{confirming.confirm}</span>
@@ -240,8 +328,8 @@ export default function AdminBookings() {
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        {b.type === 'bed_hold' && (b.status === 'held' || b.status === 'paid') && (
-                          // Lease agreement filled in from this booking, as an editable Word file
+                        {b.type === 'bed_hold' && b.status === 'paid' && studentFor(b)?.passportStatus === 'verified' && (
+                          // Lease agreement filled in from this booking and the verified passport, as an editable Word file
                           <a href={`/api/staff/bookings/${b.id}/agreement`} download
                             className="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 inline-flex items-center gap-1.5">
                             <FileText className="h-4 w-4" /> Generate agreement

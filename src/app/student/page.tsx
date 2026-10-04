@@ -39,6 +39,16 @@ export default function StudentDashboard() {
         </p>
       </div>
 
+      {me?.passport.allowed && (me.passport.status === 'none' || me.passport.status === 'rejected') && (
+        <Link href="/student/profile" className="block rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+          <strong>Action needed:</strong>{' '}
+          {me.passport.status === 'rejected'
+            ? `please check your passport details${me.passport.rejectReason ? ` (${me.passport.rejectReason})` : ''}.`
+            : 'your booking is paid. Add your passport details for your lease agreement.'}{' '}
+          <span className="underline">Go to My Profile</span>
+        </Link>
+      )}
+
       <div className="bg-card border border-border rounded-2xl shadow-sm p-6 sm:p-8">
         {room ? (
           <div className="flex flex-wrap justify-between items-start gap-4">

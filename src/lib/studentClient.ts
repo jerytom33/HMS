@@ -1,8 +1,13 @@
 // Browser helpers for the student portal pages.
 
+export type PassportInfo = {
+  allowed: boolean; status: 'none' | 'submitted' | 'verified' | 'rejected';
+  number: string; validUntil: string; validUntilIso: string; rejectReason: string;
+};
+
 export type StudentProfile = {
   name: string; whatsapp: string; email: string; gender: string; course: string; yearOfStudy: string;
-  arrivalDateText: string; arrivalDate: string;
+  arrivalDateText: string; arrivalDate: string; passport: PassportInfo;
 };
 
 export type StudentBooking = {
