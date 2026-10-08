@@ -2,7 +2,7 @@
 //   npx jest src/tests/notify.spec.ts --config '{"preset":"ts-jest","testEnvironment":"node","moduleNameMapper":{"^@/(.*)$":"<rootDir>/src/$1"}}'
 import { afterEach, describe, expect, it, jest } from '@jest/globals'
 
-import { bookingPlace, sendStudentNotification } from '@/lib/notify'
+import { bookingPlace, notifyAdminsOfBooking, sendStudentNotification } from '@/lib/notify'
 
 describe('bookingPlace', () => {
   it('joins hostel, room and bed', () => {
@@ -70,5 +70,55 @@ describe('sendStudentNotification', () => {
     await expect(sendStudentNotification('booking_paid', { whatsapp: '48500111222' })).resolves.toBe(false)
     global.fetch = jest.fn(async () => new Response('', { status: 500 })) as any
     await expect(sendStudentNotification('booking_paid', { whatsapp: '48500111222' })).resolves.toBe(false)
+  })
+})
+
+describe('notifyAdminsOfBooking', () => {
+  const realFetch = global.fetch
+  afterEach(() => {
+    global.fetch = realFetch
+    delete process.env.NOTIFY_WEBHOOK_URL
+    delete process.env.NOTIFY_WEBHOOK_SECRET
+    jest.restoreAllMocks()
+  })
+
+  it('sends nothing without a webhook URL', async () => {
+    const fetchMock = jest.fn()
+    global.fetch = fetchMock as any
+    await expect(notifyAdminsOfBooking({ ref: 'KLS-1' })).resolves.toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('posts booking_created with the six alert details and the secret', async () => {
+    process.env.NOTIFY_WEBHOOK_URL = 'https://hooks.test/notify'
+    process.env.NOTIFY_WEBHOOK_SECRET = 's3cret'
+    const fetchMock = jest.fn(async () => new Response('{}', { status: 200 }))
+    global.fetch = fetchMock as any
+    await expect(
+      notifyAdminsOfBooking({ ref: 'KLS-7Q4M2X', name: 'Anna Kowalska', whatsapp: '+48 500 100 200', hostel: 'Bukowiecka 11', room: 'Room 202', bed: 'A', arrivalDate: '15/02/2027' }),
+    ).resolves.toBe(true)
+    const [, init] = fetchMock.mock.calls[0] as any
+    expect(JSON.parse(init.body)).toEqual({
+      event: 'booking_created',
+      name: 'Anna Kowalska',
+      whatsapp: '48500100200',
+      hostel: 'Bukowiecka 11',
+      roomBed: 'Room 202, Bed A',
+      arrivalDate: '15/02/2027',
+      ref: 'KLS-7Q4M2X',
+      secret: 's3cret',
+    })
+  })
+
+  it('never sends empty values and never throws', async () => {
+    process.env.NOTIFY_WEBHOOK_URL = 'https://hooks.test/notify'
+    const fetchMock = jest.fn(async () => new Response('{}', { status: 200 }))
+    global.fetch = fetchMock as any
+    await notifyAdminsOfBooking({ ref: 'KLS-2' })
+    const body = JSON.parse((fetchMock.mock.calls[0] as any)[1].body)
+    for (const k of ['name', 'whatsapp', 'hostel', 'roomBed', 'arrivalDate']) expect(body[k]).toBe('-')
+    global.fetch = jest.fn(async () => { throw new Error('down') }) as any
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    await expect(notifyAdminsOfBooking({ ref: 'KLS-3' })).resolves.toBe(false)
   })
 })

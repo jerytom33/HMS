@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { holdBed, holdConfirmation } from '@/lib/bedHold'
 import { allowedForGender, AMBIGUOUS_ROOM_MESSAGE, findUnit, genderNotAllowedMessage, parseAgreement, parseContactPhone, parseGender, parseSharing, resolveBed } from '@/lib/botRooms'
+import { notifyAdminsOfBooking } from '@/lib/notify'
 import { botPayload, checkBotKey, clean, loadInventory, normalizePhone } from '@/lib/botServer'
 import { parseArrivalDate, saveStudentFromBot } from '@/lib/studentAuth'
 
@@ -85,6 +86,8 @@ export async function POST(request: Request) {
       source: 'bot',
     })
     if (!result.ok) return NextResponse.json(result)
+    // A repeated request for the same hold (duplicate) was already announced
+    if (!result.duplicate) await notifyAdminsOfBooking(result.booking)
     return NextResponse.json(holdConfirmation(result.booking, result.duplicate))
   } catch (error) {
     console.error('Bot booking API error:', error)

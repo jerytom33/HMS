@@ -9,6 +9,9 @@ import { findStudentByWhatsapp, normalizeWhatsapp } from './studentAuth'
 
 export type NotifyEvent = 'booking_paid' | 'contract_generated'
 
+/** Placeholder for template variables that would otherwise be empty (Meta rejects empty values). */
+const NONE = '-'
+
 /** Where the student lives on the live site; links in messages point here. */
 const PRODUCTION_SITE = 'https://hms-sigma-gold.vercel.app'
 
@@ -116,4 +119,38 @@ async function noteOnBooking(payload: Payload, booking: any, line: string, req?:
     req,
     data: { notes: [fresh?.notes, line].filter(Boolean).join('\n') } as any,
   })
+}
+
+/**
+ * Tell the admins about a new bed hold (website or bot): the workflow sends the approved
+ * kasia_admin_booking_alert template to each admin number. Never throws; false when nothing
+ * was sent (not configured, network error, timeout or an error status).
+ */
+export async function notifyAdminsOfBooking(booking: any): Promise<boolean> {
+  const url = process.env.NOTIFY_WEBHOOK_URL
+  if (!url || !booking) return false
+  const text = (v: unknown) => String(v ?? '').trim() || NONE
+  const roomBed = bookingPlace({ room: booking.room, bed: booking.bed })
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'booking_created',
+        name: text(booking.name),
+        whatsapp: normalizeWhatsapp(booking.whatsapp) || NONE,
+        hostel: text(booking.hostel),
+        roomBed: roomBed === 'your room' ? NONE : roomBed,
+        arrivalDate: text(booking.arrivalDate),
+        ref: text(booking.ref),
+        secret: process.env.NOTIFY_WEBHOOK_SECRET || '',
+      }),
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!res.ok) console.error(`Admin booking alert for ${booking.ref}: webhook answered ${res.status}`)
+    return res.ok
+  } catch (error) {
+    console.error(`Admin booking alert for ${booking?.ref} failed:`, error)
+    return false
+  }
 }

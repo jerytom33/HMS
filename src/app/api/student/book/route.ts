@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { holdBed, holdConfirmation } from '@/lib/bedHold'
+import { notifyAdminsOfBooking } from '@/lib/notify'
 import { botPayload } from '@/lib/botServer'
 import { checkPortalBooking } from '@/lib/portalBooking'
 import { studentFromRequest, studentGender } from '@/lib/studentAuth'
@@ -45,6 +46,8 @@ export async function POST(request: Request) {
       source: 'portal',
     })
     if (!result.ok) return NextResponse.json(result)
+    // A repeated request for the same hold (duplicate) was already announced
+    if (!result.duplicate) await notifyAdminsOfBooking(result.booking)
     const { adminMessage, ...forStudent } = holdConfirmation(result.booking, result.duplicate)
     return NextResponse.json(forStudent)
   } catch (error) {
