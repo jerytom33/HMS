@@ -106,6 +106,8 @@ describe('notifyAdminsOfBooking', () => {
       roomBed: 'Room 202, Bed A',
       arrivalDate: '15/02/2027',
       ref: 'KLS-7Q4M2X',
+      studentName: 'Anna Kowalska',
+      place: 'Bukowiecka 11, Room 202, Bed A',
       secret: 's3cret',
     })
   })
@@ -117,6 +119,8 @@ describe('notifyAdminsOfBooking', () => {
     await notifyAdminsOfBooking({ ref: 'KLS-2' })
     const body = JSON.parse((fetchMock.mock.calls[0] as any)[1].body)
     for (const k of ['name', 'whatsapp', 'hostel', 'roomBed', 'arrivalDate']) expect(body[k]).toBe('-')
+    expect(body.studentName).toBe('there')
+    expect(body.place).toBe('your room')
     global.fetch = jest.fn(async () => { throw new Error('down') }) as any
     jest.spyOn(console, 'error').mockImplementation(() => {})
     await expect(notifyAdminsOfBooking({ ref: 'KLS-3' })).resolves.toBe(false)

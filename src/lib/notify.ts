@@ -122,8 +122,10 @@ async function noteOnBooking(payload: Payload, booking: any, line: string, req?:
 }
 
 /**
- * Tell the admins about a new bed hold (website or bot): the workflow sends the approved
- * kasia_admin_booking_alert template to each admin number. Never throws; false when nothing
+ * Tell the admins and the student about a new bed hold (website or bot): the workflow sends the
+ * approved kasia_admin_booking_alert template to each admin number, and kasia_bed_on_hold
+ * ("your bed is on hold; our team will confirm and contact you") to the student, using
+ * `studentName`, `place` and `ref`. Never throws; false when nothing
  * was sent (not configured, network error, timeout or an error status).
  */
 export async function notifyAdminsOfBooking(booking: any): Promise<boolean> {
@@ -143,6 +145,9 @@ export async function notifyAdminsOfBooking(booking: any): Promise<boolean> {
         roomBed: roomBed === 'your room' ? NONE : roomBed,
         arrivalDate: text(booking.arrivalDate),
         ref: text(booking.ref),
+        // For the student's "bed on hold" message
+        studentName: String(booking.name ?? '').trim() || 'there',
+        place: bookingPlace(booking),
         secret: process.env.NOTIFY_WEBHOOK_SECRET || '',
       }),
       signal: AbortSignal.timeout(10_000),
