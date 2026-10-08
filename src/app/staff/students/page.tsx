@@ -4,22 +4,13 @@ import { useState, useEffect } from 'react';
 import { Users, X, Search, Plus, Mail, Phone, Home, Calendar, MapPin, GraduationCap, HeartPulse, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { floorLabel, parseRoomString } from '@/lib/propertyTypes';
-
-const INITIAL_STUDENTS: any[] = [
-  { 
-    id: 1, name: 'John Doe', email: 'john@example.com', phone: '+1 234 567 8900', room: '101A', status: 'Active',
-    dateOfBirth: '2001-05-15', gender: 'male', address: '123 College Ave, City', course: 'Computer Science', yearOfStudy: '3',
-    emergencyName: 'Mary Doe', emergencyPhone: '+1 987 654 3210', emergencyRelation: 'Mother'
-  },
-  { 
-    id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '+1 234 567 8901', room: '102B', status: 'Active',
-    dateOfBirth: '2002-11-20', gender: 'female', address: '456 University Blvd, City', course: 'Engineering', yearOfStudy: '2',
-    emergencyName: 'Robert Smith', emergencyPhone: '+1 987 654 3211', emergencyRelation: 'Father'
-  },
-];
+import { STAY_LABEL, studentStatus, studentStay, type Stay, type StayBooking } from '@/lib/studentStay';
 
 export default function AdminStudents() {
-  const [students, setStudents] = useState(INITIAL_STUDENTS);
+  const [students, setStudents] = useState<any[]>([]);
+  // Bookings and units, to show where each student stays (assigned bed or booking)
+  const [bookings, setBookings] = useState<StayBooking[]>([]);
+  const [overrides, setOverrides] = useState<Record<string, any>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [studentToDelete, setStudentToDelete] = useState<any>(null);
   const [properties, setProperties] = useState<any[]>([]);
@@ -34,7 +25,17 @@ export default function AdminStudents() {
     fetch('/api/v1-properties?limit=1000').then(res => res.json()).then(data => {
       if (data && data.docs) setProperties(data.docs);
     }).catch(e => console.error(e));
+
+    fetch('/api/v1-bot-bookings?where[type][equals]=bed_hold&limit=2000&depth=0').then(res => res.json()).then(data => {
+      if (data && data.docs) setBookings(data.docs);
+    }).catch(e => console.error(e));
+
+    fetch('/api/v1-room-overrides?limit=2000&depth=0').then(res => res.json()).then(data => {
+      if (data && data.docs) setOverrides(Object.fromEntries(data.docs.map((o: any) => [o.overrideKey, o])));
+    }).catch(e => console.error(e));
   }, []);
+
+  const stays = new Map<string, Stay | null>(students.map((s) => [String(s.id), studentStay(s, bookings, properties, overrides)]));
 
   const handleDeleteStudent = (id: any) => {
     setStudentToDelete(id);
@@ -58,12 +59,13 @@ export default function AdminStudents() {
       (s.email && s.email.toLowerCase().includes(query)) ||
       (s.room && s.room.toLowerCase().includes(query)) ||
       (s.property && s.property.toLowerCase().includes(query)) ||
+      [stays.get(String(s.id))?.hostel, stays.get(String(s.id))?.unit, stays.get(String(s.id))?.booking?.ref].some((v) => v && v.toLowerCase().includes(query)) ||
       (s.phone && s.phone.toLowerCase().includes(query))
     );
 
     let matchesProperty = true;
     if (propertyFilter !== 'all') {
-      matchesProperty = s.property === propertyFilter;
+      matchesProperty = s.property === propertyFilter || stays.get(String(s.id))?.hostel === propertyFilter;
     }
 
     let matchesFloor = true;
@@ -165,23 +167,35 @@ export default function AdminStudents() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1 text-xs">
-                        <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                          <Home className="h-4 w-4 text-gray-400" />
-                          <span className="font-medium text-sm">{student.room || 'Unassigned'}</span>
-                        </div>
-                        {student.property && (
-                          <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 pl-5">
-                            <MapPin className="h-3 w-3" />
-                            {student.property}
+                      {(() => {
+                        const stay = stays.get(String(student.id));
+                        if (!stay) {
+                          return (
+                            <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                              <Home className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm">No room yet</span>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="flex flex-col gap-1 text-xs">
+                            <div className="flex items-center gap-1.5 text-gray-900 dark:text-gray-100">
+                              <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                              <span className="font-medium text-sm">{stay.hostel}</span>
+                              <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${stay.source === 'held' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>{STAY_LABEL[stay.source]}</span>
+                            </div>
+                            <div className="pl-5 text-gray-700 dark:text-gray-300">{stay.unitType}: {stay.unit}{stay.floor ? ` · ${stay.floor}` : ''}</div>
+                            <div className="pl-5 text-gray-500 dark:text-gray-400">{stay.bed}{stay.bedType ? ` (${stay.bedType})` : ''}{stay.booking ? ` · ${stay.booking.ref}` : ''}</div>
                           </div>
-                        )}
-                      </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full border border-green-200">
-                        {student.status}
-                      </span>
+                      {(() => {
+                        const status = studentStatus(student, stays.get(String(student.id)) ?? null);
+                        const tone = status === 'Active' ? 'bg-green-100 text-green-800 border-green-200' : status === 'On hold' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-gray-100 text-gray-700 border-gray-200';
+                        return <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${tone}`}>{status}</span>;
+                      })()}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-3">
