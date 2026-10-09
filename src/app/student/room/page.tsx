@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BadgeCheck, BedSingle, CheckCircle2, Clock, FileText, Info, MapPin, Search } from 'lucide-react';
 import { formatPLN } from '@/lib/currency';
 import { AgreementViewer } from '@/components/AgreementViewer';
+import { showDate } from '@/lib/rent';
 import { studentGet, type PassportInfo, type PendingBooking, type StudentProfile, type StudentRoom } from '@/lib/studentClient';
 
 export default function StudentRoomPage() {
@@ -98,6 +99,27 @@ export default function StudentRoomPage() {
           <p className="flex items-start gap-2 rounded-lg bg-secondary/10 p-3 text-sm">
             <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" /> Minimum stay: 1 semester (6 months).
           </p>
+          {/* Monthly rent: first due 30 days after the agreement, then the same day every month */}
+          {room.booking.rentDue ? (
+            room.booking.rentDue.overdueCount > 0 ? (
+              <p role="alert" className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950/30 dark:text-red-200">
+                <Clock className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>
+                  Rent overdue: {room.booking.rentDue.overdueCount} {room.booking.rentDue.overdueCount === 1 ? 'month' : 'months'}, {formatPLN(room.booking.rentDue.overdueAmount)}.
+                  {room.booking.rentDue.next ? ` Due since ${showDate(room.booking.rentDue.next.dueDate)}.` : ''} Please pay as soon as possible.
+                </span>
+              </p>
+            ) : room.booking.rentDue.next ? (
+              <p className={`flex items-start gap-2 rounded-lg p-3 text-sm ${room.booking.rentDue.next.status === 'due' ? 'border border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200' : 'bg-secondary/10'}`}>
+                <Clock className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                <span>Next rent: <strong>{showDate(room.booking.rentDue.next.dueDate)}</strong> · {formatPLN(room.booking.rentDue.next.amount)}</span>
+              </p>
+            ) : null
+          ) : !room.booking.agreementGeneratedAt && (
+            <p className="flex items-start gap-2 rounded-lg bg-secondary/10 p-3 text-sm">
+              <Clock className="h-4 w-4 mt-0.5 shrink-0 text-primary" /> Your monthly rent starts 30 days after your agreement is generated.
+            </p>
+          )}
           {room.booking.agreementGeneratedAt && (
             <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3 text-sm">
               <FileText className="h-4 w-4 text-primary" />

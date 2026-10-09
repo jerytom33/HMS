@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, Users, FileCheck, Wrench, Settings, Search, Bell, Menu, LogOut, CheckSquare, MessageSquare, X, Moon, Sun, Home, BedDouble, Layers, CalendarCheck } from 'lucide-react';
+import { Building2, Users, FileCheck, Wrench, Settings, Search, Bell, Menu, LogOut, CheckSquare, MessageSquare, X, Moon, Sun, Home, BedDouble, Layers, CalendarCheck, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTheme } from 'next-themes';
@@ -295,6 +295,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Students', href: '/staff/students', icon: Users },
     { name: 'Bookings', href: '/staff/bookings', icon: CalendarCheck },
     { name: 'Payments', href: '/staff/payments', icon: CheckSquare },
+    { name: 'Rent', href: '/staff/rent', icon: Wallet },
     { name: 'Settings', href: '/staff/settings', icon: Settings },
   ];
 

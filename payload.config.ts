@@ -44,6 +44,7 @@ import { V1Properties } from './src/collections/V1Properties'
 import { V1Students } from './src/collections/V1Students'
 import { V1RoomOverrides } from './src/collections/V1RoomOverrides'
 import { V1BotBookings } from './src/collections/V1BotBookings'
+import { V1RentPayments } from './src/collections/V1RentPayments'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -94,6 +95,7 @@ export default buildConfig({
     V1Students,
     V1RoomOverrides,
     V1BotBookings,
+    V1RentPayments,
   ],
   // The /admin panel in English or Polish (each user picks it on their account page)
   i18n: {

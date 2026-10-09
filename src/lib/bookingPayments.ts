@@ -31,3 +31,21 @@ export function bookingPayments(paidBookings: any[], units: Record<string, { roo
       ]
     })
 }
+
+/** Monthly rent payments staff recorded (v1-rent-payments) as completed Rent payments. */
+export function rentPaymentRows(rentPayments: any[]) {
+  return rentPayments.map((p) => ({
+    id: `RENT-${p.ref || p.bookingId}-${p.dueDate}`,
+    bookingRef: '',
+    rentFor: String(p.dueDate || ''),
+    student: p.name || (p.whatsapp ? `+${p.whatsapp}` : ''),
+    property: p.hostel || '',
+    propertyId: '',
+    room: p.room || '',
+    type: 'Rent' as const,
+    amount: Number(p.amount) || 0,
+    status: 'Completed' as const,
+    date: String(p.paidAt || p.createdAt || '').slice(0, 10),
+    ref: p.ref || '',
+  }))
+}

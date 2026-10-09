@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, BadgeCheck, BedDouble, CalendarCheck, Edit, FileText, Mail, MapPin, MessageCircle, Phone, Trash2, User } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, BedDouble, CalendarCheck, Edit, FileText, Mail, MapPin, MessageCircle, Phone, Trash2, User, Wallet } from 'lucide-react';
 import { AgreementViewer } from '@/components/AgreementViewer';
 import { formatPLN, parseAmount } from '@/lib/currency';
 import { unitDeposit } from '@/lib/propertyTypes';
 import { bookingsOf, STAY_LABEL, studentStatus, studentStay, type StayBooking } from '@/lib/studentStay';
+import { daysUntil, monthlyRent, RENT_STATUS_LABEL, rentSchedule, showDate, warsawDate, type RentPayment } from '@/lib/rent';
 
 // A student's page in the staff panel, from the database: personal details, where they stay
 // (bed staff assigned, or their booking), their bookings, passport and lease agreement.
@@ -34,6 +35,7 @@ export default function StudentProfilePage() {
   const [bookings, setBookings] = useState<StayBooking[]>([]);
   const [properties, setProperties] = useState<any[]>([]);
   const [overrides, setOverrides] = useState<Record<string, any>>({});
+  const [rentPayments, setRentPayments] = useState<RentPayment[]>([]);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
   const [viewing, setViewing] = useState<StayBooking | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -47,11 +49,13 @@ export default function StudentProfilePage() {
         if (!res.ok) throw new Error(String(res.status));
         setStudent(await res.json());
         const json = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-        const [b, p, o] = await Promise.all([
+        const [b, p, o, rp] = await Promise.all([
           json('/api/v1-bot-bookings?where[type][equals]=bed_hold&limit=2000&depth=0&sort=-createdAt'),
           json('/api/v1-properties?limit=1000&depth=0'),
           json('/api/v1-room-overrides?limit=2000&depth=0'),
+          json('/api/v1-rent-payments?limit=10000&depth=0'),
         ]);
+        setRentPayments(rp?.docs || []);
         setBookings(b?.docs || []);
         setProperties(p?.docs || []);
         setOverrides(Object.fromEntries((o?.docs || []).map((x: any) => [x.overrideKey, x])));
@@ -186,6 +190,40 @@ export default function StudentProfilePage() {
           )}
         </section>
       </div>
+
+      {/* Monthly rent (from 30 days after the agreement) */}
+      {(() => {
+        const today = warsawDate();
+        const withRent = own
+          .map((b) => ({ b, s: rentSchedule(b, monthlyRent(b, b.overrideKey ? overrides[b.overrideKey] : null), rentPayments, today) }))
+          .filter((x) => x.s !== null);
+        return (
+          <section className={`${card} p-6 space-y-4`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-semibold text-lg flex items-center gap-2"><Wallet className="w-5 h-5 text-blue-600" /> Rent</h2>
+              <Link href="/staff/rent" className="text-sm text-blue-600 hover:underline">Record payments on the Rent page</Link>
+            </div>
+            {withRent.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">Rent starts 30 days after the agreement is generated; this student has no agreement yet.</p>
+            ) : withRent.map(({ b, s }) => (
+              <div key={b.id} className="space-y-2">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {b.ref} · monthly {s!.amount !== null ? formatPLN(s!.amount) : 'not set'} · first due {showDate(s!.firstDue)}
+                  {s!.next ? ` · next ${showDate(s!.next.dueDate)} (${s!.overdue.length ? `${s!.overdue.length} overdue, ${formatPLN(s!.overdueAmount)}` : daysUntil(s!.next.dueDate, today) === 0 ? 'today' : `in ${daysUntil(s!.next.dueDate, today)} days`})` : ' · all paid'}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[...s!.periods].reverse().map((p) => (
+                    <span key={p.dueDate} title={p.payment?.paidAt ? `Paid ${new Date(p.payment.paidAt).toLocaleDateString('en-GB')}` : undefined}
+                      className={`px-2 py-1 rounded-md text-xs font-medium ${p.status === 'paid' ? 'bg-green-100 text-green-800' : p.status === 'overdue' ? 'bg-red-100 text-red-800' : p.status === 'due' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'}`}>
+                      {showDate(p.dueDate)} · {RENT_STATUS_LABEL[p.status]}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        );
+      })()}
 
       {/* Bookings */}
       <section className={`${card} p-6 space-y-4`}>

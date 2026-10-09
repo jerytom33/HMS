@@ -20,7 +20,11 @@ export type StudentRoom = {
   floorName: string; bed: string; bedType: string; sharing: number; rent: number | null; deposit: number | null;
   rentIncludes: string; amenities: string[]; genderPolicy: string; bedImage: string | null; images: string[];
   /** The paid booking this room comes from (null for a bed staff assigned by hand). */
-  booking: { ref: string; status: string; arrivalDate: string; rent: number | null; deposit: number | null; minStayAgreed: boolean; agreementGeneratedAt: string } | null;
+  booking: {
+    ref: string; status: string; arrivalDate: string; rent: number | null; deposit: number | null; minStayAgreed: boolean; agreementGeneratedAt: string;
+    /** Monthly rent once the agreement is generated (first due 30 days later, then monthly) */
+    rentDue?: { firstDue: string; amount: number | null; next: { dueDate: string; status: string; amount: number } | null; overdueCount: number; overdueAmount: number } | null;
+  } | null;
 };
 
 /** A booking still on hold, waiting for payment confirmation. */

@@ -10,6 +10,7 @@ import type { Payload } from 'payload'
 import { activeBooking } from './bedHold'
 import { defaultFloorBeds, effectiveGenderPolicy, GENDER_POLICY_LABELS, splitOverrideKey, whatsappImageUrl, type BotOverride, type BotProperty } from './botRooms'
 import { parseAmount } from './currency'
+import { monthlyRent, rentSchedule } from './rent'
 import { bedDisplayLabel, bedTypeDisplay, defaultAmenities, floorLabel, parseRoomString, RENT_INCLUDES_TEXT, unitDeposit, unitLabel, type Amenity } from './propertyTypes'
 
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.flat(2).filter((s): s is string => typeof s === 'string' && s.trim() !== '') : [])
@@ -59,6 +60,21 @@ const bookingSummary = (b: any, unit?: BotOverride) => ({
   // Set once staff generate the lease agreement; the student can then view and download it
   agreementGeneratedAt: (b.agreementGeneratedAt as string) || '',
 })
+
+/** The paid booking's monthly rent for the student: next due date and anything overdue (null before the agreement). */
+async function rentFor(payload: Payload, booking: any, unit?: BotOverride) {
+  if (!booking.agreementGeneratedAt) return null
+  const found = await payload.find({ collection: 'v1-rent-payments', overrideAccess: true, depth: 0, pagination: false, where: { bookingId: { equals: String(booking.id) } } })
+  const s = rentSchedule(booking, monthlyRent(booking, unit), found.docs as any[])
+  if (!s) return null
+  return {
+    firstDue: s.firstDue,
+    amount: s.amount,
+    next: s.next ? { dueDate: s.next.dueDate, status: s.next.status, amount: s.next.amount } : null,
+    overdueCount: s.overdue.length,
+    overdueAmount: s.overdueAmount,
+  }
+}
 
 /**
  * The student's room for the portal: the bed staff assigned, else the bed of their paid
@@ -110,7 +126,7 @@ export async function studentRoom(payload: Payload, student: any) {
     genderPolicy: GENDER_POLICY_LABELS[effectiveGenderPolicy(property.genderPolicy, o?.genderPolicy)],
     bedImage: bedImage ? whatsappImageUrl(bedImage) : null,
     images: [...new Set((unitImages.length ? unitImages : strings(property.images)).map(whatsappImageUrl))],
-    booking: paid ? bookingSummary(paid, o) : null,
+    booking: paid ? { ...bookingSummary(paid, o), rentDue: await rentFor(payload, paid, o) } : null,
   }
   return { room, pending }
 }

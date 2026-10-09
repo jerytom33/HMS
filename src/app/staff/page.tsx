@@ -3,7 +3,8 @@
 import { Users, Building2, Bed, CreditCard, ArrowUpRight, ArrowDownRight, MoreHorizontal, Wrench, Calendar, FileText, AlertCircle, Mail, DollarSign, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
-import { bookingPayments } from '@/lib/bookingPayments';
+import { bookingPayments, rentPaymentRows } from '@/lib/bookingPayments';
+import { monthlyRent, rentSchedule, warsawDate } from '@/lib/rent';
 import { formatPLN } from '@/lib/currency';
 import { occupancy, occupancyPercent } from '@/lib/occupancy';
 
@@ -12,6 +13,8 @@ export default function AdminDashboard() {
   const [overrides, setOverrides] = useState<any[]>([]);
   // Bed holds and calls from the bot and the portal (v1-bot-bookings)
   const [bookings, setBookings] = useState<any[]>([]);
+  // Monthly rent payments recorded on the Rent page
+  const [rentPayments, setRentPayments] = useState<any[]>([]);
   // Payments typed in on the Payments page (kept in this browser)
   const [manualPayments, setManualPayments] = useState<any[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('all');
@@ -21,6 +24,7 @@ export default function AdminDashboard() {
     json('/api/v1-properties?limit=1000&depth=0').then((d) => d?.docs && setProperties(d.docs));
     json('/api/v1-room-overrides?limit=2000&depth=0').then((d) => d?.docs && setOverrides(d.docs));
     json('/api/v1-bot-bookings?limit=2000&depth=0&sort=-createdAt').then((d) => d?.docs && setBookings(d.docs));
+    json('/api/v1-rent-payments?limit=10000&depth=0').then((d) => d?.docs && setRentPayments(d.docs));
     try {
       const saved = localStorage.getItem('hms_payments');
       if (saved) setManualPayments(JSON.parse(saved));
@@ -45,7 +49,16 @@ export default function AdminDashboard() {
     : properties.find(p => p.id.toString() === selectedPropertyId)?.name || 'all';
 
   const unitsByKey = useMemo(() => Object.fromEntries(overrides.map((o) => [o.overrideKey, o])), [overrides]);
-  const payments = [...bookingPayments(bookings, unitsByKey), ...manualPayments];
+  const payments = [...bookingPayments(bookings, unitsByKey), ...rentPaymentRows(rentPayments), ...manualPayments];
+
+  // Monthly rent of tenants with an agreement (see the Rent page)
+  const today = warsawDate();
+  const rentRows = bookings
+    .filter((b) => b.type === 'bed_hold' && b.status === 'paid' && (selectedPropertyId === 'all' || String(b.propertyId) === selectedPropertyId))
+    .map((b) => rentSchedule(b, monthlyRent(b, unitsByKey[b.overrideKey]), rentPayments, today))
+    .filter((s): s is NonNullable<typeof s> => s !== null);
+  const rentOverdue = rentRows.filter((s) => s.overdue.length > 0);
+  const rentDueSoon = rentRows.filter((s) => s.next?.status === 'due');
   const filteredPayments = selectedPropertyName === 'all'
     ? payments
     : payments.filter(p => p.property === selectedPropertyName);
@@ -58,6 +71,14 @@ export default function AdminDashboard() {
   const totalDeposits = filteredPayments
     .filter(p => p.status === 'Completed' && p.type === 'Deposit')
     .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+  const rentStat = {
+    name: 'Rent Overdue',
+    value: `${rentOverdue.length}`,
+    note: `${formatPLN(rentOverdue.reduce((s, r) => s + r.overdueAmount, 0))} overdue · ${rentDueSoon.length} due in 7 days`,
+    change: '',
+    trend: 'up',
+  };
 
   const stats = [
     { name: 'Occupied Beds', value: `${filledBeds} / ${totalBeds}`, note: shown.heldBeds ? `${shown.heldBeds} on hold, awaiting payment` : '', change: '', trend: 'up' },
@@ -136,8 +157,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {stats.map((stat) => (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {[...stats, rentStat].map((stat) => (
           <div key={stat.name} className="bg-white dark:bg-gray-900 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-800">
             <div className="p-5">
               <div className="flex items-center">
