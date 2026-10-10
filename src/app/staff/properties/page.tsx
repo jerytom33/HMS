@@ -10,7 +10,7 @@ import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
 import { cloudinaryUpload } from '@/lib/cloudinaryUpload';
 import { occupancy, occupancyPercent } from '@/lib/occupancy';
 import { PhotoCarousel } from '@/components/PhotoCarousel';
-import { StudentAvatar } from '@/components/StudentAvatar';
+import { UnitCard, UnitProfiles, type UnitOccupant } from '@/components/staff/UnitCard';
 import { staffPhotoUrl } from '@/lib/photoClient';
 
 const INITIAL_PROPERTIES: any[] = [];
@@ -41,7 +41,7 @@ export default function AdminProperties() {
    */
   const unitOccupants = (roomNum: number | string, u: { unitType?: string, subRooms?: SubRoom[], beds: number, bedOccupants?: (string | null)[] }) => {
     const digits = (v: unknown) => String(v ?? '').replace(/\D/g, '');
-    const out: { bedIndex: number, bed: string, name: string, photo: string | null, state: string }[] = [];
+    const out: UnitOccupant[] = [];
     for (let i = 0; i < (u.beds || 0); i++) {
       const assigned = u.bedOccupants?.[i] != null ? availableStudents.find((s) => String(s.id) === String(u.bedOccupants![i])) : null;
       const hold = botHolds[`${selectedPropertyId}-${roomNum}:${i}`];
@@ -49,7 +49,7 @@ export default function AdminProperties() {
       const student = assigned || booked;
       const name = student?.name || hold?.name || '';
       if (!name) continue;
-      out.push({ bedIndex: i, bed: bedDisplayLabel(u, i), name, photo: staffPhotoUrl(student), state: assigned ? 'Assigned' : hold?.status === 'paid' ? 'Paid' : 'On hold' });
+      out.push({ bedIndex: i, bed: bedDisplayLabel(u, i), name, photo: staffPhotoUrl(student), state: assigned ? 'Assigned' : hold?.status === 'paid' ? 'Paid' : 'On hold', id: student?.id ? String(student.id) : undefined, whatsapp: student?.whatsapp || student?.phone || hold?.whatsapp });
     }
     return out;
   };
@@ -141,6 +141,8 @@ export default function AdminProperties() {
   const [newProperty, setNewProperty] = useState({ name: '', location: '', rooms: '', floors: '1', beds: '2', roomsPerFloor: ['0'], floorNames: [''] as string[], isCustomBedsPerFloor: false, bedsPerFloor: ['2'], images: [] as string[], facilities: [] as string[], genderPolicy: 'mixed' });
   const [successMessage, setSuccessMessage] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  // Unit whose students are shown in the profiles popup ("View Profiles" on a unit card)
+  const [profilesFor, setProfilesFor] = useState<{ title: string, people: UnitOccupant[] } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isFullScreenMap, setIsFullScreenMap] = useState(false);
 
@@ -1043,85 +1045,25 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
             </div>
           </div>
           <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 flex-1 overflow-auto pb-24">
-            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 min-w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5 min-w-full">
               {filteredRooms.map(({ roomNum, roomName, unitType, subRooms, amenities, standalone, bedTypes, bunkPositions, genderPolicy, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, deposit, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions }) => (
-                <div 
-                  key={roomNum} 
-                  onClick={() => {
+                <UnitCard
+                  key={roomNum}
+                  title={unitDisplayName({ roomName, unitType, roomNum })}
+                  typeLabel={`${unitLabel(unitType)}${unitType === 'apartment' && subRooms?.length ? ` · ${subRooms.length} room${subRooms.length !== 1 ? 's' : ''}` : ''}`}
+                  status={status}
+                  beds={beds}
+                  freeBeds={freeBeds}
+                  filledBeds={filledBeds}
+                  bedTypes={bedTypes}
+                  photos={unitPhotos({ roomFacilitiesList, roomFacilitiesImages, bedImages })}
+                  people={unitOccupants(roomNum, { unitType, subRooms, beds, bedOccupants })}
+                  onOpen={() => {
                     setSelectedRoom({ roomNum, roomName, unitType, subRooms, amenities, standalone, bedTypes, bunkPositions, genderPolicy, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, deposit, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions });
                     setIsEditingRoom(false);
                   }}
-                  className="property-glass-card group cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-red-500/20 flex flex-col h-full"
-                >
-                  <div className={`card-content-layer border relative flex flex-col overflow-hidden h-full ${
-                    status === 'occupied' ? 'bg-white dark:bg-gray-900 dark:bg-gray-900 border-gray-200 dark:border-gray-800 dark:border-gray-800' :
-                    status === 'available' ? 'bg-green-50 border-green-200' :
-                    'bg-red-50 border-red-200'
-                  }`}>
-                    {(() => {
-                      // Every photo of the unit: room photos first, then the beds'
-                      const photos = unitPhotos({ roomFacilitiesList, roomFacilitiesImages, bedImages });
-                      return photos.length > 0 && (
-                        <div className="h-48 sm:h-56 relative bg-black/5 overflow-hidden shrink-0 border-b border-gray-200 dark:border-gray-800 dark:border-gray-800/50">
-                          <AutoCarousel images={photos} name={unitDisplayName({ roomName, unitType, roomNum })} dotsClass="bottom-2" />
-                        </div>
-                      );
-                    })()}
-                    <div className="p-3 flex flex-col flex-1">
-                      <div className="flex justify-between items-start">
-                        <div className="flex flex-col">
-                          <div className="font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 group-hover:text-red-600 transition-colors">{unitDisplayName({ roomName, unitType, roomNum })}</div>
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                            {unitLabel(unitType)}{unitType === 'apartment' && subRooms?.length ? ` · ${subRooms.length} room${subRooms.length !== 1 ? 's' : ''}` : ''}
-                          </span>
-                        </div>
-                        {status === 'occupied' ? <CheckCircle2 className="h-4 w-4 text-gray-400" /> :
-                         status === 'maintenance' ? <AlertCircle className="h-4 w-4 text-red-500" /> :
-                         <span className="text-green-600 font-semibold text-xs">Free</span>}
-                      </div>
-                      <div className="mt-auto pt-3 flex flex-col gap-1.5">
-                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800 dark:border-gray-800 pb-1">
-                          <RentIncludedNote variant="icons" className="block mb-1" />
-                          {beds} Total Bed{beds !== 1 ? 's' : ''}
-                          {(() => {
-                            const c = bedTypeCounts(bedTypes, beds);
-                            return (
-                              <span className="inline-flex items-center gap-2 ml-1 align-middle">
-                                {c.independent > 0 && <span className="inline-flex items-center gap-0.5"><BedTypeIcon type="independent" className="w-3.5 h-3.5" />{c.independent}</span>}
-                                {c.bunk > 0 && <span className="inline-flex items-center gap-0.5"><BedTypeIcon type="bunk" className="w-3.5 h-3.5" />{c.bunk}</span>}
-                              </span>
-                            );
-                          })()}
-                        </div>
-                        {(() => {
-                          // Students in this unit: assigned by staff, or with a booking on hold / paid
-                          const people = unitOccupants(roomNum, { unitType, subRooms, beds, bedOccupants });
-                          return people.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-1.5 py-1" aria-label="Students in this unit">
-                              {people.map((o) => (
-                                <span key={o.bedIndex} className="inline-flex items-center gap-1.5 rounded-full bg-white/70 dark:bg-gray-800/70 pr-2 text-[11px] font-medium text-gray-700 dark:text-gray-200">
-                                  <StudentAvatar name={o.name} src={o.photo} size={28} title={`${o.name} · ${o.bed} · ${o.state}`}
-                                    className={`ring-2 ${o.state === 'On hold' ? 'ring-amber-400' : 'ring-green-500'}`} />
-                                  <span className="max-w-[7rem] truncate" data-no-translate>{o.name.split(' ')[0]}</span>
-                                </span>
-                              ))}
-                            </div>
-                          );
-                        })()}
-                        <div className="flex justify-between text-xs mt-0.5">
-                          <span className="text-green-600 font-medium flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                            {freeBeds !== undefined ? freeBeds : '-'} Free
-                          </span>
-                          <span className="text-red-500 font-medium flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                            {filledBeds !== undefined ? filledBeds : '-'} Filled
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  onViewProfiles={() => setProfilesFor({ title: unitDisplayName({ roomName, unitType, roomNum }), people: unitOccupants(roomNum, { unitType, subRooms, beds, bedOccupants }) })}
+                />
               ))}
             </div>
 
@@ -1144,54 +1086,22 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
               {standaloneUnits.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">No studios or apartments outside floors.</p>
               ) : (
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
                   {standaloneUnits.map(unit => (
-                    <div
+                    <UnitCard
                       key={unit.roomNum}
-                      onClick={() => { setSelectedRoom(unit); setIsEditingRoom(false); }}
-                      className={`cursor-pointer rounded-lg border p-3 transition-shadow hover:shadow-md overflow-hidden ${
-                        unit.status === 'maintenance' ? 'bg-red-50 border-red-200' :
-                        unit.freeBeds > 0 ? 'bg-green-50 border-green-200' :
-                        'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800'
-                      }`}
-                    >
-                      {unitPhotos(unit).length > 0 && (
-                        <div className="relative -mx-3 -mt-3 mb-3 h-48 sm:h-56 overflow-hidden bg-black/5 border-b border-gray-200 dark:border-gray-800">
-                          <AutoCarousel images={unitPhotos(unit)} name={unitDisplayName(unit)} dotsClass="bottom-2" />
-                        </div>
-                      )}
-                      <div className="font-bold text-gray-900 dark:text-gray-100">{unitDisplayName(unit)}</div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                        {unitLabel(unit.unitType)}{unit.unitType === 'apartment' && unit.subRooms?.length ? ` · ${unit.subRooms.length} room${unit.subRooms.length !== 1 ? 's' : ''}` : ''}
-                      </span>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        <RentIncludedNote variant="icons" className="block mb-1" />
-                        {unit.beds} bed{unit.beds !== 1 ? 's' : ''} · {unit.freeBeds} free
-                        {(() => {
-                            const c = bedTypeCounts(unit.bedTypes, unit.beds);
-                            return (
-                              <span className="inline-flex items-center gap-2 ml-1 align-middle">
-                                {c.independent > 0 && <span className="inline-flex items-center gap-0.5"><BedTypeIcon type="independent" className="w-3.5 h-3.5" />{c.independent}</span>}
-                                {c.bunk > 0 && <span className="inline-flex items-center gap-0.5"><BedTypeIcon type="bunk" className="w-3.5 h-3.5" />{c.bunk}</span>}
-                              </span>
-                            );
-                          })()}
-                      </div>
-                      {(() => {
-                        const people = unitOccupants(unit.roomNum, unit);
-                        return people.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 pt-2" aria-label="Students in this unit">
-                            {people.map((o) => (
-                              <span key={o.bedIndex} className="inline-flex items-center gap-1.5 rounded-full bg-white/70 dark:bg-gray-800/70 pr-2 text-[11px] font-medium text-gray-700 dark:text-gray-200">
-                                <StudentAvatar name={o.name} src={o.photo} size={28} title={`${o.name} · ${o.bed} · ${o.state}`}
-                                  className={`ring-2 ${o.state === 'On hold' ? 'ring-amber-400' : 'ring-green-500'}`} />
-                                <span className="max-w-[7rem] truncate" data-no-translate>{o.name.split(' ')[0]}</span>
-                              </span>
-                            ))}
-                          </div>
-                        );
-                      })()}
-                    </div>
+                      title={unitDisplayName(unit)}
+                      typeLabel={`${unitLabel(unit.unitType)}${unit.unitType === 'apartment' && unit.subRooms?.length ? ` · ${unit.subRooms.length} room${unit.subRooms.length !== 1 ? 's' : ''}` : ''}`}
+                      status={unit.status === 'maintenance' ? 'maintenance' : unit.freeBeds > 0 ? 'available' : 'occupied'}
+                      beds={unit.beds}
+                      freeBeds={unit.freeBeds}
+                      filledBeds={unit.filledBeds}
+                      bedTypes={unit.bedTypes}
+                      photos={unitPhotos(unit)}
+                      people={unitOccupants(unit.roomNum, unit)}
+                      onOpen={() => { setSelectedRoom(unit); setIsEditingRoom(false); }}
+                      onViewProfiles={() => setProfilesFor({ title: unitDisplayName(unit), people: unitOccupants(unit.roomNum, unit) })}
+                    />
                   ))}
                 </div>
               )}
@@ -3065,6 +2975,8 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
       )}
 
       {/* Image Preview Modal */}
+      {profilesFor && <UnitProfiles title={profilesFor.title} people={profilesFor.people} onClose={() => setProfilesFor(null)} />}
+
       {previewImage && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
           <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center" onClick={e => e.stopPropagation()}>
