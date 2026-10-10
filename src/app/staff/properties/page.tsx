@@ -19,6 +19,17 @@ const INITIAL_PROPERTIES: any[] = [];
 const MOCK_STUDENTS: any[] = [];
 
 // Auto-advancing photo carousel with arrows, dots and swipe (see PhotoCarousel)
+/**
+ * The facilities of one floor (0-based). Some stored properties hold `{}` instead of a list for a
+ * floor; treat anything that isn't a list of facilities as none.
+ */
+const floorFacilitiesAt = (p: any, floorIndex: number): { description: string, images: string[] }[] => {
+  const list = p?.floorFacilitiesLists?.[floorIndex];
+  return Array.isArray(list)
+    ? list.filter((f: any) => f && typeof f === 'object').map((f: any) => ({ description: String(f.description || ''), images: Array.isArray(f.images) ? f.images.filter(Boolean) : [] }))
+    : [];
+};
+
 const AutoCarousel = ({ images, name, dotsClass = 'bottom-12' }: { images: string[], name: string, dotsClass?: string }) => (
   <PhotoCarousel images={images} name={name} autoMs={3000} dotsClass={dotsClass} />
 );
@@ -732,7 +743,7 @@ export default function AdminProperties() {
     
     const propertyImages = selectedProperty.images || [];
     
-    const floorFacilities = selectedProperty.floorFacilitiesLists?.[selectedFloor - 1] || [];
+    const floorFacilities = floorFacilitiesAt(selectedProperty, selectedFloor - 1);
     let floorFacilitiesText = '';
     if (floorFacilities.length > 0) {
       floorFacilitiesText = `\n\n🏢 *${floorDisplayName(selectedFloor)} Facilities*\n` + floorFacilities.map((f: any) => 
@@ -1039,9 +1050,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     image: selectedProperty?.floorImages?.[selectedFloor - 1] || '',
                     rooms: selectedProperty?.roomsPerFloor?.[selectedFloor - 1] || 0,
                     beds: selectedProperty?.bedsPerFloor?.[selectedFloor - 1] || (selectedProperty?.beds || 2),
-                    floorFacilitiesList: selectedProperty?.floorFacilitiesLists?.[selectedFloor - 1] 
-                      ? JSON.parse(JSON.stringify(selectedProperty.floorFacilitiesLists[selectedFloor - 1])) 
-                      : []
+                    floorFacilitiesList: floorFacilitiesAt(selectedProperty, selectedFloor - 1)
                   });
                   setIsEditFloorModalOpen(true);
                 }}
@@ -1157,14 +1166,14 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
             </div>
 
             {/* Floor Facilities Display */}
-            {selectedProperty?.floorFacilitiesLists?.[selectedFloor - 1] && selectedProperty.floorFacilitiesLists[selectedFloor - 1].length > 0 && (
+            {floorFacilitiesAt(selectedProperty, selectedFloor - 1).length > 0 && (
               <div className="mt-8 border-t border-gray-200 dark:border-gray-800 dark:border-gray-800 pt-8">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-6 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm"><Building2 className="w-4 h-4" /></span>
                   {floorDisplayName(selectedFloor)} Facilities
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {selectedProperty.floorFacilitiesLists[selectedFloor - 1].map((facility: any, idx: number) => (
+                  {floorFacilitiesAt(selectedProperty, selectedFloor - 1).map((facility, idx) => (
                     <div key={idx} className="bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 dark:border-gray-800 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                       {facility.images && facility.images.length > 0 ? (
                         <div className="h-48 relative bg-gray-100 dark:bg-gray-800 dark:bg-gray-800 flex items-center justify-center border-b border-gray-100 dark:border-gray-800 dark:border-gray-800 overflow-hidden shrink-0">
@@ -2939,7 +2948,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                       const newFloorImages = [...(p.floorImages || Array(p.floors).fill(''))];
                       newFloorImages[editFloorData.floor - 1] = editFloorData.image;
                       
-                      const newFloorFacilitiesLists = p.floorFacilitiesLists ? [...p.floorFacilitiesLists] : Array.from({ length: p.floors }, () => []);
+                      const newFloorFacilitiesLists = Array.from({ length: Math.max(p.floors || 0, editFloorData.floor) }, (_, i) => floorFacilitiesAt(p, i));
                       newFloorFacilitiesLists[editFloorData.floor - 1] = editFloorData.floorFacilitiesList;
                       
                       const totalRooms = newRoomsPerFloor.reduce((a, b) => a + (b || 0), 0);
