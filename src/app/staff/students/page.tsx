@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Users, X, Search, Plus, Mail, Phone, Home, Calendar, MapPin, GraduationCap, HeartPulse, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { floorLabel, parseRoomString } from '@/lib/propertyTypes';
+import { StudentAvatar } from '@/components/StudentAvatar';
+import { staffPhotoUrl } from '@/lib/photoClient';
 import { STAY_LABEL, studentStatus, studentStay, type Stay, type StayBooking } from '@/lib/studentStay';
 
 export default function AdminStudents() {
@@ -154,9 +156,7 @@ export default function AdminStudents() {
                   <tr key={student.id} className="bg-white dark:bg-gray-900 border-b hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-950 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0">
-                          {student.name.charAt(0)}
-                        </div>
+                        <StudentAvatar name={student.name} src={staffPhotoUrl(student)} size={40} />
                         <div className="font-medium text-gray-900 dark:text-gray-100">{student.name}</div>
                       </div>
                     </td>

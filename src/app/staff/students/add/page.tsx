@@ -5,12 +5,18 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Camera, ArrowLeft, User, Phone, MapPin, GraduationCap, HeartPulse, Save, Home } from 'lucide-react';
 import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString, bedTypeDisplay } from '@/lib/propertyTypes';
+import { staffPhotoUrl, uploadPhoto } from '@/lib/photoClient';
 
 export default function AddStudentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
   const isEditing = !!editId;
+
+  // Profile photo: chosen here, uploaded once the student is saved (and so has an id)
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState('');
+  const [existingPhoto, setExistingPhoto] = useState('');
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -55,6 +61,7 @@ export default function AddStudentPage() {
     if (isEditing) {
       fetch(`/api/v1-students/${editId}`).then(res => res.json()).then(student => {
         if (student) {
+          setExistingPhoto(staffPhotoUrl(student) || '');
           const [firstName, ...lastNameParts] = (student.name || '').split(' ');
           setFormData({
             firstName: firstName || '',
@@ -270,6 +277,11 @@ export default function AddStudentPage() {
         }
     }
 
+    if (photoFile && studentIdToSave) {
+      const uploaded = await uploadPhoto(`/api/staff/students/${studentIdToSave}/photo`, photoFile);
+      if (!uploaded.ok) alert(uploaded.message || "The student was saved, but the photo couldn't be uploaded.");
+    }
+
     if (isEditing) {
         router.push(`/staff/students/${editId}`);
     } else {
@@ -303,16 +315,27 @@ export default function AddStudentPage() {
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
               <div className="p-6 flex flex-col items-center border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50">
-                <div className="relative group cursor-pointer mb-4">
+                <label className="relative group cursor-pointer mb-4 block">
                   <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-                    <User className="w-12 h-12 text-gray-300" />
+                    {photoPreview || existingPhoto
+                      ? <img src={photoPreview || existingPhoto} alt="Student photo" className="w-full h-full object-cover" />
+                      : <User className="w-12 h-12 text-gray-300" />}
                   </div>
-                  <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex items-center justify-center">
                     <Camera className="w-8 h-8 text-white" />
                   </div>
-                </div>
+                  <input type="file" accept="image/*" className="sr-only" aria-label="Student Photo"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setPhotoFile(file);
+                      setPhotoPreview(URL.createObjectURL(file));
+                    }} />
+                </label>
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Student Photo</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Click to upload or drag and drop<br/>SVG, PNG, JPG or GIF (max. 2MB)</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
+                  {photoFile ? 'The photo is saved with the student.' : 'Click the circle to choose a photo (JPG, PNG or WebP).'}
+                </p>
               </div>
             </div>
           </div>

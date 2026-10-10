@@ -7,7 +7,7 @@ export type PassportInfo = {
 
 export type StudentProfile = {
   name: string; whatsapp: string; email: string; gender: string; course: string; yearOfStudy: string;
-  arrivalDateText: string; arrivalDate: string; passport: PassportInfo;
+  arrivalDateText: string; arrivalDate: string; passport: PassportInfo; photoUploadedAt?: string;
 };
 
 export type StudentBooking = {

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { BadgeCheck, Clock, FileText, Lock, User } from 'lucide-react';
+import { StudentAvatar } from '@/components/StudentAvatar';
+import { uploadPhoto } from '@/lib/photoClient';
 import { studentGet, type PassportInfo, type StudentProfile } from '@/lib/studentClient';
 
 /**
@@ -131,6 +133,18 @@ export default function StudentProfilePage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+
+  const changePhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setPhotoBusy(true);
+    setPhotoError('');
+    const uploaded = await uploadPhoto('/api/student/photo', file);
+    if (uploaded.ok) setMe((m) => (m ? { ...m, photoUploadedAt: uploaded.photoUploadedAt } : m));
+    else setPhotoError(uploaded.message || '');
+    setPhotoBusy(false);
+  };
 
   const fill = (m: StudentProfile) => {
     setMe(m);
@@ -192,6 +206,17 @@ export default function StudentProfilePage() {
           <h2 className="font-medium text-lg">Personal Details</h2>
         </div>
         <div className="p-6 space-y-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <StudentAvatar name={me.name} src={me.photoUploadedAt ? `/api/student/photo?v=${encodeURIComponent(me.photoUploadedAt)}` : null} size={72} />
+            <div className="space-y-1 text-sm">
+              <label className={`inline-block cursor-pointer rounded-lg border border-border px-3 py-1.5 font-medium ${photoBusy ? 'opacity-50 pointer-events-none' : ''}`}>
+                {photoBusy ? 'Saving…' : me.photoUploadedAt ? 'Change photo' : 'Add your photo'}
+                <input type="file" accept="image/*" className="sr-only" disabled={photoBusy} onChange={(e) => { changePhoto(e.target.files?.[0]); e.target.value = ''; }} />
+              </label>
+              <p className="text-xs text-muted-foreground">A clear photo of your face. Our team sees it next to your room.</p>
+              {photoError && <p role="alert" className="text-xs text-destructive">{photoError}</p>}
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {locked.map((f) => (
               <div key={f.label} className="space-y-1">

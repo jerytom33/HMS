@@ -9,45 +9,19 @@ import { AmenityIcon } from '@/components/ui/AmenityIcon';
 import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
 import { cloudinaryUpload } from '@/lib/cloudinaryUpload';
 import { occupancy, occupancyPercent } from '@/lib/occupancy';
+import { PhotoCarousel } from '@/components/PhotoCarousel';
+import { StudentAvatar } from '@/components/StudentAvatar';
+import { staffPhotoUrl } from '@/lib/photoClient';
 
 const INITIAL_PROPERTIES: any[] = [];
 
 
 const MOCK_STUDENTS: any[] = [];
 
-const AutoCarousel = ({ images, name }: { images: string[], name: string }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(() => {
-    if (!images || images.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [images]);
-
-  if (!images || images.length === 0) {
-    return <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700"></div>;
-  }
-
-  return (
-    <>
-      <img key={currentIndex} src={images[currentIndex]} alt={name} className="w-full h-full object-cover animate-in fade-in zoom-in-95 duration-1000" />
-      {images.length > 1 && (
-        <div className="absolute top-4 left-4 bg-black/60 text-white text-xs font-bold px-2 py-1 rounded-md backdrop-blur-sm z-20 shadow-sm border border-white/10">
-          {currentIndex + 1} / {images.length}
-        </div>
-      )}
-      {images.length > 1 && (
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-1.5 z-20 bg-black/40 px-2 py-1.5 rounded-full backdrop-blur-md">
-          {images.map((_, idx) => (
-            <div key={idx} className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-white dark:bg-gray-900 dark:bg-gray-900' : 'w-1.5 bg-white dark:bg-gray-900 dark:bg-gray-900/50'}`}></div>
-          ))}
-        </div>
-      )}
-    </>
-  );
-};
+// Auto-advancing photo carousel with arrows, dots and swipe (see PhotoCarousel)
+const AutoCarousel = ({ images, name, dotsClass = 'bottom-12' }: { images: string[], name: string, dotsClass?: string }) => (
+  <PhotoCarousel images={images} name={name} autoMs={3000} dotsClass={dotsClass} />
+);
 
 export default function AdminProperties() {
   const [properties, setProperties] = useState<any[]>(INITIAL_PROPERTIES);
@@ -56,6 +30,29 @@ export default function AdminProperties() {
   const [botHolds, setBotHolds] = useState<Record<string, { ref: string, status: string, source?: string, name?: string, whatsapp?: string, arrivalDate?: string }>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [availableStudents, setAvailableStudents] = useState<any[]>(MOCK_STUDENTS);
+
+  /** Every photo of a unit: room photos first, then each bed's. */
+  const unitPhotos = (u: { roomFacilitiesList?: { images: string[] }[], roomFacilitiesImages?: string[], bedImages?: string[][] }) =>
+    [...new Set([...(u.roomFacilitiesList || []).flatMap((f) => f.images || []), ...(u.roomFacilitiesImages || []), ...(u.bedImages || []).flat()].filter(Boolean))] as string[];
+
+  /**
+   * The students in a unit of the selected property, bed by bed: the one staff assigned to
+   * the bed, else the one whose booking (on hold or paid) holds it. With their photo when they have one.
+   */
+  const unitOccupants = (roomNum: number | string, u: { unitType?: string, subRooms?: SubRoom[], beds: number, bedOccupants?: (string | null)[] }) => {
+    const digits = (v: unknown) => String(v ?? '').replace(/\D/g, '');
+    const out: { bedIndex: number, bed: string, name: string, photo: string | null, state: string }[] = [];
+    for (let i = 0; i < (u.beds || 0); i++) {
+      const assigned = u.bedOccupants?.[i] != null ? availableStudents.find((s) => String(s.id) === String(u.bedOccupants![i])) : null;
+      const hold = botHolds[`${selectedPropertyId}-${roomNum}:${i}`];
+      const booked = !assigned && hold ? availableStudents.find((s) => digits(s.whatsapp || s.phone) === digits(hold.whatsapp) && digits(hold.whatsapp).length >= 8) : null;
+      const student = assigned || booked;
+      const name = student?.name || hold?.name || '';
+      if (!name) continue;
+      out.push({ bedIndex: i, bed: bedDisplayLabel(u, i), name, photo: staffPhotoUrl(student), state: assigned ? 'Assigned' : hold?.status === 'paid' ? 'Paid' : 'On hold' });
+    }
+    return out;
+  };
 
     // Load real students from API
   useEffect(() => {
@@ -1061,12 +1058,15 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     status === 'available' ? 'bg-green-50 border-green-200' :
                     'bg-red-50 border-red-200'
                   }`}>
-                    {bedImages && bedImages.flat().filter(Boolean).length > 0 && (
-                      <div className="h-80 sm:h-[350px] relative bg-black/5 flex items-center justify-center overflow-hidden shrink-0 border-b border-gray-200 dark:border-gray-800 dark:border-gray-800/50">
-                        <AutoCarousel images={bedImages.flat().filter(Boolean) as string[]} name={unitDisplayName({ roomName, unitType, roomNum })} />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent pointer-events-none z-10"></div>
-                      </div>
-                    )}
+                    {(() => {
+                      // Every photo of the unit: room photos first, then the beds'
+                      const photos = unitPhotos({ roomFacilitiesList, roomFacilitiesImages, bedImages });
+                      return photos.length > 0 && (
+                        <div className="h-48 sm:h-56 relative bg-black/5 overflow-hidden shrink-0 border-b border-gray-200 dark:border-gray-800 dark:border-gray-800/50">
+                          <AutoCarousel images={photos} name={unitDisplayName({ roomName, unitType, roomNum })} dotsClass="bottom-2" />
+                        </div>
+                      );
+                    })()}
                     <div className="p-3 flex flex-col flex-1">
                       <div className="flex justify-between items-start">
                         <div className="flex flex-col">
@@ -1093,6 +1093,21 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                             );
                           })()}
                         </div>
+                        {(() => {
+                          // Students in this unit: assigned by staff, or with a booking on hold / paid
+                          const people = unitOccupants(roomNum, { unitType, subRooms, beds, bedOccupants });
+                          return people.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5 py-1" aria-label="Students in this unit">
+                              {people.map((o) => (
+                                <span key={o.bedIndex} className="inline-flex items-center gap-1.5 rounded-full bg-white/70 dark:bg-gray-800/70 pr-2 text-[11px] font-medium text-gray-700 dark:text-gray-200">
+                                  <StudentAvatar name={o.name} src={o.photo} size={28} title={`${o.name} · ${o.bed} · ${o.state}`}
+                                    className={`ring-2 ${o.state === 'On hold' ? 'ring-amber-400' : 'ring-green-500'}`} />
+                                  <span className="max-w-[7rem] truncate" data-no-translate>{o.name.split(' ')[0]}</span>
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        })()}
                         <div className="flex justify-between text-xs mt-0.5">
                           <span className="text-green-600 font-medium flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
@@ -1134,12 +1149,17 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     <div
                       key={unit.roomNum}
                       onClick={() => { setSelectedRoom(unit); setIsEditingRoom(false); }}
-                      className={`cursor-pointer rounded-lg border p-3 transition-shadow hover:shadow-md ${
+                      className={`cursor-pointer rounded-lg border p-3 transition-shadow hover:shadow-md overflow-hidden ${
                         unit.status === 'maintenance' ? 'bg-red-50 border-red-200' :
                         unit.freeBeds > 0 ? 'bg-green-50 border-green-200' :
                         'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800'
                       }`}
                     >
+                      {unitPhotos(unit).length > 0 && (
+                        <div className="relative -mx-3 -mt-3 mb-3 h-48 sm:h-56 overflow-hidden bg-black/5 border-b border-gray-200 dark:border-gray-800">
+                          <AutoCarousel images={unitPhotos(unit)} name={unitDisplayName(unit)} dotsClass="bottom-2" />
+                        </div>
+                      )}
                       <div className="font-bold text-gray-900 dark:text-gray-100">{unitDisplayName(unit)}</div>
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
                         {unitLabel(unit.unitType)}{unit.unitType === 'apartment' && unit.subRooms?.length ? ` · ${unit.subRooms.length} room${unit.subRooms.length !== 1 ? 's' : ''}` : ''}
@@ -1157,6 +1177,20 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                             );
                           })()}
                       </div>
+                      {(() => {
+                        const people = unitOccupants(unit.roomNum, unit);
+                        return people.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 pt-2" aria-label="Students in this unit">
+                            {people.map((o) => (
+                              <span key={o.bedIndex} className="inline-flex items-center gap-1.5 rounded-full bg-white/70 dark:bg-gray-800/70 pr-2 text-[11px] font-medium text-gray-700 dark:text-gray-200">
+                                <StudentAvatar name={o.name} src={o.photo} size={28} title={`${o.name} · ${o.bed} · ${o.state}`}
+                                  className={`ring-2 ${o.state === 'On hold' ? 'ring-amber-400' : 'ring-green-500'}`} />
+                                <span className="max-w-[7rem] truncate" data-no-translate>{o.name.split(' ')[0]}</span>
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>
@@ -1327,10 +1361,8 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                               </div>
                             )}
                             {facility.images.length > 0 && (
-                              <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1 pt-1">
-                                {facility.images.map((img, imgIdx) => (
-                                  <img key={imgIdx} src={img} alt={`Facility ${i + 1}`} onClick={() => setPreviewImage(img)} className="h-20 w-32 object-cover rounded-md border border-gray-200 dark:border-gray-800 dark:border-gray-800 shrink-0 cursor-pointer hover:opacity-90 transition-opacity shadow-sm" />
-                                ))}
+                              <div className="relative h-56 overflow-hidden rounded-md border border-gray-200 dark:border-gray-800 bg-black/5">
+                                <PhotoCarousel images={facility.images} name={`Facility ${i + 1}`} onOpen={setPreviewImage} />
                               </div>
                             )}
                           </div>
@@ -1416,9 +1448,9 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                             
                             <div className="flex gap-2 mb-2 mt-1 overflow-x-auto custom-scrollbar pb-1">
                               {selectedRoom.bedImages && selectedRoom.bedImages[idx] && selectedRoom.bedImages[idx].filter(Boolean).length > 0 ? (
-                                selectedRoom.bedImages[idx].filter(Boolean).map((imgUrl, i) => (
-                                  <img key={i} src={imgUrl} alt={`Bed View ${i + 1}`} onClick={() => setPreviewImage(imgUrl)} className="h-20 w-32 object-cover rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800 shrink-0 cursor-pointer hover:opacity-90 transition-opacity" />
-                                ))
+                                <div className="relative h-44 w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 bg-black/5">
+                                  <PhotoCarousel images={selectedRoom.bedImages[idx].filter(Boolean)} name={`Bed View ${idx + 1}`} onOpen={setPreviewImage} />
+                                </div>
                               ) : (
                                 <div className="h-20 w-32 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800 flex items-center justify-center text-gray-400 text-xs font-medium">
                                   No images

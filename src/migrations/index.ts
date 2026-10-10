@@ -9,6 +9,7 @@ import * as migration_20261004_170000_student_passwords from './20261004_170000_
 import * as migration_20261004_190000_passport_copies from './20261004_190000_passport_copies';
 import * as migration_20261004_210000_lease_agreements from './20261004_210000_lease_agreements';
 import * as migration_20261009_120000_rent_payments from './20261009_120000_rent_payments';
+import * as migration_20261010_120000_student_photos from './20261010_120000_student_photos';
 
 export const migrations = [
   {
@@ -65,5 +66,10 @@ export const migrations = [
     up: migration_20261009_120000_rent_payments.up,
     down: migration_20261009_120000_rent_payments.down,
     name: '20261009_120000_rent_payments',
+  },
+  {
+    up: migration_20261010_120000_student_photos.up,
+    down: migration_20261010_120000_student_photos.down,
+    name: '20261010_120000_student_photos',
   },
 ];

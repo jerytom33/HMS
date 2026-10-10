@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, BadgeCheck, BedDouble, CalendarCheck, Edit, FileText, Mail, MapPin, MessageCircle, Phone, Trash2, User, Wallet } from 'lucide-react';
 import { AgreementViewer } from '@/components/AgreementViewer';
+import { StudentAvatar } from '@/components/StudentAvatar';
+import { staffPhotoUrl, uploadPhoto } from '@/lib/photoClient';
 import { formatPLN, parseAmount } from '@/lib/currency';
 import { unitDeposit } from '@/lib/propertyTypes';
 import { bookingsOf, STAY_LABEL, studentStatus, studentStay, type StayBooking } from '@/lib/studentStay';
@@ -40,6 +42,27 @@ export default function StudentProfilePage() {
   const [viewing, setViewing] = useState<StayBooking | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+
+  const changePhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setPhotoBusy(true);
+    setPhotoError('');
+    const result = await uploadPhoto(`/api/staff/students/${id}/photo`, file);
+    if (result.ok) setStudent((s: any) => ({ ...s, photoUploadedAt: result.photoUploadedAt }));
+    else setPhotoError(result.message || '');
+    setPhotoBusy(false);
+  };
+
+  const removePhoto = async () => {
+    setPhotoBusy(true);
+    setPhotoError('');
+    const res = await fetch(`/api/staff/students/${id}/photo`, { method: 'DELETE' }).catch(() => null);
+    if (res?.ok) setStudent((s: any) => ({ ...s, photoUploadedAt: null }));
+    else setPhotoError("Couldn't remove the photo. Please try again.");
+    setPhotoBusy(false);
+  };
 
   useEffect(() => {
     (async () => {
@@ -97,9 +120,18 @@ export default function StudentProfilePage() {
           <Link href="/staff/students" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors" aria-label="Back">
             <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </Link>
+          <StudentAvatar name={student.name} src={staffPhotoUrl(student)} size={64} className="ring-2 ring-white shadow" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">{student.name || 'Student'}</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Student Profile</p>
+            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs">
+              <label className={`cursor-pointer text-blue-600 hover:underline ${photoBusy ? 'opacity-50 pointer-events-none' : ''}`}>
+                {photoBusy ? 'Saving…' : student.photoUploadedAt ? 'Change photo' : 'Add photo'}
+                <input type="file" accept="image/*" className="sr-only" disabled={photoBusy} onChange={(e) => { changePhoto(e.target.files?.[0]); e.target.value = ''; }} />
+              </label>
+              {student.photoUploadedAt && <button onClick={removePhoto} disabled={photoBusy} className="text-red-600 hover:underline disabled:opacity-50">Remove photo</button>}
+              {photoError && <span role="alert" className="text-red-600">{photoError}</span>}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-3">

@@ -22,6 +22,8 @@ const profile = async (payload: any, student: any) => {
     // Saved arrival (DD/MM/YYYY) as YYYY-MM-DD for the date picker, only while it is still allowed
     arrivalDate: parseArrivalDate(student.arrivalDate).ok ? dmyToIso(student.arrivalDate) : '',
     arrivalRange: arrivalRange(),
+    // Set when the student (or staff) uploaded a profile photo; the photo itself: /api/student/photo
+    photoUploadedAt: student.photoUploadedAt || '',
     // Passport for the lease agreement: asked for once the booking is paid, then checked by staff
     passport: {
       allowed: await passportAllowed(payload, student),

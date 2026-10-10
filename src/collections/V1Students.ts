@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { isStaff } from '../access'
 import { deletePassportCopy } from '../lib/passportCopy'
+import { deleteStudentPhoto } from '../lib/studentPhoto'
 
 export const V1Students: CollectionConfig = {
   slug: 'v1-students',
@@ -9,7 +10,11 @@ export const V1Students: CollectionConfig = {
   },
   hooks: {
     // The passport copy lives outside the record; remove it with the student
-    afterDelete: [({ doc, req }) => deletePassportCopy(req.payload, String(doc.id)).catch((e) => req.payload.logger.error(`Could not delete passport copy of ${doc.id}: ${e}`))],
+    afterDelete: [
+      // Same for the profile photo
+      ({ doc, req }) => deleteStudentPhoto(req.payload, String(doc.id), false).catch((e) => req.payload.logger.error(`Could not delete photo of ${doc.id}: ${e}`)),
+      ({ doc, req }) => deletePassportCopy(req.payload, String(doc.id)).catch((e) => req.payload.logger.error(`Could not delete passport copy of ${doc.id}: ${e}`)),
+    ],
   },
   access: {
     // Personal data: staff login required to read or change
@@ -39,6 +44,8 @@ export const V1Students: CollectionConfig = {
     { name: 'emergencyRelation', type: 'text' },
     // Set when the student sets a password from the personal link the bot sent to their WhatsApp
     { name: 'phoneVerifiedAt', type: 'date', admin: { readOnly: true } },
+    // When the profile photo was last uploaded (the file: student-photos, served by the photo routes)
+    { name: 'photoUploadedAt', type: 'date', admin: { readOnly: true } },
     // Passport for the lease agreement: entered by the student after payment, then verified by staff
     { name: 'passportNumber', type: 'text' },
     // DD/MM/YYYY
