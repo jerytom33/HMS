@@ -7,6 +7,17 @@ import { arrivalRange, dmyToIso, parseArrivalDate, studentFromRequest, studentGe
 
 export const dynamic = 'force-dynamic'
 
+/** The student's lease agreement once staff generated it (the newest, if there are several). */
+async function agreementOf(payload: any, student: any) {
+  if (!student.whatsapp) return null
+  const found = await payload.find({
+    collection: 'v1-bot-bookings', overrideAccess: true, depth: 0, limit: 1, sort: '-agreementGeneratedAt',
+    where: { whatsapp: { equals: student.whatsapp }, type: { equals: 'bed_hold' }, agreementGeneratedAt: { exists: true } },
+  })
+  const b: any = found.docs[0]
+  return b ? { ref: b.ref as string, generatedAt: b.agreementGeneratedAt as string, hostel: (b.hostel as string) || '', room: [b.room, b.bed].filter(Boolean).join(', ') } : null
+}
+
 const profile = async (payload: any, student: any) => {
   const gender = studentGender(student)
   return {
@@ -24,6 +35,8 @@ const profile = async (payload: any, student: any) => {
     arrivalRange: arrivalRange(),
     // Set when the student (or staff) uploaded a profile photo; the photo itself: /api/student/photo
     photoUploadedAt: student.photoUploadedAt || '',
+    // Signed lease agreement, viewable and downloadable once generated (/api/student/agreement)
+    agreement: await agreementOf(payload, student),
     // Passport for the lease agreement: asked for once the booking is paid, then checked by staff
     passport: {
       allowed: await passportAllowed(payload, student),

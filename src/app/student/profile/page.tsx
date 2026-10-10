@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BadgeCheck, Clock, FileText, Lock, User } from 'lucide-react';
+import { BadgeCheck, Clock, Download, FileText, Lock, User } from 'lucide-react';
+import { AgreementViewer } from '@/components/AgreementViewer';
 import { StudentAvatar } from '@/components/StudentAvatar';
 import { uploadPhoto } from '@/lib/photoClient';
 import { studentGet, type PassportInfo, type StudentProfile } from '@/lib/studentClient';
@@ -134,6 +135,7 @@ export default function StudentProfilePage() {
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [viewingAgreement, setViewingAgreement] = useState(false);
   const [photoError, setPhotoError] = useState('');
 
   const changePhoto = async (file: File | undefined) => {
@@ -230,6 +232,41 @@ export default function StudentProfilePage() {
           </p>
         </div>
       </div>
+
+      {/* Documents: the signed lease agreement, once staff generated it */}
+      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-secondary/5 px-6 py-4 border-b border-border flex items-center gap-2">
+          <FileText className="h-5 w-5 text-primary" />
+          <h2 className="font-medium text-lg">Documents: lease agreement</h2>
+        </div>
+        <div className="p-6">
+          {me.agreement ? (
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="text-sm">
+                <p className="flex items-center gap-2 font-medium"><BadgeCheck className="h-4 w-4 text-primary" /> Your lease agreement is ready.</p>
+                <p className="mt-1 text-muted-foreground">
+                  <span data-no-translate>{me.agreement.ref}</span>{me.agreement.hostel ? ` · ${me.agreement.hostel}` : ''}{me.agreement.room ? ` · ${me.agreement.room}` : ''}
+                  {` · ${new Date(me.agreement.generatedAt).toLocaleDateString('en-GB')}`}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => setViewingAgreement(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+                  <FileText className="h-4 w-4" /> View agreement
+                </button>
+                <a href="/api/student/agreement?download=1" download className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium">
+                  <Download className="h-4 w-4" /> Download .docx
+                </a>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Your lease agreement appears here once our team has prepared it (after your payment and passport check).</p>
+          )}
+        </div>
+      </div>
+
+      {viewingAgreement && me.agreement && (
+        <AgreementViewer url="/api/student/agreement" title={`Lease agreement ${me.agreement.ref}`} onClose={() => setViewingAgreement(false)} />
+      )}
 
       <PassportCard key={`${me.passport.status}-${me.passport.number}`} passport={me.passport} onSaved={reload} />
 

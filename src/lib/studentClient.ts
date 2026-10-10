@@ -8,6 +8,7 @@ export type PassportInfo = {
 export type StudentProfile = {
   name: string; whatsapp: string; email: string; gender: string; course: string; yearOfStudy: string;
   arrivalDateText: string; arrivalDate: string; passport: PassportInfo; photoUploadedAt?: string;
+  agreement?: { ref: string; generatedAt: string; hostel: string; room: string } | null;
 };
 
 export type StudentBooking = {

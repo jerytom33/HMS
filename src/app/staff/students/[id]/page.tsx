@@ -176,6 +176,36 @@ export default function StudentProfilePage() {
         )}
       </section>
 
+      {/* Signed lease agreement (the newest generated one) */}
+      {(() => {
+        const signed = own.filter((b) => b.agreementGeneratedAt).sort((x, y) => String(y.agreementGeneratedAt).localeCompare(String(x.agreementGeneratedAt)))[0];
+        return (
+          <section className={`${card} p-6 space-y-3`}>
+            <h2 className="font-semibold text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-blue-600" /> Lease agreement</h2>
+            {signed ? (
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="text-sm">
+                  <p className="flex items-center gap-2 font-medium text-gray-900 dark:text-gray-100"><BadgeCheck className="w-4 h-4 text-green-600" /> Agreement generated</p>
+                  <p className="mt-1 text-gray-500 dark:text-gray-400">
+                    <span data-no-translate>{signed.ref}</span>{signed.hostel ? ` · ${signed.hostel}` : ''}{signed.room ? ` · ${[signed.room, signed.bed].filter(Boolean).join(', ')}` : ''} · {date(signed.agreementGeneratedAt)}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => setViewing(signed)} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 inline-flex items-center gap-1.5">
+                    <FileText className="w-4 h-4" /> View agreement
+                  </button>
+                  <a href={`/api/staff/bookings/${signed.id}/agreement?download=1`} download className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">Download .docx</a>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No agreement yet. Generate it on the <Link href="/staff/bookings" className="text-blue-600 hover:underline">Bookings</Link> page once the booking is paid and the passport is verified.
+              </p>
+            )}
+          </section>
+        );
+      })()}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Personal details */}
         <section className={`${card} p-6 space-y-4`}>
