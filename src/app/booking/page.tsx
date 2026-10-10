@@ -93,8 +93,8 @@ export default function BookingWizard() {
               <h2 className="font-display text-3xl">Choose your hostel</h2>
               <div className="space-y-4">
                 {[1, 2].map((i) => (
-                  <div key={i} className="flex items-center p-4 border border-border rounded-xl cursor-pointer hover:border-primary transition-colors bg-card">
-                    <div className="w-24 h-24 rounded-lg bg-muted mr-4 overflow-hidden">
+                  <div key={i} className="flex min-w-0 cursor-pointer items-center rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary">
+                    <div className="mr-4 aspect-square w-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:w-24">
                       <img src={`https://images.unsplash.com/photo-${i === 1 ? '1522708323590-d24dbb6b0267' : '1502672260266-1c1f52d11018'}?auto=format&fit=crop&q=80&w=200`} className="w-full h-full object-cover" alt="Hostel" />
                     </div>
                     <div>
@@ -143,7 +143,7 @@ export default function BookingWizard() {
               <h2 className="font-display text-3xl">Secure Payment</h2>
               <p className="text-muted-foreground">Please complete your payment to finalize the booking.</p>
               
-              <div className="bg-card border border-border rounded-xl p-6 text-left max-w-sm mx-auto">
+              <div className="mx-auto w-full max-w-sm min-w-0 overflow-hidden rounded-xl border border-border bg-card p-5 text-left sm:p-6">
                 <div className="flex justify-between mb-2">
                   <span className="text-sm text-muted-foreground">Rent (1st Month)</span>
                   <span className="font-medium">{formatPLN(400, { decimals: true })}</span>

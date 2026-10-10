@@ -94,7 +94,7 @@ export default function StudentStartPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-sm">
         <Link href="/" className="mb-8 block text-center font-display text-2xl font-bold">Polska Veed</Link>
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <div className="mb-5 flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" />
             <h1 className="text-lg font-semibold">Set your password</h1>

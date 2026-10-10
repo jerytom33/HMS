@@ -1,4 +1,6 @@
 .wizardContainer {
+  width: 100%;
+  min-width: 0;
   max-width: 900px;
   margin: 0 auto;
   background-color: var(--bg-secondary);
@@ -37,7 +39,9 @@
   height: 2px;
   background-color: var(--color-secondary-gold);
   z-index: 2;
-  transition: width var(--transition-normal);
+  right: 0;
+  transform-origin: left;
+  transition: transform var(--transition-normal);
 }
 
 .stepIndicator {
@@ -89,6 +93,7 @@
 .content {
   padding: 3rem;
   min-height: 400px;
+  min-width: 0;
 }
 
 .stepTitle {
@@ -109,6 +114,8 @@
   display: flex;
   justify-content: space-between;
   background-color: var(--bg-tertiary);
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .formGrid {
@@ -118,16 +125,30 @@
 }
 
 @media (max-width: 768px) {
+  .header {
+    padding: 1.5rem;
+  }
+
   .stepLabel {
     display: none;
   }
   .content {
     padding: 2rem 1.5rem;
+    min-height: 320px;
   }
   .footer {
     padding: 1.5rem;
   }
   .formGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .header,
+  .content,
+  .footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }

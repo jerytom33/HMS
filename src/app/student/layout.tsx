@@ -115,8 +115,10 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-8 relative">
-          {children}
+        <main className="relative flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-[1400px]">
+            {children}
+          </div>
 
           {/* Floating WhatsApp Button */}
           <button className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-[#25D366] text-white shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-50">

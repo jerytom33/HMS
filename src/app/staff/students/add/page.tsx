@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Camera, ArrowLeft, User, Phone, MapPin, GraduationCap, HeartPulse, Save, Home } from 'lucide-react';
 import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString, bedTypeDisplay } from '@/lib/propertyTypes';
 import { staffPhotoUrl, uploadPhoto } from '@/lib/photoClient';
+import { adminCard } from '@/components/staff/adminStyles';
 
 export default function AddStudentPage() {
   const router = useRouter();
@@ -296,7 +297,7 @@ export default function AddStudentPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+    <div className="mx-auto w-full max-w-5xl space-y-5 pb-8 sm:space-y-6 sm:pb-12">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href={isEditing ? `/staff/students/${editId}` : "/staff/students"} className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-800 rounded-full transition-colors">
@@ -309,11 +310,11 @@ export default function AddStudentPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
           
           {/* Left Column: Photo & Quick Actions */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className={adminCard}>
               <div className="p-6 flex flex-col items-center border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50">
                 <label className="relative group cursor-pointer mb-4 block">
                   <div className="w-32 h-32 rounded-full border-4 border-white shadow-md bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
@@ -344,12 +345,12 @@ export default function AddStudentPage() {
           <div className="lg:col-span-2 space-y-6">
             
             {/* Personal Details */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className={adminCard}>
               <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
                 <User className="w-4 h-4 text-blue-600" />
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Personal Details</h3>
               </div>
-              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-6">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">First Name <span className="text-red-500">*</span></label>
                   <input required name="firstName" value={formData.firstName} onChange={handleChange} type="text" placeholder="e.g. John" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -375,12 +376,12 @@ export default function AddStudentPage() {
             </div>
 
             {/* Room Assignment */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className={adminCard}>
               <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
                 <Home className="w-4 h-4 text-blue-600" />
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Room Assignment</h3>
               </div>
-              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-6">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Property</label>
                   <select 
@@ -451,12 +452,12 @@ export default function AddStudentPage() {
             </div>
 
             {/* Contact Information */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className={adminCard}>
               <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
                 <Phone className="w-4 h-4 text-blue-600" />
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Contact Information</h3>
               </div>
-              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-6">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email Address <span className="text-red-500">*</span></label>
                   <input required name="email" value={formData.email} onChange={handleChange} type="email" placeholder="john@example.com" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -473,12 +474,12 @@ export default function AddStudentPage() {
             </div>
 
             {/* Academic Information */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className={adminCard}>
               <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
                 <GraduationCap className="w-4 h-4 text-blue-600" />
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Academic Information</h3>
               </div>
-              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-6">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Course / Major</label>
                   <input name="course" value={formData.course} onChange={handleChange} type="text" placeholder="e.g. Computer Science" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -498,12 +499,12 @@ export default function AddStudentPage() {
             </div>
 
             {/* Emergency Contact */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className={adminCard}>
               <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
                 <HeartPulse className="w-4 h-4 text-red-500" />
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Emergency Contact</h3>
               </div>
-              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-6">
                 <div className="sm:col-span-2 space-y-1">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contact Name <span className="text-red-500">*</span></label>
                   <input required name="emergencyName" value={formData.emergencyName} onChange={handleChange} type="text" placeholder="Jane Doe" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />

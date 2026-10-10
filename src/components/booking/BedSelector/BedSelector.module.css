@@ -5,6 +5,8 @@
 }
 
 .roomGroup {
+  width: 100%;
+  min-width: 0;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
@@ -40,6 +42,8 @@
 }
 
 .bedItem {
+  width: 100%;
+  min-width: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -102,4 +106,30 @@
   padding: 3rem;
   text-align: center;
   color: var(--text-secondary);
+}
+
+@media (max-width: 560px) {
+  .container {
+    gap: 1rem;
+  }
+
+  .roomHeader,
+  .bedItem {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .roomHeader,
+  .bedItem {
+    padding: 1rem;
+  }
+
+  .bedPrice {
+    text-align: left;
+  }
+
+  .emptyState {
+    padding: 2rem 1rem;
+  }
 }

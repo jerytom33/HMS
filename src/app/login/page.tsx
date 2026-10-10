@@ -83,7 +83,7 @@ export default function StaffLoginPage() {
     <main className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
       <AutoTranslate />
       <div className="fixed right-4 top-4"><LanguageToggle className="bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300" /></div>
-      <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+      <div className="w-full max-w-sm min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6">
         <div className="flex items-center gap-2 mb-6">
           <Lock className="h-5 w-5 text-blue-600" />
           <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Polska Veed Staff Sign In</h1>

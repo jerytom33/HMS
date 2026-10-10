@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AlertTriangle, CalendarClock, ChevronDown, ChevronRight, MessageCircle, RefreshCw, Search, Users, Wallet } from 'lucide-react';
 import { formatPLN } from '@/lib/currency';
 import { monthlyRent, RENT_STATUS_LABEL, rentSchedule, showDate, daysUntil, warsawDate, DUE_SOON_DAYS, FIRST_RENT_AFTER_DAYS, type RentPayment, type RentPeriod, type RentSchedule } from '@/lib/rent';
+import { adminCard, adminPage, adminStatCard, adminStatGrid } from '@/components/staff/adminStyles';
 
 // Monthly rent of every tenant with a lease agreement: rent starts 30 days after the agreement
 // is generated and is due on the same day each month. Staff record each month's payment here.
@@ -137,7 +138,7 @@ export default function RentPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={adminPage}>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Rent</h1>
@@ -150,14 +151,14 @@ export default function RentPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={adminStatGrid}>
         {[
           { label: 'Overdue', value: loading ? '–' : `${stats.overdue.length}`, note: loading ? '' : formatPLN(stats.overdue.reduce((s, r) => s + r.schedule.overdueAmount, 0)), icon: AlertTriangle, tone: 'text-red-600', tab: 'overdue' as const },
           { label: `Due in ${DUE_SOON_DAYS} days`, value: loading ? '–' : `${stats.due.length}`, note: loading ? '' : formatPLN(stats.due.reduce((s, r) => s + (r.schedule.next?.amount || 0), 0)), icon: CalendarClock, tone: 'text-amber-600', tab: 'due' as const },
           { label: 'Collected this month', value: loading ? '–' : formatPLN(stats.collected), note: '', icon: Wallet, tone: 'text-green-600', tab: 'all' as const },
           { label: 'Tenants paying rent', value: loading ? '–' : `${rows.length}`, note: notStarted ? `${notStarted} paid booking(s) without agreement yet` : '', icon: Users, tone: 'text-blue-600', tab: 'all' as const },
         ].map(({ label, value, note, icon: Icon, tone, tab }) => (
-          <button key={label} onClick={() => setFilter(tab)} className={`text-left bg-white dark:bg-gray-900 rounded-lg border p-4 shadow-sm ${filter === tab && tab !== 'all' ? 'border-blue-500' : 'border-gray-200 dark:border-gray-800 hover:border-blue-300'}`}>
+          <button key={label} onClick={() => setFilter(tab)} aria-pressed={filter === tab && tab !== 'all'} className={`${adminStatCard} text-left transition-colors ${filter === tab && tab !== 'all' ? 'border-blue-500 dark:border-blue-500' : 'hover:border-blue-300'}`}>
             <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">{label}<Icon className={`h-4 w-4 ${tone}`} /></div>
             <div className="text-2xl font-bold mt-1">{value}</div>
             {note && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{note}</div>}
@@ -165,7 +166,7 @@ export default function RentPage() {
         ))}
       </div>
 
-      <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800">
+      <div className={adminCard}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex flex-col sm:flex-row gap-3 rounded-t-lg">
           <div className="flex flex-wrap gap-2">
             {(['all', 'overdue', 'due', 'upcoming'] as const).map((f) => (

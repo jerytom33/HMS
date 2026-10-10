@@ -52,17 +52,17 @@ export default function HostelsList() {
 
       {/* Grid */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid auto-rows-fr grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
           {hostels.map((h) => (
-            <div key={h.id} className="group relative rounded-2xl border border-border/50 bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-              <div className="relative h-64 overflow-hidden">
+            <div key={h.id} className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm transition-shadow hover:shadow-md">
+              <div className="relative aspect-[16/10] overflow-hidden">
                 <img src={`https://images.unsplash.com/photo-${h.img}?auto=format&fit=crop&q=80&w=800`} alt={h.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
                 <div className="absolute top-3 left-3 bg-background/90 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
                   {h.beds} beds available
                 </div>
               </div>
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-2">
+              <div className="flex flex-1 flex-col p-5 sm:p-6">
+                <div className="mb-2 flex min-w-0 flex-wrap items-start justify-between gap-3">
                   <h3 className="font-display text-2xl">{h.name}</h3>
                   <div className="text-right">
                     <span className="block text-xl font-semibold">{formatPLN(h.price)}</span>
@@ -78,7 +78,7 @@ export default function HostelsList() {
                   <div className="flex items-center gap-1 text-xs text-muted-foreground"><Shield className="h-4 w-4" /> 24/7 Security</div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground"><Bed className="h-4 w-4" /> En-suite</div>
                 </div>
-                <Link href={`/hostels/${h.id}`} className="block w-full text-center bg-secondary text-secondary-foreground py-3 rounded-xl text-sm font-medium hover:bg-secondary/90 transition-colors">
+                <Link href={`/hostels/${h.id}`} className="mt-auto block w-full rounded-xl bg-secondary py-3 text-center text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/90">
                   View Details
                 </Link>
               </div>

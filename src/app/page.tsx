@@ -351,7 +351,7 @@ export default function Home() {
               <h2 className="font-display text-4xl sm:text-5xl">Don't just take our word for it.</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            <div className="grid auto-rows-fr grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
               {[
                 { name: "Sarah Jenkins", uni: "King's College", text: "The study rooms saved me during finals week. The environment here is incredibly supportive and the design is beautiful.", y: 0 },
                 { name: "Marcus Thorne", uni: "UCL", text: "Moving here was the best decision. The gym is better than most commercial ones, and my studio feels like a luxury hotel room. Highly recommend it to anyone looking for comfort.", y: 40 },
@@ -366,7 +366,7 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: review.y }}
                   viewport={{ once: true, margin: "-50px" }}
                   transition={{ duration: 0.6, delay: i * 0.1 }}
-                  className="bg-card border border-border/60 p-8 rounded-3xl shadow-sm hover:shadow-xl transition-shadow relative"
+                  className="relative flex h-full min-w-0 flex-col rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-shadow hover:shadow-xl sm:p-8"
                 >
                   <Quote className="absolute top-6 right-8 h-12 w-12 text-secondary/5" />
                   <div className="flex gap-1 mb-6 relative z-10">

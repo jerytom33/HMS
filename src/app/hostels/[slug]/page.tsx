@@ -32,13 +32,13 @@ export default function HostelDetail({ params }: { params: { slug: string } }) {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-10">
           
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-10">
+          <div className="min-w-0 space-y-10 lg:col-span-2">
             {/* Hero Gallery */}
-            <div className="grid grid-cols-2 gap-4 h-[500px]">
-              <div className="col-span-2 sm:col-span-1 h-full rounded-2xl overflow-hidden">
+            <div className="grid aspect-[4/3] max-h-[500px] min-h-64 grid-cols-2 gap-3 sm:aspect-[16/10] sm:gap-4">
+              <div className="col-span-2 h-full overflow-hidden rounded-2xl sm:col-span-1">
                 <img src={`https://images.unsplash.com/photo-${hostel.images[0]}?auto=format&fit=crop&q=80&w=1000`} className="w-full h-full object-cover" alt="Primary" />
               </div>
               <div className="hidden sm:grid grid-rows-2 gap-4 h-full">
@@ -99,7 +99,7 @@ export default function HostelDetail({ params }: { params: { slug: string } }) {
 
           {/* Sidebar Booking Card */}
           <div className="relative">
-            <div className="sticky top-24 rounded-2xl border border-border bg-card p-6 shadow-lg">
+            <div className="sticky top-24 min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-lg sm:p-6">
               <div className="flex justify-between items-end mb-6">
                 <div>
                   <span className="text-3xl font-display font-semibold">{formatPLN(hostel.price)}</span>

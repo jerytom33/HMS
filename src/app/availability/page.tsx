@@ -95,7 +95,7 @@ export default function AvailabilityPage() {
         {selectedProperty ? (
           <div className="space-y-8">
             {availabilityData.map((bldg, bIdx) => (
-              <div key={bIdx} className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div key={bIdx} className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                 <div className="bg-secondary/5 px-6 py-4 border-b border-border">
                   <h2 className="font-display text-xl">{bldg.building}</h2>
                 </div>
@@ -103,9 +103,9 @@ export default function AvailabilityPage() {
                   {bldg.floors.map((fl, fIdx) => (
                     <div key={fIdx} className="mb-8 last:mb-0">
                       <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">{fl.floor}</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                         {fl.rooms.map((room, rIdx) => (
-                          <div key={rIdx} className="border border-border rounded-xl p-4">
+                          <div key={rIdx} className="flex h-full min-w-0 flex-col rounded-xl border border-border p-4">
                             <div className="flex justify-between items-center mb-4">
                               <span className="font-medium">{room.room}</span>
                               <span className="text-sm font-semibold text-primary">{formatPLN(room.price)}/mo</span>
@@ -138,7 +138,7 @@ export default function AvailabilityPage() {
                                 </div>
                               ))}
                             </div>
-                            <div className="mt-4 pt-4 border-t border-border flex justify-end">
+                            <div className="mt-auto flex justify-end border-t border-border pt-4">
                               <Link href="/booking" className="text-xs font-medium bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
                                 Book Room
                               </Link>

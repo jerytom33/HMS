@@ -92,6 +92,10 @@
 .main {
   padding: 2rem;
   flex: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 @media (max-width: 768px) {
@@ -100,5 +104,9 @@
   }
   .contentWrapper {
     margin-left: 0;
+  }
+
+  .main {
+    padding: 1rem;
   }
 }

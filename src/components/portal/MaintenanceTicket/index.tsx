@@ -25,8 +25,8 @@ export const MaintenanceTicket = ({ id, title, status, date, priority }: Mainten
   const config = getStatusConfig();
 
   return (
-    <Card style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+    <Card style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', minWidth: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0, flex: '1 1 14rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>#{id}</span>
           <span style={{ 

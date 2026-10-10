@@ -4,7 +4,7 @@ import Link from 'next/link';
 export default function BookingSuccess({ params }: { params: { id: string } }) {
   return (
     <div className="w-full max-w-full min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-3xl p-8 sm:p-12 max-w-2xl w-full shadow-lg relative overflow-hidden">
+      <div className="relative w-full max-w-2xl min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-lg sm:p-10">
         {/* Decorative Background */}
         <div className="absolute top-0 left-0 w-full h-32 bg-primary/5 -z-10 rounded-t-3xl"></div>
         
@@ -22,9 +22,9 @@ export default function BookingSuccess({ params }: { params: { id: string } }) {
           </div>
         </div>
 
-        <div className="bg-background rounded-2xl border border-border p-6 mb-8">
+        <div className="mb-8 min-w-0 overflow-hidden rounded-2xl border border-border bg-background p-4 sm:p-6">
           <h3 className="font-semibold mb-4 text-sm uppercase tracking-wider text-muted-foreground">Booking Summary</h3>
-          <div className="grid grid-cols-2 gap-y-4 text-sm">
+          <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
             <div>
               <span className="block text-muted-foreground mb-1">Property</span>
               <span className="font-medium">The Grand Residence</span>
@@ -49,8 +49,8 @@ export default function BookingSuccess({ params }: { params: { id: string } }) {
         <div className="space-y-4">
           <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-4">Next Steps</h3>
           
-          <Link href="/student" className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-primary transition-colors bg-background group">
-            <div className="flex items-center gap-4">
+          <Link href="/student" className="group flex min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary">
+            <div className="flex min-w-0 items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                 <FileText className="w-5 h-5" />
               </div>
@@ -62,8 +62,8 @@ export default function BookingSuccess({ params }: { params: { id: string } }) {
             <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
           </Link>
 
-          <a href="#" className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-[#25D366] transition-colors bg-background group">
-            <div className="flex items-center gap-4">
+          <a href="#" className="group flex min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-border bg-background p-4 transition-colors hover:border-[#25D366]">
+            <div className="flex min-w-0 items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-[#25D366]/10 flex items-center justify-center text-[#25D366]">
                 <MessageCircle className="w-5 h-5" />
               </div>

@@ -18,10 +18,10 @@ export default function ContactPage() {
 
         {/* Content */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-32">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24">
+          <div className="grid min-w-0 grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-24">
             
             {/* Contact Form */}
-            <div className="bg-card border border-border/50 rounded-3xl p-8 sm:p-12 shadow-sm">
+            <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-border/50 bg-card p-5 shadow-sm sm:p-8 lg:p-10">
               <h3 className="font-display text-3xl mb-8">Send a Message</h3>
               <form className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

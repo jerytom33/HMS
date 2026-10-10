@@ -7,6 +7,7 @@ import { bookingPayments, rentPaymentRows } from '@/lib/bookingPayments';
 import { monthlyRent, rentSchedule, warsawDate } from '@/lib/rent';
 import { formatPLN } from '@/lib/currency';
 import { occupancy, occupancyPercent } from '@/lib/occupancy';
+import { adminCard, adminPage } from '@/components/staff/adminStyles';
 
 export default function AdminDashboard() {
   const [properties, setProperties] = useState<any[]>([]);
@@ -136,31 +137,31 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className={adminPage}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Overview</h1>
-        <div className="flex gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <select 
             value={selectedPropertyId}
             onChange={(e) => setSelectedPropertyId(e.target.value)}
-            className="text-sm border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-900 px-3 py-1.5 focus:ring-blue-500 focus:border-blue-500 outline-none border"
+            className="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 sm:w-auto"
           >
             <option value="all">All Properties</option>
             {properties.map(p => (
               <option key={p.id} value={p.id.toString()}>{p.name}</option>
             ))}
           </select>
-          <button className="bg-blue-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-blue-700 shadow-sm">
+          <button className="min-h-11 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 sm:w-auto">
             Export Report
           </button>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid auto-rows-fr grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         {[...stats, rentStat].map((stat) => (
-          <div key={stat.name} className="bg-white dark:bg-gray-900 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-800">
-            <div className="p-5">
+          <div key={stat.name} className={`${adminCard} flex min-h-28 h-full flex-col`}>
+            <div className="flex h-full items-center p-4 sm:p-5">
               <div className="flex items-center">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{stat.name}</p>
@@ -182,12 +183,12 @@ export default function AdminDashboard() {
       </div>
 
       {/* Grid Layout for details */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3 lg:gap-6">
         
         {/* === ROW 1 === */}
         {/* Recent Bookings */}
         <div className="lg:col-span-2 flex flex-col">
-          <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 flex-1 flex flex-col">
+          <div className={`${adminCard} flex flex-1 flex-col`}>
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
               <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100">Recent Bookings</h3>
               <Link href="/staff/bookings" className="text-sm text-blue-600 hover:text-blue-500 font-medium">View all</Link>
@@ -242,7 +243,7 @@ export default function AdminDashboard() {
 
         {/* Occupancy Snapshot / Floor Details */}
         <div className="lg:col-span-1 flex flex-col">
-          <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6 flex-1">
+          <div className={`${adminCard} flex-1 p-4 sm:p-6`}>
             <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100 mb-4">
               {selectedPropertyId === 'all' ? 'Occupancy Snapshot' : 'Floor Occupancy'}
             </h3>
@@ -291,7 +292,7 @@ export default function AdminDashboard() {
         {/* === ROW 2 === */}
         {/* Payment Collection */}
         <div className="lg:col-span-1 flex flex-col">
-          <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6 flex-1">
+          <div className={`${adminCard} flex-1 p-4 sm:p-6`}>
             <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" /> Financials
             </h3>
@@ -323,7 +324,7 @@ export default function AdminDashboard() {
 
         {/* Today's Check-ins & Check-outs */}
         <div className="lg:col-span-1 flex flex-col">
-          <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 flex flex-col flex-1">
+          <div className={`${adminCard} flex flex-1 flex-col`}>
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
               <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" /> Today's Schedule
@@ -350,7 +351,7 @@ export default function AdminDashboard() {
 
         {/* Active Maintenance */}
         <div className="lg:col-span-1 flex flex-col">
-          <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 flex flex-col flex-1">
+          <div className={`${adminCard} flex flex-1 flex-col`}>
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
               <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Wrench className="w-4 h-4 text-gray-500 dark:text-gray-400" /> Maintenance
@@ -375,7 +376,7 @@ export default function AdminDashboard() {
         {/* === ROW 3 === */}
         {/* Quick Actions */}
         <div className="lg:col-span-1 flex flex-col">
-          <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 flex-1">
+          <div className={`${adminCard} flex-1`}>
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
               <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100">Quick Actions</h3>
             </div>
@@ -389,7 +390,7 @@ export default function AdminDashboard() {
 
         {/* Pending Documents */}
         <div className="lg:col-span-2 flex flex-col">
-          <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6 flex-1">
+          <div className={`${adminCard} flex-1 p-4 sm:p-6`}>
             <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
               <FileText className="w-4 h-4 text-gray-500 dark:text-gray-400" /> Action Required
             </h3>

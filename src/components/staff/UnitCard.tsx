@@ -52,10 +52,10 @@ export function UnitCard({ title, typeLabel, status, beds, freeBeds, filledBeds,
   return (
     <div
       role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onOpen(); }}
-      className={`group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${tone}`}
+      className={`group flex h-full min-h-[22rem] min-w-0 cursor-pointer flex-col overflow-hidden rounded-xl border shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${tone}`}
     >
       {/* The room's photos */}
-      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800">
+      <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800">
         {photos.length > 0 ? (
           <PhotoCarousel images={photos} name={title} autoMs={3500} />
         ) : (
@@ -109,13 +109,13 @@ export function UnitCard({ title, typeLabel, status, beds, freeBeds, filledBeds,
 
       {people.length > 0 && (
         <button type="button" onClick={(e) => { e.stopPropagation(); onViewProfiles(); }}
-          className="flex w-full items-center justify-center gap-1 border-t border-black/5 py-2.5 text-sm font-medium text-gray-600 hover:bg-black/5 hover:text-gray-900 focus:outline-none focus-visible:bg-black/5 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5">
+          className="flex min-h-11 w-full items-center justify-center gap-1 border-t border-black/5 px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-black/5 hover:text-gray-900 focus:outline-none focus-visible:bg-black/5 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5">
           View Profiles <ChevronRight className="h-4 w-4" />
         </button>
       )}
       {onViewBeds && beds > 0 && (
         <button type="button" onClick={(e) => { e.stopPropagation(); onViewBeds(); }}
-          className="flex w-full items-center justify-center gap-1 border-t border-black/5 py-2.5 text-sm font-medium text-gray-600 hover:bg-black/5 hover:text-gray-900 focus:outline-none focus-visible:bg-black/5 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5">
+          className="flex min-h-11 w-full items-center justify-center gap-1 border-t border-black/5 px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-black/5 hover:text-gray-900 focus:outline-none focus-visible:bg-black/5 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5">
           View Beds <ChevronRight className="h-4 w-4" />
         </button>
       )}

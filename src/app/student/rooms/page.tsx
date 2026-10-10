@@ -134,7 +134,7 @@ export default function FindRoomPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 pb-10">
       <div>
         <h1 className="font-display text-2xl font-semibold">Find a room</h1>
         {me && <p className="text-sm text-muted-foreground">Signed in as {me.name || 'student'} · +{me.whatsapp}{me.gender ? ` · ${me.gender}` : ''}</p>}
@@ -187,7 +187,7 @@ export default function FindRoomPage() {
       </div>
 
       {loading ? (
-        <div className="grid gap-4 md:grid-cols-2" aria-busy="true">
+        <div className="grid auto-rows-fr gap-4 md:grid-cols-2" aria-busy="true">
           {[0, 1].map((i) => <div key={i} className="h-64 animate-pulse rounded-xl bg-secondary/10" />)}
         </div>
       ) : error ? (
@@ -198,11 +198,11 @@ export default function FindRoomPage() {
       ) : rooms.length === 0 ? (
         <p className="text-sm text-muted-foreground">No free beds right now{sharing ? ' for this sharing type' : ''}. Please check again soon.</p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid auto-rows-fr gap-4 md:grid-cols-2">
           {rooms.map((r) => (
-            <div key={r.unit} className="overflow-hidden rounded-xl border border-border bg-card">
-              {r.image && <img src={r.image} alt={r.label} className="h-44 w-full object-cover" />}
-              <div className="space-y-3 p-4">
+            <div key={r.unit} className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
+              {r.image && <img src={r.image} alt={r.label} className="aspect-[16/9] w-full object-cover" />}
+              <div className="flex flex-1 flex-col space-y-3 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h2 className="font-semibold">{r.label}</h2>
@@ -215,7 +215,7 @@ export default function FindRoomPage() {
                 <p className="text-xs text-emerald-700 dark:text-emerald-400">Water, Electricity and Winter Heating included</p>
                 {r.amenities.length > 0 && <p className="text-xs text-muted-foreground">{r.amenities.join(' · ')}</p>}
 
-                <fieldset className="space-y-1.5">
+                <fieldset className="mt-auto space-y-1.5 pt-2">
                   <legend className="mb-1 text-sm font-medium">Choose a bed</legend>
                   {r.beds.map((b) => (
                     <label key={b.index} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary/10">
@@ -272,7 +272,7 @@ export default function FindRoomPage() {
 
       {conflict && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="conflict-title">
-          <div className="w-full max-w-md space-y-4 rounded-xl border border-border bg-card p-6 shadow-xl">
+          <div className="w-full max-w-md min-w-0 space-y-4 overflow-hidden rounded-xl border border-border bg-card p-5 shadow-xl sm:p-6">
             <h2 id="conflict-title" className="font-display text-xl font-semibold">You already have a booking</h2>
             <p className="text-sm">
               <strong>{conflict.ref}</strong>{conflict.place ? ` (${conflict.place})` : ''}. You can book only one bed.

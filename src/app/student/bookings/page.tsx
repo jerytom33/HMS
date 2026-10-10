@@ -37,7 +37,7 @@ export default function StudentBookings() {
   };
 
   return (
-    <div className="max-w-4xl space-y-8 pb-10">
+    <div className="mx-auto w-full max-w-4xl space-y-8 pb-10">
       <div>
         <h1 className="font-display text-3xl font-medium mb-1">Bookings</h1>
         <p className="text-muted-foreground text-sm">Beds you booked here or on WhatsApp. A held bed is kept for you until payment. You can have one booking at a time; to book a different bed, cancel your booking first.</p>
@@ -55,7 +55,7 @@ export default function StudentBookings() {
       ) : error ? (
         <p className="text-sm text-destructive">{error}</p>
       ) : bookings.length === 0 ? (
-        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8">
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-5 sm:p-8">
           <p className="text-sm text-muted-foreground mb-4">You have no bookings yet.</p>
           <Link href="/student/rooms" className="inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium">
             <Search className="h-4 w-4" /> Find a Room
@@ -64,7 +64,7 @@ export default function StudentBookings() {
       ) : (
         <div className="space-y-4">
           {bookings.map((b) => (
-            <div key={b.ref} className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
+            <div key={b.ref} className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
               <div className="flex flex-wrap justify-between items-start gap-3">
                 <div>
                   <h2 className="font-display text-lg">{b.room}, {b.bed}</h2>

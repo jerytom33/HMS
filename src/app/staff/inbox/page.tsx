@@ -1,4 +1,5 @@
 import { Search, MoreVertical, Phone, Paperclip, Send, CheckCircle2 } from 'lucide-react';
+import { adminCard } from '@/components/staff/adminStyles';
 
 export default function AdminInbox() {
   const conversations = [
@@ -8,9 +9,9 @@ export default function AdminInbox() {
   ];
 
   return (
-    <div className="h-[calc(100vh-8rem)] bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col md:flex-row">
+    <div className={`${adminCard} flex min-h-[calc(100dvh-7rem)] flex-col md:h-[calc(100dvh-8rem)] md:min-h-[560px] md:flex-row`}>
       {/* Sidebar - Chat List */}
-      <div className="w-full md:w-80 h-1/3 md:h-auto border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-800 flex flex-col bg-gray-50 dark:bg-gray-950">
+      <div className="flex h-[40%] w-full shrink-0 flex-col border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 md:h-auto md:w-80 md:border-b-0 md:border-r">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">WhatsApp Inbox</h2>
           <div className="relative">
@@ -47,7 +48,7 @@ export default function AdminInbox() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-[#EFEAE2]">
         {/* Chat Header */}
-        <div className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-6 flex items-center justify-between shadow-sm z-10">
+        <div className="z-10 flex min-h-16 items-center justify-between border-b border-gray-200 bg-white px-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">J</div>
             <div>
@@ -57,19 +58,19 @@ export default function AdminInbox() {
               </p>
             </div>
           </div>
-          <div className="flex gap-4">
-            <button className="text-gray-400 hover:text-gray-600 dark:text-gray-400"><Phone className="h-5 w-5" /></button>
-            <button className="text-gray-400 hover:text-gray-600 dark:text-gray-400"><MoreVertical className="h-5 w-5" /></button>
+          <div className="flex gap-1">
+            <button aria-label="Call student" className="grid min-h-11 min-w-11 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"><Phone className="h-5 w-5" /></button>
+            <button aria-label="Conversation options" className="grid min-h-11 min-w-11 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"><MoreVertical className="h-5 w-5" /></button>
           </div>
         </div>
 
         {/* Chat History */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
           <div className="flex justify-center">
             <span className="bg-white dark:bg-gray-900/80 px-3 py-1 rounded-md text-xs text-gray-500 dark:text-gray-400 shadow-sm backdrop-blur-sm">Today</span>
           </div>
 
-          <div className="flex flex-col gap-1 max-w-[75%]">
+          <div className="flex max-w-[88%] flex-col gap-1 sm:max-w-[75%]">
             <div className="bg-white dark:bg-gray-900 p-3 rounded-lg rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-sm">
               Hi, I have a quick question.
             </div>
@@ -79,7 +80,7 @@ export default function AdminInbox() {
             <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">10:42 AM</span>
           </div>
 
-          <div className="flex flex-col gap-1 max-w-[75%] self-end">
+          <div className="flex max-w-[88%] flex-col gap-1 self-end sm:max-w-[75%]">
             <div className="bg-[#D9FDD3] p-3 rounded-lg rounded-tr-none shadow-sm text-gray-900 dark:text-gray-100 text-sm relative">
               Hello John! Yes, the gym is open 24/7 for all residents. Your digital key will grant you access.
               <CheckCircle2 className="h-3 w-3 text-blue-500 absolute bottom-1.5 right-1.5" />

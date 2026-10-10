@@ -5,6 +5,7 @@ import { BadgeCheck, CalendarCheck, CheckCircle2, FileText, MessageCircle, Phone
 import { AgreementViewer } from '@/components/AgreementViewer';
 import { formatPLN, parseAmount } from '@/lib/currency';
 import { unitDeposit } from '@/lib/propertyTypes';
+import { adminCard, adminPage, adminStatCard, adminStatGrid } from '@/components/staff/adminStyles';
 
 // Bed holds and call requests from the WhatsApp bot and the student portal (v1-bot-bookings).
 // Staff mark holds paid or cancel them (cancelling frees the bed) and tick off call requests.
@@ -188,7 +189,7 @@ export default function AdminBookings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={adminPage}>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Bookings</h1>
@@ -201,22 +202,22 @@ export default function AdminBookings() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={adminStatGrid}>
         {[
           { label: 'On hold', value: counts.held, icon: CalendarCheck, tab: 'held' },
           { label: 'Paid', value: counts.paid, icon: CheckCircle2, tab: 'paid' },
           { label: 'Calls to make', value: counts.calls, icon: Phone, tab: 'calls' },
           { label: 'Cancelled', value: counts.cancelled, icon: XCircle, tab: 'cancelled' },
         ].map(({ label, value, icon: Icon, tab: t }) => (
-          <button key={label} onClick={() => setTab(t)}
-            className={`text-left bg-white dark:bg-gray-900 rounded-lg border p-4 shadow-sm transition-colors ${tab === t ? 'border-blue-500' : 'border-gray-200 dark:border-gray-800 hover:border-blue-300'}`}>
+          <button key={label} onClick={() => setTab(t)} aria-pressed={tab === t}
+            className={`${adminStatCard} text-left transition-colors ${tab === t ? 'border-blue-500 dark:border-blue-500' : 'hover:border-blue-300'}`}>
             <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">{label}<Icon className="h-4 w-4" /></div>
             <div className="text-2xl font-bold mt-1">{loading ? '–' : value}</div>
           </button>
         ))}
       </div>
 
-      <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800">
+      <div className={adminCard}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 space-y-3 rounded-t-lg">
           <div className="flex flex-wrap gap-2" role="tablist">
             {TABS.map((t) => (

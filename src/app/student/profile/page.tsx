@@ -66,7 +66,7 @@ function PassportCard({ passport, onSaved }: { passport: PassportInfo; onSaved: 
   };
 
   return (
-    <div id="documents" className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden scroll-mt-4">
+    <div id="documents" className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm scroll-mt-4">
       <div className="bg-secondary/5 px-6 py-4 border-b border-border flex items-center gap-2">
         <FileText className="h-5 w-5 text-primary" />
         <h2 className="font-medium text-lg">Documents: passport copy</h2>
@@ -196,13 +196,13 @@ export default function StudentProfilePage() {
   const changed = form.email !== me.email || form.course !== me.course || form.yearOfStudy !== me.yearOfStudy;
 
   return (
-    <div className="max-w-4xl space-y-8 pb-10">
+    <div className="mx-auto w-full max-w-4xl space-y-8 pb-10">
       <div>
         <h1 className="font-display text-3xl font-medium mb-1">My Profile</h1>
         <p className="text-muted-foreground text-sm">Your details as we have them.</p>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+      <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="bg-secondary/5 px-6 py-4 border-b border-border flex items-center gap-2">
           <User className="h-5 w-5 text-primary" />
           <h2 className="font-medium text-lg">Personal Details</h2>
@@ -234,7 +234,7 @@ export default function StudentProfilePage() {
       </div>
 
       {/* Documents: the signed lease agreement, once staff generated it */}
-      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+      <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="bg-secondary/5 px-6 py-4 border-b border-border flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
           <h2 className="font-medium text-lg">Documents: lease agreement</h2>
@@ -270,7 +270,7 @@ export default function StudentProfilePage() {
 
       <PassportCard key={`${me.passport.status}-${me.passport.number}`} passport={me.passport} onSaved={reload} />
 
-      <form onSubmit={save} className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+      <form onSubmit={save} className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="bg-secondary/5 px-6 py-4 border-b border-border">
           <h2 className="font-medium text-lg">Contact & Studies</h2>
         </div>

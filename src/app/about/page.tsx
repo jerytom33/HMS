@@ -23,8 +23,8 @@ export default function AboutPage() {
 
         {/* Mission Section */}
         <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-card border border-border/50 p-8 rounded-3xl shadow-sm text-center">
+          <div className="grid auto-rows-fr grid-cols-1 gap-5 md:grid-cols-3 lg:gap-8">
+            <div className="flex h-full min-w-0 flex-col items-center rounded-2xl border border-border/50 bg-card p-6 text-center shadow-sm sm:p-8">
               <div className="h-16 w-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-6">
                 <Sparkles className="h-8 w-8 text-[var(--color-gold)]" />
               </div>
@@ -32,7 +32,7 @@ export default function AboutPage() {
               <p className="text-muted-foreground">Luxury amenities, designer furnishings, and spaces crafted for optimal study and relaxation.</p>
             </div>
             
-            <div className="bg-card border border-border/50 p-8 rounded-3xl shadow-sm text-center">
+            <div className="flex h-full min-w-0 flex-col items-center rounded-2xl border border-border/50 bg-card p-6 text-center shadow-sm sm:p-8">
               <div className="h-16 w-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-6">
                 <Shield className="h-8 w-8 text-[var(--color-gold)]" />
               </div>
@@ -40,7 +40,7 @@ export default function AboutPage() {
               <p className="text-muted-foreground">24/7 on-site staff, secure key-fob entry, and comprehensive CCTV for total peace of mind.</p>
             </div>
 
-            <div className="bg-card border border-border/50 p-8 rounded-3xl shadow-sm text-center">
+            <div className="flex h-full min-w-0 flex-col items-center rounded-2xl border border-border/50 bg-card p-6 text-center shadow-sm sm:p-8">
               <div className="h-16 w-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-6">
                 <Users className="h-8 w-8 text-[var(--color-gold)]" />
               </div>

@@ -4,6 +4,8 @@
 }
 
 .container {
+  width: 100%;
+  min-width: 0;
   max-width: 800px;
   margin: 0 auto;
 }
@@ -27,6 +29,8 @@
 }
 
 .item {
+  width: 100%;
+  min-width: 0;
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   background-color: var(--bg-primary);
@@ -53,9 +57,11 @@
   color: var(--text-primary);
   cursor: pointer;
   text-align: left;
+  gap: 1rem;
 }
 
 .icon {
+  flex-shrink: 0;
   color: var(--color-secondary-gold);
   transition: transform var(--transition-normal);
 }
@@ -65,15 +71,40 @@
 }
 
 .answer {
+  display: grid;
+  grid-template-rows: 0fr;
   padding: 0 1.5rem;
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height var(--transition-normal), padding var(--transition-normal);
+  transition: grid-template-rows var(--transition-normal);
   color: var(--text-secondary);
   line-height: 1.6;
 }
 
+.answer > p {
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
 .answer.open {
-  padding: 0 1.5rem 1.5rem 1.5rem;
-  max-height: 500px; /* arbitrary large value for transition */
+  grid-template-rows: 1fr;
+}
+
+.answer.open > p {
+  padding-bottom: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding: 3.5rem 1rem;
+  }
+
+  .question {
+    padding: 1rem;
+  }
+
+  .answer,
+  .answer.open {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }

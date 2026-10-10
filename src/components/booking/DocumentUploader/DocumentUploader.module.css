@@ -1,4 +1,7 @@
 .uploader {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   border: 2px dashed var(--border-strong);
   border-radius: var(--radius-lg);
   padding: 3rem 2rem;
@@ -37,6 +40,8 @@
 }
 
 .fileItem {
+  width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -47,11 +52,23 @@
 }
 
 .fileInfo {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   font-size: 0.875rem;
   color: var(--text-primary);
+}
+
+@media (max-width: 480px) {
+  .uploader {
+    padding: 2rem 1rem;
+  }
+
+  .fileItem {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
 }
 
 .removeBtn {

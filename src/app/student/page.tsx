@@ -31,7 +31,7 @@ export default function StudentDashboard() {
   const firstName = me?.name?.trim().split(/\s+/)[0];
 
   return (
-    <div className="max-w-4xl space-y-8 pb-10">
+    <div className="mx-auto w-full max-w-4xl space-y-8 pb-10">
       <div>
         <h1 className="font-display text-3xl font-medium mb-1">{firstName ? `Welcome back, ${firstName}` : 'Welcome'}</h1>
         <p className="text-muted-foreground text-sm">
@@ -50,7 +50,7 @@ export default function StudentDashboard() {
         </Link>
       )}
 
-      <div className="bg-card border border-border rounded-2xl shadow-sm p-6 sm:p-8">
+      <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-8">
         {room ? (
           <div className="flex flex-wrap justify-between items-start gap-4">
             <div>
@@ -96,7 +96,7 @@ export default function StudentDashboard() {
         ) : (
           <div className="space-y-3">
             {active.map((b) => (
-              <div key={b.ref} className="bg-card border border-border rounded-xl p-4 flex flex-wrap justify-between gap-2">
+              <div key={b.ref} className="flex min-w-0 flex-wrap justify-between gap-2 rounded-xl border border-border bg-card p-4">
                 <div>
                   <div className="font-medium">{b.room}, {b.bed} — {b.hostel}</div>
                   <div className="text-xs text-muted-foreground mt-1">Ref {b.ref}{b.arrivalDate ? ` · Arrival ${b.arrivalDate}` : ''}</div>
@@ -108,13 +108,13 @@ export default function StudentDashboard() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           { href: '/student/rooms', label: 'Find a Room', icon: Search },
           { href: '/student/room', label: 'My Room', icon: Bed },
           { href: '/student/profile', label: 'My Profile', icon: User },
         ].map(({ href, label, icon: Icon }) => (
-          <Link key={href} href={href} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:border-primary transition-colors">
+          <Link key={href} href={href} className="flex h-full min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary">
             <Icon className="h-5 w-5 text-primary" /> <span className="text-sm font-medium">{label}</span>
           </Link>
         ))}

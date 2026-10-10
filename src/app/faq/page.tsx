@@ -15,16 +15,16 @@ export default function FAQPage() {
         
         <div className="space-y-4">
           {faqs.map((faq, i) => (
-            <div key={i} className="bg-card border border-border rounded-xl p-6 shadow-sm hover:border-primary transition-colors cursor-pointer group">
-              <div className="flex justify-between items-center">
-                <h3 className="font-medium text-lg flex items-center gap-3">
+            <div key={i} className="group min-w-0 cursor-pointer overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary sm:p-6">
+              <div className="flex min-w-0 items-center justify-between gap-3">
+                <h3 className="flex min-w-0 items-center gap-3 text-lg font-medium">
                   <HelpCircle className="h-5 w-5 text-primary" />
                   {faq.q}
                 </h3>
-                <ChevronDown className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
               </div>
               {/* Note: In a real app, this would be an accordion. For static UI, we'll just show it. */}
-              <p className="mt-4 text-muted-foreground pl-8">{faq.a}</p>
+              <p className="mt-4 text-muted-foreground sm:pl-8">{faq.a}</p>
             </div>
           ))}
         </div>

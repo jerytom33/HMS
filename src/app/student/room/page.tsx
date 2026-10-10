@@ -31,9 +31,9 @@ export default function StudentRoomPage() {
 
   if (!room && pending) {
     return (
-      <div className="max-w-4xl space-y-6">
+      <div className="mx-auto w-full max-w-4xl space-y-6">
         <h1 className="font-display text-3xl font-medium">My Room</h1>
-        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 space-y-3">
+        <div className="min-w-0 space-y-3 overflow-hidden rounded-2xl border border-border bg-card p-5 sm:p-8">
           <span className="inline-flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-amber-800 bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 px-2 py-1 rounded">
             <Clock className="h-3.5 w-3.5" /> Reserved – waiting for payment confirmation
           </span>
@@ -48,9 +48,9 @@ export default function StudentRoomPage() {
 
   if (!room) {
     return (
-      <div className="max-w-4xl space-y-6">
+      <div className="mx-auto w-full max-w-4xl space-y-6">
         <h1 className="font-display text-3xl font-medium">My Room</h1>
-        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8">
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-5 sm:p-8">
           <h2 className="font-display text-xl">No room assigned yet</h2>
           <p className="text-sm text-muted-foreground mt-1 mb-4">
             Book a bed, and once our team confirms your payment, your room appears here.
@@ -76,14 +76,14 @@ export default function StudentRoomPage() {
   ];
 
   return (
-    <div className="max-w-4xl space-y-8 pb-10">
+    <div className="mx-auto w-full max-w-4xl space-y-8 pb-10">
       <div>
         <h1 className="font-display text-3xl font-medium mb-1">My Room</h1>
         <p className="text-muted-foreground text-sm">The room and bed assigned to you.</p>
       </div>
 
       {room.booking && (
-        <div className="bg-card border border-border rounded-2xl shadow-sm p-6 space-y-4">
+        <div className="min-w-0 space-y-4 overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-xl">Your booking</h2>
             <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300 px-3 py-1 rounded-full text-xs font-semibold">
@@ -146,8 +146,8 @@ export default function StudentRoomPage() {
         </div>
       )}
 
-      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-        {photos[0] && <img src={photos[0]} alt={room.label} className="w-full h-56 sm:h-72 object-cover" />}
+      <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        {photos[0] && <img src={photos[0]} alt={room.label} className="aspect-[16/9] w-full object-cover sm:aspect-[2/1]" />}
         <div className="p-6 sm:p-8 space-y-6">
           <div className="flex flex-wrap justify-between items-start gap-3">
             <div>

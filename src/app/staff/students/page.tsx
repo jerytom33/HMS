@@ -7,6 +7,7 @@ import { floorLabel, parseRoomString } from '@/lib/propertyTypes';
 import { StudentAvatar } from '@/components/StudentAvatar';
 import { staffPhotoUrl } from '@/lib/photoClient';
 import { STAY_LABEL, studentStatus, studentStay, type Stay, type StayBooking } from '@/lib/studentStay';
+import { adminCard, adminPage } from '@/components/staff/adminStyles';
 
 export default function AdminStudents() {
   const [students, setStudents] = useState<any[]>([]);
@@ -80,7 +81,7 @@ export default function AdminStudents() {
 
 
   return (
-    <div className="space-y-6">
+    <div className={adminPage}>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Students</h1>
@@ -88,13 +89,13 @@ export default function AdminStudents() {
         </div>
         <Link 
           href="/staff/students/add"
-          className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 shadow-sm flex items-center gap-2"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 sm:w-auto"
         >
           <Plus className="h-4 w-4" /> Add Student
         </Link>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 flex flex-col min-h-[600px]">
+      <div className={`${adminCard} flex min-h-[420px] flex-col sm:min-h-[600px]`}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 dark:bg-gray-950 gap-3">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">Student Directory</h3>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">

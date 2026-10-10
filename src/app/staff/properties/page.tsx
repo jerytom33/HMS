@@ -12,6 +12,7 @@ import { occupancy, occupancyPercent } from '@/lib/occupancy';
 import { PhotoCarousel } from '@/components/PhotoCarousel';
 import { UnitCard, UnitProfiles, UnitBeds, type UnitOccupant, type UnitBed } from '@/components/staff/UnitCard';
 import { staffPhotoUrl } from '@/lib/photoClient';
+import { adminCard, adminPage } from '@/components/staff/adminStyles';
 
 const INITIAL_PROPERTIES: any[] = [];
 
@@ -796,7 +797,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
   };
 
   return (
-    <div className="space-y-6">
+    <div className={adminPage}>
       <style>{`
         .property-glass-card {
           position: relative;
@@ -890,14 +891,14 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
         </div>
       )}
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100 tracking-tight">Property Management</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">Manage buildings and view interactive room layouts.</p>
         </div>
         <button 
           onClick={() => setIsAddPropertyModalOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 shadow-sm flex items-center gap-2"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 sm:w-auto"
         >
           <Plus className="h-4 w-4" /> Add Property
         </button>
@@ -906,7 +907,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
       <div className="flex flex-col gap-6">
         {/* Properties List */}
         {!isFullScreenMap && (
-        <div className="bg-white dark:bg-gray-900 dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800 flex flex-col h-[calc(100vh-150px)] min-h-[600px]">
+        <div className={`${adminCard} flex min-h-[520px] flex-col lg:h-[calc(100dvh-11rem)] lg:min-h-[600px]`}>
           <div className="p-4 border-b border-gray-200 dark:border-gray-800 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 gap-3">
             <h3 className="font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100">Your Properties</h3>
             <div className="relative w-full sm:w-auto">
@@ -945,15 +946,15 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                 </button>
               </div>
             ) : filteredProperties.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 xl:gap-6">
                 {filteredProperties.map((prop) => (
                   <div 
                     key={prop.id} 
                     onClick={() => { setSelectedPropertyId(prop.id); setSelectedFloor(1); setIsEditingRoom(false); setSelectedRoom(null); setIsFullScreenMap(true); }}
-                    className="property-glass-card group cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-red-500/20"
+                    className="property-glass-card group h-full min-w-0 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
                   >
                     <div className="card-content-layer">
-                      <div className="h-80 sm:h-[350px] relative bg-white dark:bg-gray-900 dark:bg-gray-900/20 flex items-center justify-center overflow-hidden">
+                      <div className="relative aspect-[16/10] min-h-48 max-h-72 overflow-hidden bg-white dark:bg-gray-900/20">
                         <AutoCarousel images={prop.images} name={prop.name} />
                         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
                         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
@@ -1035,8 +1036,8 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
 
         {/* Interactive Room Map */}
         {isFullScreenMap && (
-        <div className="bg-white dark:bg-gray-900 dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 dark:border-gray-800 flex flex-col h-[calc(100vh-150px)] min-h-[600px] overflow-hidden relative">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-800 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-950 dark:bg-gray-950">
+        <div className={`${adminCard} relative flex min-h-[520px] flex-col lg:h-[calc(100dvh-11rem)] lg:min-h-[600px]`}>
+          <div className="flex flex-col gap-3 border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex items-center gap-3">
               {isFullScreenMap && (
                 <button 
@@ -1110,7 +1111,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
             </div>
           </div>
           <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-950 dark:bg-gray-950 flex-1 overflow-auto pb-24">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5 min-w-full">
+            <div className="grid min-w-full auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {filteredRooms.map(({ roomNum, floor, roomName, unitType, subRooms, amenities, standalone, bedTypes, bunkPositions, genderPolicy, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, deposit, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions }) => (
                 <UnitCard
                   key={roomNum}
@@ -1152,7 +1153,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
               {standaloneUnits.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">No studios or apartments outside floors.</p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+                <div className="grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {standaloneUnits.map(unit => (
                     <UnitCard
                       key={unit.roomNum}
@@ -1181,7 +1182,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                   <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm"><Building2 className="w-4 h-4" /></span>
                   {floorDisplayName(selectedFloor)} Facilities
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 xl:gap-6">
                   {floorFacilitiesAt(selectedProperty, selectedFloor - 1).map((facility, idx) => (
                     <div key={idx} className="bg-white dark:bg-gray-900 dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 dark:border-gray-800 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                       {facility.images && facility.images.length > 0 ? (
@@ -1379,7 +1380,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                                 </span>
                                 <button 
                                   onClick={(e) => handleShareBed(idx, e)}
-                                  className="ml-1 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                  className="ml-1 rounded-md p-1 text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30"
                                   title="Share Bed Details"
                                 >
                                   <Share2 className="w-3.5 h-3.5" />
@@ -1614,7 +1615,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                                 key={p.name}
                                 type="button"
                                 onClick={() => updateAmenities([...editRoomData.amenities, { ...p }])}
-                                className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+                                className="inline-flex items-center gap-1 rounded-full border border-dashed border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/30"
                               >
                                 <Plus className="w-3 h-3" />
                                 <AmenityIcon name={p.name} className="w-3.5 h-3.5" />

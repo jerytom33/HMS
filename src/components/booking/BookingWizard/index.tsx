@@ -142,7 +142,7 @@ export const BookingWizard = () => {
           <div className={styles.stepperLine} />
           <div 
             className={styles.stepperProgress} 
-            style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }} 
+            style={{ transform: `scaleX(${currentStep / (STEPS.length - 1)})` }} 
           />
           {STEPS.map((label, index) => (
             <div key={label} className={styles.stepIndicator}>

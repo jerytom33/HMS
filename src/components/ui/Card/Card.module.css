@@ -1,4 +1,7 @@
 .card {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   background-color: var(--bg-secondary);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
@@ -50,6 +53,12 @@
   gap: 0.25rem;
 }
 
+.header,
+.content,
+.footer {
+  min-width: 0;
+}
+
 .title {
   font-family: var(--font-heading), serif;
   font-size: 1.25rem;
@@ -74,4 +83,5 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }

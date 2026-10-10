@@ -41,7 +41,7 @@ export function AgreementViewer({ url, title, onClose }: { url: string; title: s
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-6" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-5xl h-full flex flex-col">
+      <div className="flex h-full max-h-[calc(100dvh-2rem)] w-full max-w-5xl min-w-0 flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:bg-gray-900">
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
           <h2 className="font-semibold truncate">{title}</h2>
           <div className="flex items-center gap-2 shrink-0">

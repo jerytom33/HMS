@@ -6,6 +6,7 @@ import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums,
 import { bookingPayments, rentPaymentRows } from '@/lib/bookingPayments';
 import { showDate } from '@/lib/rent';
 import { formatPLN } from '@/lib/currency';
+import { adminCard, adminPage, adminStatCard, adminStatGrid } from '@/components/staff/adminStyles';
 
 const INITIAL_PAYMENTS: any[] = [];
 
@@ -150,7 +151,7 @@ export default function AdminPayments() {
   const failedAmount = filteredPayments.filter(p => p.status === 'Failed').reduce((sum, p) => sum + p.amount, 0);
 
   return (
-    <div className="space-y-6">
+    <div className={adminPage}>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Payment Management</h1>
@@ -170,23 +171,23 @@ export default function AdminPayments() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+      <div className={adminStatGrid}>
+        <div className={adminStatCard}>
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Revenue {monthFilter ? `(${monthFilter})` : '(All Time)'}</p>
           <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatPLN(totalRevenue, { decimals: true })}</p>
           <span className="text-xs font-medium text-green-600 mt-2 block">Completed payments, deposits not included</span>
         </div>
-        <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+        <div className={adminStatCard}>
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Deposits {monthFilter ? `(${monthFilter})` : '(All Time)'}</p>
           <p className="text-3xl font-bold text-blue-600">{formatPLN(totalDeposits, { decimals: true })}</p>
           <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-2 block">{depositCount} {depositCount === 1 ? 'deposit' : 'deposits'} received (refundable)</span>
         </div>
-        <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+        <div className={adminStatCard}>
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Pending Payments</p>
           <p className="text-3xl font-bold text-orange-600">{formatPLN(pendingAmount, { decimals: true })}</p>
           <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-2 block">{pendingCount} students with past due</span>
         </div>
-        <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+        <div className={adminStatCard}>
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Failed Transactions</p>
           <p className="text-3xl font-bold text-red-600">{formatPLN(failedAmount, { decimals: true })}</p>
           <span className="text-xs font-medium text-red-600 mt-2 block">Action required</span>
@@ -194,10 +195,10 @@ export default function AdminPayments() {
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-white dark:bg-gray-900 shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+      <div className={adminCard}>
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex flex-col sm:flex-row justify-between items-center gap-4">
           <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Recent Transactions</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <select
               value={propertyFilter}
               onChange={(e) => {

@@ -29,11 +29,15 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 2.5rem;
+  align-items: stretch;
 }
 
 .feature {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -43,6 +47,24 @@
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding: 3.5rem 1rem;
+  }
+
+  .header {
+    margin-bottom: 2.5rem;
+  }
+
+  .grid {
+    gap: 1rem;
+  }
+
+  .feature {
+    padding: 1.5rem;
+  }
 }
 
 .feature:hover {
