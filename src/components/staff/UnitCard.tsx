@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { BedDouble, ChevronRight, MessageCircle, X } from 'lucide-react';
+import { BedDouble, BedSingle, ChevronRight, MessageCircle, X } from 'lucide-react';
 import { PhotoCarousel } from '@/components/PhotoCarousel';
 import { StudentAvatar } from '@/components/StudentAvatar';
 import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
@@ -11,6 +11,9 @@ import { bedTypeCounts } from '@/lib/propertyTypes';
 
 /** A student in a unit: assigned by staff, or with a booking paid / on hold. */
 export type UnitOccupant = { bedIndex: number; bed: string; name: string; photo: string | null; state: string; id?: string; whatsapp?: string };
+
+/** One bed of a unit: its label, type, photos and who (if anyone) has it. */
+export type UnitBed = { bedIndex: number; label: string; type: 'independent' | 'bunk'; typeText: string; photos: string[]; description?: string; taken: boolean; occupant?: UnitOccupant };
 
 const STATE_STYLE: Record<string, string> = {
   'On hold': 'bg-amber-100 text-amber-800',
@@ -38,9 +41,9 @@ const firstNames = (people: UnitOccupant[]) => {
  * A unit (room, studio or apartment) in the staff unit map: its photos on top, name and status,
  * bills and beds, then the students in it and a link to their profiles.
  */
-export function UnitCard({ title, typeLabel, status, beds, freeBeds, filledBeds, bedTypes, photos, people, onOpen, onViewProfiles }: {
+export function UnitCard({ title, typeLabel, status, beds, freeBeds, filledBeds, bedTypes, photos, people, onOpen, onViewProfiles, onViewBeds }: {
   title: string; typeLabel: string; status: string; beds: number; freeBeds?: number; filledBeds?: number; bedTypes?: string[];
-  photos: string[]; people: UnitOccupant[]; onOpen: () => void; onViewProfiles: () => void;
+  photos: string[]; people: UnitOccupant[]; onOpen: () => void; onViewProfiles: () => void; onViewBeds?: () => void;
 }) {
   const counts = bedTypeCounts(bedTypes, beds);
   const tone = status === 'maintenance' ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900'
@@ -110,6 +113,12 @@ export function UnitCard({ title, typeLabel, status, beds, freeBeds, filledBeds,
           View Profiles <ChevronRight className="h-4 w-4" />
         </button>
       )}
+      {onViewBeds && beds > 0 && (
+        <button type="button" onClick={(e) => { e.stopPropagation(); onViewBeds(); }}
+          className="flex w-full items-center justify-center gap-1 border-t border-black/5 py-2.5 text-sm font-medium text-gray-600 hover:bg-black/5 hover:text-gray-900 focus:outline-none focus-visible:bg-black/5 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5">
+          View Beds <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
     </div>
   );
 }
@@ -154,6 +163,83 @@ export function UnitProfiles({ title, people, onClose }: { title: string; people
                     Profile
                   </Link>
                 )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+const BED_STATE_STYLE: Record<string, string> = {
+  Free: 'bg-green-100 text-green-800',
+  Taken: 'bg-red-100 text-red-700',
+  Maintenance: 'bg-red-100 text-red-700',
+  ...STATE_STYLE,
+};
+
+/** Every bed of one unit as a tile: photo, bed and type, Free / On hold / Paid / Assigned / Taken, and its student. */
+export function UnitBeds({ title, beds, maintenance, onClose }: { title: string; beds: UnitBed[]; maintenance?: boolean; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const free = beds.filter((b) => !b.taken && !b.occupant).length;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="unit-beds-title" onClick={onClose}>
+      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800">
+          <div>
+            <h2 id="unit-beds-title" className="font-semibold text-gray-900 dark:text-gray-100">
+              Beds · <span data-no-translate>{title}</span>
+            </h2>
+            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{`${beds.length} Total Bed${beds.length !== 1 ? 's' : ''} · ${free} Free · ${beds.length - free} Filled`}</p>
+          </div>
+          <button onClick={onClose} aria-label="Close" className="rounded-md p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"><X className="h-5 w-5" /></button>
+        </div>
+        <ul className="grid min-h-0 auto-rows-max grid-cols-1 content-start gap-4 overflow-y-auto p-5 sm:grid-cols-2">
+          {beds.map((b) => {
+            const state = b.occupant?.state || (maintenance ? 'Maintenance' : b.taken ? 'Taken' : 'Free');
+            const p = b.occupant;
+            return (
+              <li key={b.bedIndex} className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950">
+                <div className={`relative w-full shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800 ${b.photos.length > 0 ? 'aspect-[16/9]' : 'h-24'}`}>
+                  {b.photos.length > 0 ? (
+                    <PhotoCarousel images={b.photos} name={b.label} />
+                  ) : (
+                    <div className="absolute inset-0 grid place-items-center text-gray-400">
+                      <span className="flex flex-col items-center gap-1 text-xs"><BedSingle className="h-7 w-7" /> No bed photos yet</span>
+                    </div>
+                  )}
+                  <span className={`absolute right-2 top-2 rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm ${BED_STATE_STYLE[state] || 'bg-gray-100 text-gray-700'}`}>{state}</span>
+                </div>
+                <div className="flex flex-1 flex-col gap-2 p-3.5">
+                  <div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100" data-no-translate>{b.label}</div>
+                    <div className="mt-0.5 inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      <BedTypeIcon type={b.type} className="h-4 w-4" /> {b.typeText}
+                    </div>
+                  </div>
+                  {b.description && <p className="text-xs text-gray-600 line-clamp-2 dark:text-gray-400">{b.description}</p>}
+                  <div className="mt-auto flex items-center gap-2.5 border-t border-gray-100 pt-2.5 dark:border-gray-800">
+                    {p ? (
+                      <>
+                        <RingAvatar person={p} size={36} />
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-800 dark:text-gray-200" data-no-translate>{p.name}</span>
+                        {p.id && (
+                          <Link href={`/staff/students/${p.id}`} className="shrink-0 rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50 dark:border-gray-700 dark:text-blue-400 dark:hover:bg-blue-950/40">
+                            Profile
+                          </Link>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-sm text-gray-400">{b.taken ? 'Taken, no student linked' : 'No student'}</span>
+                    )}
+                  </div>
+                </div>
               </li>
             );
           })}

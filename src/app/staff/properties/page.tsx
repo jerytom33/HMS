@@ -10,7 +10,7 @@ import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
 import { cloudinaryUpload } from '@/lib/cloudinaryUpload';
 import { occupancy, occupancyPercent } from '@/lib/occupancy';
 import { PhotoCarousel } from '@/components/PhotoCarousel';
-import { UnitCard, UnitProfiles, type UnitOccupant } from '@/components/staff/UnitCard';
+import { UnitCard, UnitProfiles, UnitBeds, type UnitOccupant, type UnitBed } from '@/components/staff/UnitCard';
 import { staffPhotoUrl } from '@/lib/photoClient';
 
 const INITIAL_PROPERTIES: any[] = [];
@@ -52,6 +52,21 @@ export default function AdminProperties() {
       out.push({ bedIndex: i, bed: bedDisplayLabel(u, i), name, photo: staffPhotoUrl(student), state: assigned ? 'Assigned' : hold?.status === 'paid' ? 'Paid' : 'On hold', id: student?.id ? String(student.id) : undefined, whatsapp: student?.whatsapp || student?.phone || hold?.whatsapp });
     }
     return out;
+  };
+
+  /** Every bed of a unit for the "View Beds" popup, with the student in it (see unitOccupants). */
+  const unitBedsOf = (roomNum: number | string, u: { unitType?: string, subRooms?: SubRoom[], beds: number, bedTypes?: string[], bunkPositions?: (string | null)[], bedStatuses?: boolean[], bedOccupants?: (string | null)[], bedImages?: string[][], bedDescriptions?: string[] }): UnitBed[] => {
+    const people = unitOccupants(roomNum, u);
+    return Array.from({ length: u.beds || 0 }, (_, i) => ({
+      bedIndex: i,
+      label: bedDisplayLabel(u, i),
+      type: bedTypeAt(u.bedTypes, i),
+      typeText: bedTypeDisplay(u.bedTypes, u.bunkPositions, i),
+      photos: (u.bedImages?.[i] || []).filter(Boolean),
+      description: u.bedDescriptions?.[i] || undefined,
+      taken: Boolean(u.bedStatuses?.[i]),
+      occupant: people.find((p) => p.bedIndex === i),
+    }));
   };
 
     // Load real students from API
@@ -143,6 +158,7 @@ export default function AdminProperties() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   // Unit whose students are shown in the profiles popup ("View Profiles" on a unit card)
   const [profilesFor, setProfilesFor] = useState<{ title: string, people: UnitOccupant[] } | null>(null);
+  const [bedsFor, setBedsFor] = useState<{ title: string, beds: UnitBed[], maintenance: boolean } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isFullScreenMap, setIsFullScreenMap] = useState(false);
 
@@ -1063,6 +1079,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     setIsEditingRoom(false);
                   }}
                   onViewProfiles={() => setProfilesFor({ title: unitDisplayName({ roomName, unitType, roomNum }), people: unitOccupants(roomNum, { unitType, subRooms, beds, bedOccupants }) })}
+                  onViewBeds={() => setBedsFor({ title: unitDisplayName({ roomName, unitType, roomNum }), beds: unitBedsOf(roomNum, { unitType, subRooms, beds, bedTypes, bunkPositions, bedStatuses, bedOccupants, bedImages, bedDescriptions }), maintenance: status === 'maintenance' })}
                 />
               ))}
             </div>
@@ -1101,6 +1118,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                       people={unitOccupants(unit.roomNum, unit)}
                       onOpen={() => { setSelectedRoom(unit); setIsEditingRoom(false); }}
                       onViewProfiles={() => setProfilesFor({ title: unitDisplayName(unit), people: unitOccupants(unit.roomNum, unit) })}
+                      onViewBeds={() => setBedsFor({ title: unitDisplayName(unit), beds: unitBedsOf(unit.roomNum, unit), maintenance: unit.status === 'maintenance' })}
                     />
                   ))}
                 </div>
@@ -2976,6 +2994,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
 
       {/* Image Preview Modal */}
       {profilesFor && <UnitProfiles title={profilesFor.title} people={profilesFor.people} onClose={() => setProfilesFor(null)} />}
+      {bedsFor && <UnitBeds title={bedsFor.title} beds={bedsFor.beds} maintenance={bedsFor.maintenance} onClose={() => setBedsFor(null)} />}
 
       {previewImage && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>
