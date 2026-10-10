@@ -70,6 +70,7 @@ export const PL: Record<string, string> = {
   'Signed in as': 'Zalogowano jako',
   'View Profiles': 'Zobacz profile',
   'No photos yet': 'Brak zdjęć',
+  'No room photos yet': 'Brak zdjęć pokoju',
   'No students yet': 'Brak studentów',
   'Full': 'Pełny',
   'Profile': 'Profil',

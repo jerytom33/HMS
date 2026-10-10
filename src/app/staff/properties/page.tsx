@@ -31,9 +31,9 @@ export default function AdminProperties() {
   const [searchQuery, setSearchQuery] = useState('');
   const [availableStudents, setAvailableStudents] = useState<any[]>(MOCK_STUDENTS);
 
-  /** Every photo of a unit: room photos first, then each bed's. */
-  const unitPhotos = (u: { roomFacilitiesList?: { images: string[] }[], roomFacilitiesImages?: string[], bedImages?: string[][] }) =>
-    [...new Set([...(u.roomFacilitiesList || []).flatMap((f) => f.images || []), ...(u.roomFacilitiesImages || []), ...(u.bedImages || []).flat()].filter(Boolean))] as string[];
+  /** The unit card's photos: the room's own photos only (bed photos stay in the unit's details). */
+  const unitPhotos = (u: { roomFacilitiesList?: { images: string[] }[], roomFacilitiesImages?: string[] }) =>
+    [...new Set([...(u.roomFacilitiesList || []).flatMap((f) => f.images || []), ...(u.roomFacilitiesImages || [])].filter(Boolean))] as string[];
 
   /**
    * The students in a unit of the selected property, bed by bed: the one staff assigned to
@@ -1056,7 +1056,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                   freeBeds={freeBeds}
                   filledBeds={filledBeds}
                   bedTypes={bedTypes}
-                  photos={unitPhotos({ roomFacilitiesList, roomFacilitiesImages, bedImages })}
+                  photos={unitPhotos({ roomFacilitiesList, roomFacilitiesImages })}
                   people={unitOccupants(roomNum, { unitType, subRooms, beds, bedOccupants })}
                   onOpen={() => {
                     setSelectedRoom({ roomNum, roomName, unitType, subRooms, amenities, standalone, bedTypes, bunkPositions, genderPolicy, status, beds, freeBeds, filledBeds, bedStatuses, bedOccupants, bedImages, bedDescriptions, roomPrice, deposit, roomFacilitiesList, roomFacilitiesImages, roomFacilitiesDescription, roomFacilitiesDescriptions });

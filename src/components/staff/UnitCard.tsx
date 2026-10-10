@@ -51,13 +51,13 @@ export function UnitCard({ title, typeLabel, status, beds, freeBeds, filledBeds,
       role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onOpen(); }}
       className={`group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${tone}`}
     >
-      {/* Photos of the unit (room first, then beds) */}
+      {/* The room's photos */}
       <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-800">
         {photos.length > 0 ? (
           <PhotoCarousel images={photos} name={title} autoMs={3500} />
         ) : (
           <div className="absolute inset-0 grid place-items-center text-gray-400">
-            <span className="flex flex-col items-center gap-1 text-xs"><BedDouble className="h-8 w-8" /> No photos yet</span>
+            <span className="flex flex-col items-center gap-1 text-xs"><BedDouble className="h-8 w-8" /> No room photos yet</span>
           </div>
         )}
       </div>
