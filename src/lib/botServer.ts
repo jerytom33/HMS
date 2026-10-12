@@ -25,14 +25,14 @@ export function checkBotKey(request: Request): NextResponse | null {
 export const botPayload = () => getPayload({ config: configPromise })
 
 /** Every property and room override, as plain objects. */
-export async function loadInventory(payload: Payload) {
+export async function loadInventory(payload: Payload, options: { includeMaintenance?: boolean } = {}) {
   const [properties, overrides] = await Promise.all([
     payload.find({ collection: 'v1-properties', pagination: false, depth: 0, overrideAccess: true }),
     payload.find({ collection: 'v1-room-overrides', pagination: false, depth: 0, overrideAccess: true }),
   ])
   const props = properties.docs as unknown as BotProperty[]
   const overs = overrides.docs as unknown as BotOverride[]
-  return { properties: props, overrides: overs, units: listUnits(props, overs) }
+  return { properties: props, overrides: overs, units: listUnits(props, overs, options) }
 }
 
 /** WhatsApp numbers arrive as "+48 507 873 416", "48507873416"... keep digits only. */

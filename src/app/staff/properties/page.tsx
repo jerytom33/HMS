@@ -759,59 +759,33 @@ export default function AdminProperties() {
     setActiveSearchBed(null);
   };
 
-  const handleShareBed = async (room: ShareableUnit, bedIndex: number) => {
-    if (!room || !selectedProperty) return;
-    const roomFloor = room.floor || selectedFloor;
-    
-    const isFilled = room.bedStatuses ? room.bedStatuses[bedIndex] : bedIndex < (room.filledBeds || 0);
-    const bedDescription = room.bedDescriptions?.[bedIndex];
-    const bedImages = room.bedImages?.[bedIndex]?.filter(Boolean) || [];
-    
-    const propertyImages = selectedProperty.images || [];
-    
-    const floorFacilities = floorFacilitiesAt(selectedProperty, roomFloor - 1);
-    let floorFacilitiesText = '';
-    if (floorFacilities.length > 0) {
-      floorFacilitiesText = `\n\n🏢 *${floorDisplayName(roomFloor)} Facilities*\n` + floorFacilities.map((f: any) =>
-        `- ${f.description || 'Facility'}${f.images?.length > 0 ? `\n  Images:\n  ${f.images.join('\n  ')}` : ''}`
-      ).join('\n');
-    }
-
-    const roomFacilities = room.roomFacilitiesList || [];
-    let roomFacilitiesText = '';
-    if (roomFacilities.length > 0) {
-      roomFacilitiesText = `\n\n🛋️ *Room Facilities*\n` + roomFacilities.map((f) =>
-        `- ${f.description || 'Facility'}${f.images?.length > 0 ? `\n  Images:\n  ${f.images.join('\n  ')}` : ''}`
-      ).join('\n');
-    }
-    
-    const shareText = `🏨 *Property Details*
-Name: ${selectedProperty.name}
-Location: ${selectedProperty.location}
-${propertyImages.length > 0 ? `Images:\n${propertyImages.join('\n')}` : ''}${floorFacilitiesText}
-
-🚪 *${unitDisplayName(room)} Details* (${unitLabel(room.unitType)})
-Floor: ${room.standalone ? 'Outside floors' : floorDisplayName(roomFloor)}
-Rent: ${formatPLN(room.roomPrice) || 'Not set'}\nDeposit: ${formatPLN(unitDeposit(room)) || 'Not set'}\n✅ ${RENT_INCLUDES_TEXT}
-Total Beds: ${room.beds} (${room.freeBeds} Free)${roomFacilitiesText}
-
-🛏️ *${bedDisplayLabel(room, bedIndex)} Details*
-Type: ${bedTypeDisplay(room.bedTypes, room.bunkPositions, bedIndex)}
-Status: ${isFilled ? 'Occupied' : 'Free'}
-${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 0 ? `Images:\n${bedImages.join('\n')}\n` : ''}`;
-
+  // Shares are a link to the public page (/beds/...), which shows the live details without a login
+  const shareLink = async (title: string, text: string, path: string) => {
+    const url = `${window.location.origin}${path}`;
     try {
       if (navigator.share) {
-        await navigator.share({
-          title: `${bedDisplayLabel(room, bedIndex)} at ${selectedProperty.name}`,
-          text: shareText
-        });
+        await navigator.share({ title, text, url });
       } else {
-        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+        window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`, '_blank');
       }
     } catch (err) {
-      console.error('Error sharing:', err);
+      // Closing the share sheet is not an error
+      if ((err as Error)?.name !== 'AbortError') console.error('Error sharing:', err);
     }
+  };
+
+  const unitSharePath = (room: ShareableUnit) => `/beds/${encodeURIComponent(`${selectedPropertyId}-${room.roomNum}`)}`;
+
+  const handleShareBed = (room: ShareableUnit, bedIndex: number) => {
+    if (!room || !selectedProperty) return;
+    const title = `${bedDisplayLabel(room, bedIndex)}, ${unitDisplayName(room)} at ${selectedProperty.name}`;
+    return shareLink(title, `🛏️ ${title}\nPhotos, rent and live availability:`, `${unitSharePath(room)}/${bedIndex}`);
+  };
+
+  const handleShareUnit = (room: ShareableUnit) => {
+    if (!room || !selectedProperty) return;
+    const title = `${unitDisplayName(room)} at ${selectedProperty.name}`;
+    return shareLink(title, `🏨 ${title}\nAll beds with photos, rent and live availability:`, unitSharePath(room));
   };
 
   return (
@@ -1361,6 +1335,14 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-gray-700 dark:text-gray-300 dark:text-gray-300 font-bold text-base">Beds & Occupants</span>
                       <div className="text-xs font-semibold flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleShareUnit(selectedRoom)}
+                          className="flex items-center gap-1.5 rounded border border-blue-200 px-2 py-1 text-blue-700 transition-colors hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                          title="Share a public link to all beds"
+                        >
+                          <Share2 className="w-3.5 h-3.5" /> Share all
+                        </button>
                         <span className="flex items-center gap-1.5 text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200"><div className="w-2 h-2 rounded-full bg-green-500"></div> Free: {selectedRoom.freeBeds}</span>
                         <span className="flex items-center gap-1.5 text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200"><div className="w-2 h-2 rounded-full bg-red-500"></div> Filled: {selectedRoom.filledBeds}</span>
                       </div>
@@ -3042,6 +3024,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
           beds={bedsFor.beds}
           maintenance={bedsFor.maintenance}
           onShareBed={(bedIndex) => handleShareBed(bedsFor.room, bedIndex)}
+          onShareAll={() => handleShareUnit(bedsFor.room)}
           onClose={() => setBedsFor(null)}
         />
       )}

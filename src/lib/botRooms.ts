@@ -43,12 +43,23 @@ export type BotOverride = {
   /** Per bed: 'lower' | 'upper' for bunk beds */
   bunkPositions?: (string | null)[]
   bedImages?: string[][]
+  bedDescriptions?: string[]
   roomFacilitiesImages?: string[]
   roomFacilitiesList?: { images?: string[]; description?: string }[]
   roomPrice?: string
   deposit?: string
   /** 'inherit' | 'mixed' | 'male' | 'female' (missing = inherit from the property) */
   genderPolicy?: string
+}
+
+export type BotBed = {
+  index: number
+  label: string
+  type: string
+  image: string | null
+  images: string[]
+  description: string
+  available: boolean
 }
 
 /** One bookable choice: a room or studio, or one bedroom of an apartment. */
@@ -64,6 +75,7 @@ export type BotUnit = {
   floor: number | null
   floorName: string
   unitType: 'room' | 'studio' | 'apartment'
+  status: string
   /** "Room 202", "Studio 3", "Apartment 101 · Bedroom 2". */
   label: string
   subRoomIndex: number | null
@@ -74,7 +86,9 @@ export type BotUnit = {
   /** Flat bed indices of this unit that are free. */
   freeBedIndices: number[]
   /** The free beds with their labels ("Bed B", "Bedroom 2 · Bed A"), type ("Bunk Bed · Upper") and photo, if any. */
-  freeBedList: { index: number; label: string; type: string; image: string | null }[]
+  freeBedList: BotBed[]
+  /** Every bed in this unit, including currently occupied beds, for public shared links. */
+  allBedList: BotBed[]
   price: number | null
   deposit: number | null
   amenities: string[]
@@ -143,7 +157,7 @@ function roomsOnFloor(property: BotProperty, floor: number): number {
 }
 
 /** Units of every property, one entry per room/studio and per apartment bedroom. */
-export function listUnits(properties: BotProperty[], overrides: BotOverride[]): BotUnit[] {
+export function listUnits(properties: BotProperty[], overrides: BotOverride[], options: { includeMaintenance?: boolean } = {}): BotUnit[] {
   const byKey = new Map(overrides.map((o) => [o.overrideKey, o]))
   const units: BotUnit[] = []
 
@@ -169,7 +183,7 @@ export function listUnits(properties: BotProperty[], overrides: BotOverride[]): 
     for (const slot of slots) {
       const o = byKey.get(slot.key)
       const status = o?.status || 'available'
-      if (status === 'maintenance') continue
+      if (status === 'maintenance' && !options.includeMaintenance) continue
 
       const unitType = (o?.unitType || (slot.floor === null ? 'studio' : 'room')) as BotUnit['unitType']
       const subRooms = unitType === 'apartment' && Array.isArray(o?.subRooms) ? o!.subRooms : []
@@ -180,11 +194,19 @@ export function listUnits(properties: BotProperty[], overrides: BotOverride[]): 
       if (total <= 0) continue
 
       const taken = fitBedStatuses(o, total)
-      const bedInfo = (b: number) => {
-        const photo = strings(o?.bedImages?.[b])[0]
+      const bedInfo = (b: number): BotBed => {
+        const images = strings(o?.bedImages?.[b]).map(whatsappImageUrl)
         // An apartment bedroom's label already names the bedroom, so keep just "Bed A"
         const label = bedDisplayLabel({ unitType, subRooms }, b).split(' · ').pop()!
-        return { index: b, label, type: bedTypeDisplay(o?.bedTypes, o?.bunkPositions, b), image: photo ? whatsappImageUrl(photo) : null }
+        return {
+          index: b,
+          label,
+          type: bedTypeDisplay(o?.bedTypes, o?.bunkPositions, b),
+          image: images[0] || null,
+          images,
+          description: String(o?.bedDescriptions?.[b] || '').trim(),
+          available: !taken[b],
+        }
       }
       const ownImages = [...strings(o?.roomFacilitiesImages), ...strings(o?.bedImages), ...(o?.roomFacilitiesList || []).flatMap((f) => strings(f?.images))].map(whatsappImageUrl)
       const baseLabel = o?.roomName?.trim() || `${unitLabel(unitType)} ${slot.roomNum}`
@@ -197,6 +219,7 @@ export function listUnits(properties: BotProperty[], overrides: BotOverride[]): 
         floor: slot.floor,
         floorName: slot.floor === null ? 'Outside floors' : floorLabel(property, slot.floor),
         unitType,
+        status,
         price: parseAmount(o?.roomPrice),
         deposit: unitDeposit(o),
         amenities: (o?.amenities || []).filter((a) => a?.included).map((a) => (a.shared ? `${a.name} (shared)` : a.name)),
@@ -209,8 +232,8 @@ export function listUnits(properties: BotProperty[], overrides: BotOverride[]): 
         let start = 0
         subRooms.forEach((room, index) => {
           const beds = Number(room.beds) || 0
-          const free = []
-          for (let b = start; b < start + beds; b++) if (!taken[b]) free.push(b)
+          const allBedList = Array.from({ length: beds }, (_, offset) => bedInfo(start + offset))
+          const freeBedList = allBedList.filter((bed) => bed.available)
           units.push({
             ...base,
             unit: `${slot.key}~${index}`,
@@ -218,15 +241,28 @@ export function listUnits(properties: BotProperty[], overrides: BotOverride[]): 
             subRoomIndex: index,
             subRoomName: room.name || `Bedroom ${index + 1}`,
             sharing: beds,
-            freeBeds: free.length,
-            freeBedIndices: free,
-            freeBedList: free.map(bedInfo),
+            freeBeds: freeBedList.length,
+            freeBedIndices: freeBedList.map((bed) => bed.index),
+            freeBedList,
+            allBedList,
           })
           start += beds
         })
       } else {
-        const free = taken.flatMap((t, i) => (t ? [] : [i]))
-        units.push({ ...base, unit: slot.key, label: baseLabel, subRoomIndex: null, subRoomName: null, sharing: total, freeBeds: free.length, freeBedIndices: free, freeBedList: free.map(bedInfo) })
+        const allBedList = Array.from({ length: total }, (_, index) => bedInfo(index))
+        const freeBedList = allBedList.filter((bed) => bed.available)
+        units.push({
+          ...base,
+          unit: slot.key,
+          label: baseLabel,
+          subRoomIndex: null,
+          subRoomName: null,
+          sharing: total,
+          freeBeds: freeBedList.length,
+          freeBedIndices: freeBedList.map((bed) => bed.index),
+          freeBedList,
+          allBedList,
+        })
       }
     }
   }

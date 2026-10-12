@@ -180,11 +180,12 @@ const BED_STATE_STYLE: Record<string, string> = {
 };
 
 /** Every bed of one unit as a tile: photo, bed and type, Free / On hold / Paid / Assigned / Taken, and its student. */
-export function UnitBeds({ title, beds, maintenance, onShareBed, onClose }: {
+export function UnitBeds({ title, beds, maintenance, onShareBed, onShareAll, onClose }: {
   title: string;
   beds: UnitBed[];
   maintenance?: boolean;
   onShareBed?: (bedIndex: number) => void;
+  onShareAll?: () => void;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -204,7 +205,18 @@ export function UnitBeds({ title, beds, maintenance, onShareBed, onClose }: {
             </h2>
             <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{`${beds.length} Total Bed${beds.length !== 1 ? 's' : ''} · ${free} Free · ${beds.length - free} Filled`}</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="rounded-md p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"><X className="h-5 w-5" /></button>
+          <div className="flex items-center gap-2">
+            {onShareAll && (
+              <button
+                type="button"
+                onClick={onShareAll}
+                className="flex min-h-9 items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-gray-700 dark:text-blue-400 dark:hover:bg-blue-950/40"
+              >
+                <Share2 className="h-4 w-4" /> Share all beds
+              </button>
+            )}
+            <button onClick={onClose} aria-label="Close" className="rounded-md p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"><X className="h-5 w-5" /></button>
+          </div>
         </div>
         <ul className="grid min-h-0 auto-rows-max grid-cols-1 content-start gap-4 overflow-y-auto p-5 sm:grid-cols-2">
           {beds.map((b) => {

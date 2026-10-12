@@ -44,6 +44,13 @@ export default function FindRoomPage() {
       // Pre-fill the arrival date the student gave on WhatsApp
       setArrivalDate((current) => current || r.arrivalDate || '');
       setRooms(r.rooms);
+      const sharedParams = new URLSearchParams(window.location.search);
+      const sharedUnit = sharedParams.get('unit');
+      const sharedBed = Number(sharedParams.get('bed'));
+      if (sharedUnit && Number.isInteger(sharedBed)) {
+        const room = r.rooms.find((candidate: Room) => candidate.unit === sharedUnit);
+        if (room?.beds.some((bed: Bed) => bed.index === sharedBed)) setPicked({ unit: sharedUnit, bed: sharedBed });
+      }
       setSharingOptions(r.sharingOptions);
       setGenderKnown(r.genderKnown);
       setBookings((await get('/api/student/bookings')).bookings);

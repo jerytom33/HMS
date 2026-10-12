@@ -80,6 +80,21 @@ describe('bot room availability', () => {
     expect(u.map((x) => x.freeBedIndices)).toEqual([[], [3]])
   })
 
+  it('keeps all bed details for public links and can include maintenance rooms explicitly', () => {
+    const changed = overrides.map((o) =>
+      o.overrideKey === `${B}-202`
+        ? { ...o, status: 'maintenance', bedStatuses: [true, false, false, false], bedDescriptions: ['Near the window'], bedImages: [['https://example.com/bed-a.jpg']] }
+        : o,
+    )
+
+    expect(listUnits(properties, changed).some((unit) => unit.overrideKey === `${B}-202`)).toBe(false)
+    const room = listUnits(properties, changed, { includeMaintenance: true }).find((unit) => unit.overrideKey === `${B}-202`)!
+    expect(room.status).toBe('maintenance')
+    expect(room.allBedList).toHaveLength(4)
+    expect(room.allBedList[0]).toMatchObject({ index: 0, available: false, description: 'Near the window', image: 'https://example.com/bed-a.jpg' })
+    expect(room.freeBedIndices).toEqual([1, 2, 3])
+  })
+
   it('offers other sharing types or reports full', () => {
     const allTaken = units.map((u) => (u.sharing === 3 ? { ...u, freeBeds: 0, freeBedIndices: [] } : u))
     const three = searchRooms(allTaken, 3)
