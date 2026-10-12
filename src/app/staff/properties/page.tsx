@@ -16,6 +16,26 @@ import { adminCard, adminPage } from '@/components/staff/adminStyles';
 
 const INITIAL_PROPERTIES: any[] = [];
 
+type ShareableUnit = {
+  roomNum: number | string;
+  floor?: number;
+  roomName?: string;
+  unitType?: string;
+  subRooms?: SubRoom[];
+  standalone?: boolean;
+  beds: number;
+  freeBeds?: number;
+  filledBeds?: number;
+  bedStatuses?: boolean[];
+  bedImages?: string[][];
+  bedDescriptions?: string[];
+  roomPrice?: string | null;
+  deposit?: string | null;
+  bedTypes?: string[];
+  bunkPositions?: (string | null)[];
+  roomFacilitiesList?: { images: string[]; description: string }[];
+};
+
 
 const MOCK_STUDENTS: any[] = [];
 
@@ -170,7 +190,7 @@ export default function AdminProperties() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   // Unit whose students are shown in the profiles popup ("View Profiles" on a unit card)
   const [profilesFor, setProfilesFor] = useState<{ title: string, people: UnitOccupant[] } | null>(null);
-  const [bedsFor, setBedsFor] = useState<{ title: string, beds: UnitBed[], maintenance: boolean } | null>(null);
+  const [bedsFor, setBedsFor] = useState<{ title: string, beds: UnitBed[], maintenance: boolean, room: ShareableUnit } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isFullScreenMap, setIsFullScreenMap] = useState(false);
 
@@ -739,15 +759,13 @@ export default function AdminProperties() {
     setActiveSearchBed(null);
   };
 
-  const handleShareBed = async (bedIndex: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!selectedRoom || !selectedProperty) return;
-    const roomFloor = selectedRoom.floor || selectedFloor;
+  const handleShareBed = async (room: ShareableUnit, bedIndex: number) => {
+    if (!room || !selectedProperty) return;
+    const roomFloor = room.floor || selectedFloor;
     
-    const bedLabel = String.fromCharCode(65 + bedIndex);
-    const isFilled = selectedRoom.bedStatuses ? selectedRoom.bedStatuses[bedIndex] : bedIndex < (selectedRoom.filledBeds || 0);
-    const bedDescription = selectedRoom.bedDescriptions?.[bedIndex];
-    const bedImages = selectedRoom.bedImages?.[bedIndex]?.filter(Boolean) || [];
+    const isFilled = room.bedStatuses ? room.bedStatuses[bedIndex] : bedIndex < (room.filledBeds || 0);
+    const bedDescription = room.bedDescriptions?.[bedIndex];
+    const bedImages = room.bedImages?.[bedIndex]?.filter(Boolean) || [];
     
     const propertyImages = selectedProperty.images || [];
     
@@ -759,10 +777,10 @@ export default function AdminProperties() {
       ).join('\n');
     }
 
-    const roomFacilities = selectedRoom.roomFacilitiesList || [];
+    const roomFacilities = room.roomFacilitiesList || [];
     let roomFacilitiesText = '';
     if (roomFacilities.length > 0) {
-      roomFacilitiesText = `\n\n🛋️ *Room Facilities*\n` + roomFacilities.map((f: any) =>
+      roomFacilitiesText = `\n\n🛋️ *Room Facilities*\n` + roomFacilities.map((f) =>
         `- ${f.description || 'Facility'}${f.images?.length > 0 ? `\n  Images:\n  ${f.images.join('\n  ')}` : ''}`
       ).join('\n');
     }
@@ -772,20 +790,20 @@ Name: ${selectedProperty.name}
 Location: ${selectedProperty.location}
 ${propertyImages.length > 0 ? `Images:\n${propertyImages.join('\n')}` : ''}${floorFacilitiesText}
 
-🚪 *${unitDisplayName(selectedRoom)} Details* (${unitLabel(selectedRoom.unitType)})
-Floor: ${selectedRoom.standalone ? 'Outside floors' : floorDisplayName(roomFloor)}
-Rent: ${formatPLN(selectedRoom.roomPrice) || 'Not set'}\nDeposit: ${formatPLN(unitDeposit(selectedRoom)) || 'Not set'}\n✅ ${RENT_INCLUDES_TEXT}
-Total Beds: ${selectedRoom.beds} (${selectedRoom.freeBeds} Free)${roomFacilitiesText}
+🚪 *${unitDisplayName(room)} Details* (${unitLabel(room.unitType)})
+Floor: ${room.standalone ? 'Outside floors' : floorDisplayName(roomFloor)}
+Rent: ${formatPLN(room.roomPrice) || 'Not set'}\nDeposit: ${formatPLN(unitDeposit(room)) || 'Not set'}\n✅ ${RENT_INCLUDES_TEXT}
+Total Beds: ${room.beds} (${room.freeBeds} Free)${roomFacilitiesText}
 
-🛏️ *${bedDisplayLabel(selectedRoom, bedIndex)} Details*
-Type: ${bedTypeDisplay(selectedRoom.bedTypes, selectedRoom.bunkPositions, bedIndex)}
+🛏️ *${bedDisplayLabel(room, bedIndex)} Details*
+Type: ${bedTypeDisplay(room.bedTypes, room.bunkPositions, bedIndex)}
 Status: ${isFilled ? 'Occupied' : 'Free'}
 ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 0 ? `Images:\n${bedImages.join('\n')}\n` : ''}`;
 
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${bedDisplayLabel(selectedRoom, bedIndex)} at ${selectedProperty.name}`,
+          title: `${bedDisplayLabel(room, bedIndex)} at ${selectedProperty.name}`,
           text: shareText
         });
       } else {
@@ -1129,7 +1147,12 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                     setIsEditingRoom(false);
                   }}
                   onViewProfiles={() => setProfilesFor({ title: unitDisplayName({ roomName, unitType, roomNum }), people: unitOccupants(roomNum, { unitType, subRooms, beds, bedOccupants }) })}
-                  onViewBeds={() => setBedsFor({ title: unitDisplayName({ roomName, unitType, roomNum }), beds: unitBedsOf(roomNum, { unitType, subRooms, beds, bedTypes, bunkPositions, bedStatuses, bedOccupants, bedImages, bedDescriptions }), maintenance: status === 'maintenance' })}
+                  onViewBeds={() => setBedsFor({
+                    title: unitDisplayName({ roomName, unitType, roomNum }),
+                    beds: unitBedsOf(roomNum, { unitType, subRooms, beds, bedTypes, bunkPositions, bedStatuses, bedOccupants, bedImages, bedDescriptions }),
+                    maintenance: status === 'maintenance',
+                    room: { roomNum, floor, roomName, unitType, subRooms, standalone, beds, freeBeds, filledBeds, bedStatuses, bedImages, bedDescriptions, roomPrice, deposit, bedTypes, bunkPositions, roomFacilitiesList },
+                  })}
                 />
               ))}
             </div>
@@ -1168,7 +1191,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                       people={unitOccupants(unit.roomNum, unit)}
                       onOpen={() => { setSelectedRoom(unit); setIsEditingRoom(false); }}
                       onViewProfiles={() => setProfilesFor({ title: unitDisplayName(unit), people: unitOccupants(unit.roomNum, unit) })}
-                      onViewBeds={() => setBedsFor({ title: unitDisplayName(unit), beds: unitBedsOf(unit.roomNum, unit), maintenance: unit.status === 'maintenance' })}
+                      onViewBeds={() => setBedsFor({ title: unitDisplayName(unit), beds: unitBedsOf(unit.roomNum, unit), maintenance: unit.status === 'maintenance', room: unit })}
                     />
                   ))}
                 </div>
@@ -1379,7 +1402,7 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
                                   <BedTypeIcon type={bedTypeAt(selectedRoom.bedTypes, idx)} position={bunkPositionAt(selectedRoom.bedTypes, selectedRoom.bunkPositions, idx)} withLabel className="w-3.5 h-3.5" />
                                 </span>
                                 <button 
-                                  onClick={(e) => handleShareBed(idx, e)}
+                                  onClick={(e) => { e.stopPropagation(); handleShareBed(selectedRoom, idx); }}
                                   className="ml-1 rounded-md p-1 text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30"
                                   title="Share Bed Details"
                                 >
@@ -3013,7 +3036,15 @@ ${bedDescription ? `Description: ${bedDescription}\n` : ''}${bedImages.length > 
 
       {/* Image Preview Modal */}
       {profilesFor && <UnitProfiles title={profilesFor.title} people={profilesFor.people} onClose={() => setProfilesFor(null)} />}
-      {bedsFor && <UnitBeds title={bedsFor.title} beds={bedsFor.beds} maintenance={bedsFor.maintenance} onClose={() => setBedsFor(null)} />}
+      {bedsFor && (
+        <UnitBeds
+          title={bedsFor.title}
+          beds={bedsFor.beds}
+          maintenance={bedsFor.maintenance}
+          onShareBed={(bedIndex) => handleShareBed(bedsFor.room, bedIndex)}
+          onClose={() => setBedsFor(null)}
+        />
+      )}
 
       {previewImage && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => setPreviewImage(null)}>

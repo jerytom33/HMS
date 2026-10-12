@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { BedDouble, BedSingle, ChevronRight, MessageCircle, X } from 'lucide-react';
+import { BedDouble, BedSingle, ChevronRight, MessageCircle, Share2, X } from 'lucide-react';
 import { PhotoCarousel } from '@/components/PhotoCarousel';
 import { StudentAvatar } from '@/components/StudentAvatar';
 import { BedTypeIcon } from '@/components/ui/BedTypeIcon';
@@ -180,7 +180,13 @@ const BED_STATE_STYLE: Record<string, string> = {
 };
 
 /** Every bed of one unit as a tile: photo, bed and type, Free / On hold / Paid / Assigned / Taken, and its student. */
-export function UnitBeds({ title, beds, maintenance, onClose }: { title: string; beds: UnitBed[]; maintenance?: boolean; onClose: () => void }) {
+export function UnitBeds({ title, beds, maintenance, onShareBed, onClose }: {
+  title: string;
+  beds: UnitBed[];
+  maintenance?: boolean;
+  onShareBed?: (bedIndex: number) => void;
+  onClose: () => void;
+}) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -240,6 +246,16 @@ export function UnitBeds({ title, beds, maintenance, onClose }: { title: string;
                     )}
                   </div>
                 </div>
+                {onShareBed && (
+                  <button
+                    type="button"
+                    onClick={() => onShareBed(b.bedIndex)}
+                    className="flex min-h-11 w-full items-center justify-center gap-2 border-t border-gray-100 px-3 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:border-gray-800 dark:text-blue-400 dark:hover:bg-blue-950/40"
+                    aria-label={`Share ${b.label} details`}
+                  >
+                    <Share2 className="h-4 w-4" /> Share bed
+                  </button>
+                )}
               </li>
             );
           })}
