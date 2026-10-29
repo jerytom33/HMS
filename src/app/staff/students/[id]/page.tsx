@@ -31,6 +31,71 @@ function Field({ label, value }: { label: string; value?: React.ReactNode }) {
   );
 }
 
+/**
+ * The booking's monthly rent, which staff can change for this student (a discount, or more than
+ * the room's rate). Rent due from now on, the portal and new agreements use it; rent already
+ * recorded and an agreement already generated stay as they were.
+ */
+function RentEditor({ booking, standard, deposit, onSaved }: { booking: StayBooking; standard: number | null; deposit: number | null; onSaved: (b: Partial<StayBooking>) => void }) {
+  const current = typeof booking.price === 'number' ? booking.price : standard;
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const save = async (amount: number | null) => {
+    setBusy(true);
+    setError('');
+    // Bookings without their own deposit take it from the rent; keep that deposit as it was
+    const data: Record<string, unknown> = { price: amount };
+    if (typeof booking.deposit !== 'number' && deposit !== null) data.deposit = deposit;
+    const res = await fetch(`/api/v1-bot-bookings/${booking.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).catch(() => null);
+    setBusy(false);
+    if (!res?.ok) return setError("Couldn't save the rent. Please try again.");
+    onSaved(data as Partial<StayBooking>);
+    setEditing(false);
+  };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseAmount(value);
+    if (amount === null || amount <= 0 || amount > 100000) return setError('Enter the monthly rent in PLN, e.g. 1450.');
+    save(amount);
+  };
+
+  const custom = current !== null && standard !== null && current !== standard;
+  return (
+    <div>
+      <dt className="text-xs text-gray-500 dark:text-gray-400">Monthly rent</dt>
+      {editing ? (
+        <form onSubmit={submit} className="mt-1 space-y-2">
+          <div className="flex items-center gap-2">
+            <input autoFocus inputMode="decimal" aria-label="Monthly rent in PLN" value={value} onChange={(e) => setValue(e.target.value)} className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-950" />
+            <span className="text-sm text-gray-500">PLN</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" disabled={busy} className="rounded-md bg-blue-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60">Save</button>
+            <button type="button" onClick={() => { setEditing(false); setError(''); }} className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium dark:border-gray-700">Cancel</button>
+          </div>
+          {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
+        </form>
+      ) : (
+        <dd className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {current !== null ? `${formatPLN(current)}/mo` : '–'}
+          {custom && <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">Individual</span>}
+          {custom && <span className="block text-xs font-normal text-gray-500 dark:text-gray-400">Room rate {formatPLN(standard)}/mo</span>}
+          <span className="mt-1 flex flex-wrap gap-x-3 text-xs font-normal">
+            <button type="button" onClick={() => { setValue(current !== null ? String(current) : ''); setEditing(true); }} className="text-blue-600 hover:underline">Change rent</button>
+            {custom && <button type="button" disabled={busy} onClick={() => save(standard)} className="text-blue-600 hover:underline">Use room rate</button>}
+          </span>
+          {error && <span role="alert" className="block text-xs text-red-600">{error}</span>}
+          {booking.agreementGeneratedAt && custom && <span className="block text-xs font-normal text-gray-500 dark:text-gray-400">The generated agreement keeps the rent it was made with.</span>}
+        </dd>
+      )}
+    </div>
+  );
+}
+
 export default function StudentProfilePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -297,7 +362,7 @@ export default function StudentProfilePage() {
           <ul className="divide-y divide-gray-200 dark:divide-gray-800">
             {own.map((b) => {
               const unit = b.overrideKey ? overrides[b.overrideKey] : undefined;
-              const rent = typeof b.price === 'number' ? b.price : parseAmount(unit?.roomPrice);
+              const standard = parseAmount(unit?.roomPrice);
               const deposit = typeof b.deposit === 'number' ? b.deposit : typeof b.price === 'number' ? b.price : unitDeposit(unit);
               return (
                 <li key={b.id} className="py-4 space-y-3">
@@ -306,11 +371,12 @@ export default function StudentProfilePage() {
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${b.status === 'paid' ? 'bg-green-100 text-green-800' : b.status === 'held' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}`}>{BOOKING_STATUS[b.status] || b.status}</span>
                     <span className="text-xs text-gray-500">Booked {date(b.createdAt)}{b.paidAt ? ` · paid ${date(b.paidAt)}` : ''}</span>
                   </div>
-                  <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+                  <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-5">
                     <Field label="Hostel" value={b.hostel} />
                     <Field label="Room / bed" value={[b.room, b.bed].filter(Boolean).join(', ')} />
                     <Field label="Arrival" value={b.arrivalDate} />
-                    <Field label="Rent / deposit" value={`${rent !== null ? `${formatPLN(rent)}/mo` : '–'} · ${deposit !== null ? formatPLN(deposit) : '–'}`} />
+                    <RentEditor booking={b} standard={standard} deposit={deposit} onSaved={(changes) => setBookings((all) => all.map((x) => (x.id === b.id ? { ...x, ...changes } : x)))} />
+                    <Field label="Deposit" value={deposit !== null ? formatPLN(deposit) : '–'} />
                   </dl>
                   {b.agreementGeneratedAt && (
                     <div className="flex flex-wrap items-center gap-2 text-sm">

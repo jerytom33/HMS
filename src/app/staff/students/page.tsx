@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, X, Search, Plus, Mail, Phone, Home, Calendar, MapPin, GraduationCap, HeartPulse, AlertTriangle } from 'lucide-react';
+import { Users, X, Search, Plus, Mail, Phone, Home, Calendar, MapPin, GraduationCap, HeartPulse, AlertTriangle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { floorLabel, parseRoomString } from '@/lib/propertyTypes';
 import { StudentAvatar } from '@/components/StudentAvatar';
@@ -87,12 +87,20 @@ export default function AdminStudents() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Students</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Manage student directory and profiles.</p>
         </div>
-        <Link 
-          href="/staff/students/add"
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 sm:w-auto"
-        >
-          <Plus className="h-4 w-4" /> Add Student
-        </Link>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Link
+            href="/staff/students/leftovers"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 sm:w-auto"
+          >
+            <Trash2 className="h-4 w-4" /> Deleted students&apos; records
+          </Link>
+          <Link 
+            href="/staff/students/add"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 sm:w-auto"
+          >
+            <Plus className="h-4 w-4" /> Add Student
+          </Link>
+        </div>
       </div>
 
       <div className={`${adminCard} flex min-h-[420px] flex-col sm:min-h-[600px]`}>

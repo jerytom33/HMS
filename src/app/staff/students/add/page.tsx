@@ -3,10 +3,22 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Camera, ArrowLeft, User, Phone, MapPin, GraduationCap, HeartPulse, Save, Home } from 'lucide-react';
+import { Camera, ArrowLeft, User, Phone, MapPin, GraduationCap, HeartPulse, Save, Home, BookUser } from 'lucide-react';
 import { roomNumber, floorLabel, roomLabel, bedDisplayLabel, standaloneRoomNums, parseRoomString, bedTypeDisplay } from '@/lib/propertyTypes';
 import { staffPhotoUrl, uploadPhoto } from '@/lib/photoClient';
 import { adminCard } from '@/components/staff/adminStyles';
+
+// Passport expiry is stored DD/MM/YYYY (like the portal); the date picker works in YYYY-MM-DD
+const toPicker = (ddmmyyyy: string) => {
+  const m = String(ddmmyyyy || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
+};
+const fromPicker = (ymd: string) => {
+  const m = String(ymd || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
+};
+/** "ab 123 4567" -> "AB1234567" */
+const cleanPassportNumber = (value: string) => value.toUpperCase().replace(/[\s-]/g, '');
 
 export default function AddStudentPage() {
   const router = useRouter();
@@ -32,7 +44,12 @@ export default function AddStudentPage() {
     emergencyName: '',
     emergencyPhone: '',
     emergencyRelation: '',
+    passportNumber: '',
+    passportValidUntil: '',
   });
+  // As loaded, to tell whether staff changed the passport
+  const [savedPassport, setSavedPassport] = useState({ number: '', validUntil: '' });
+  const [passportError, setPassportError] = useState('');
 
   const [properties, setProperties] = useState<any[]>([]);
   const [roomOverrides, setRoomOverrides] = useState<Record<string, any>>({});
@@ -77,7 +94,10 @@ export default function AddStudentPage() {
             emergencyName: student.emergencyName || '',
             emergencyPhone: student.emergencyPhone || '',
             emergencyRelation: student.emergencyRelation || '',
+            passportNumber: student.passportNumber || '',
+            passportValidUntil: toPicker(student.passportValidUntil || ''),
           });
+          setSavedPassport({ number: student.passportNumber || '', validUntil: student.passportValidUntil || '' });
 
           if (student.property && student.room && student.room !== 'Unassigned') {
             const prop = loadedProps.find(p => p.name === student.property);
@@ -116,6 +136,23 @@ export default function AddStudentPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const passportNumber = cleanPassportNumber(formData.passportNumber);
+    const passportValidUntil = fromPicker(formData.passportValidUntil);
+    if (passportNumber && !/^[A-Z0-9]{5,20}$/.test(passportNumber)) {
+      setPassportError('Passport number: 5 to 20 letters and digits.');
+      return;
+    }
+    if (!!passportNumber !== !!passportValidUntil) {
+      setPassportError('Enter both the passport number and the date it is valid until.');
+      return;
+    }
+    setPassportError('');
+    const passportChanged = passportNumber !== savedPassport.number || passportValidUntil !== savedPassport.validUntil;
+    // Details staff enter themselves count as checked; clearing them resets the status
+    const passport = !passportChanged ? {} : passportNumber
+      ? { passportNumber, passportValidUntil, passportStatus: 'verified', passportVerifiedAt: new Date().toISOString(), passportRejectReason: '' }
+      : { passportNumber: '', passportValidUntil: '', passportStatus: 'none', passportVerifiedAt: null };
     
     let currentStudents: any[] = [];
     try {
@@ -152,6 +189,7 @@ export default function AddStudentPage() {
         emergencyName: formData.emergencyName,
         emergencyPhone: formData.emergencyPhone,
         emergencyRelation: formData.emergencyRelation,
+        ...passport,
         room: roomStr || 'Unassigned',
         property: propName || '',
         status: roomStr ? 'Active' : 'Active'
@@ -172,7 +210,8 @@ export default function AddStudentPage() {
         yearOfStudy: formData.yearOfStudy,
         emergencyName: formData.emergencyName,
         emergencyPhone: formData.emergencyPhone,
-        emergencyRelation: formData.emergencyRelation
+        emergencyRelation: formData.emergencyRelation,
+        ...passport,
       };
       
       const res = await fetch('/api/v1-students', { method: 'POST', headers: { 'Content-Type': 'application/json'}, body: JSON.stringify(newStudent) });
@@ -470,6 +509,29 @@ export default function AddStudentPage() {
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Home Address</label>
                   <textarea name="address" value={formData.address} onChange={handleChange} rows={3} placeholder="Full residential address..." className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
                 </div>
+              </div>
+            </div>
+
+            {/* Passport (for the lease agreement) */}
+            <div className={adminCard}>
+              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex items-center gap-2">
+                <BookUser className="w-4 h-4 text-blue-600" />
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Passport</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-6">
+                <div className="space-y-1">
+                  <label htmlFor="passportNumber" className="text-sm font-medium text-gray-700 dark:text-gray-300">Passport Number</label>
+                  <input id="passportNumber" name="passportNumber" value={formData.passportNumber} onChange={handleChange} type="text" autoComplete="off" placeholder="e.g. AB1234567" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm uppercase focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="passportValidUntil" className="text-sm font-medium text-gray-700 dark:text-gray-300">Valid Until</label>
+                  <input id="passportValidUntil" name="passportValidUntil" value={formData.passportValidUntil} onChange={handleChange} type="date" className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                {passportError ? (
+                  <p role="alert" className="sm:col-span-2 text-sm text-red-600">{passportError}</p>
+                ) : (
+                  <p className="sm:col-span-2 text-xs text-gray-500 dark:text-gray-400">Details entered here count as verified for the lease agreement.</p>
+                )}
               </div>
             </div>
 
